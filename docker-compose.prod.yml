@@ -1,0 +1,36 @@
+name: balkan-events-prod
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: balkan
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: balkan_events
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile.prod
+    restart: always
+    env_file: .env.prod
+    depends_on:
+      - postgres
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile.prod
+    restart: always
+    depends_on:
+      - api
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+      - web
+volumes:
+  postgres_data:

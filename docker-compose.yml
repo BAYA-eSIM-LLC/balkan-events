@@ -1,0 +1,27 @@
+# Local development
+name: balkan-events
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: balkan
+      POSTGRES_PASSWORD: balkan_dev_password
+      POSTGRES_DB: balkan_events
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+  api:
+    build: ./services/api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://balkan:balkan_dev_password@postgres:5432/balkan_events
+    depends_on:
+      - postgres
+volumes:
+  postgres_data:

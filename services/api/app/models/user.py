@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -20,6 +20,11 @@ class User(Base):
     role = Column(String(50), default=UserRole.USER.value)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
+    avatar_url = Column(String(500))
+    bio = Column(Text)
+    email_verified_at = Column(DateTime)
+    preferred_language = Column(String(10), default="bs")
+    timezone = Column(String(50), default="Europe/Sarajevo")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     memberships = relationship("OrganizationMember", back_populates="user")

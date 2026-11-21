@@ -1,7 +1,7 @@
 """scanner tables
 
 Revision ID: 010_scanner
-Revises: 009_admin_system
+Revises: 009
 Create Date: 2026-11-21
 
 """
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = '010_scanner'
-down_revision = '009_admin_system'
+down_revision = '009'
 branch_labels = None
 depends_on = None
 

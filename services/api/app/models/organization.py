@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -28,7 +28,7 @@ class OrganizationMember(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
-    role = Column(Enum(OrgRole), default=OrgRole.STAFF)
+    role = Column(String(50), default=OrgRole.STAFF.value)
     created_at = Column(DateTime, default=datetime.utcnow)
     user = relationship("User", back_populates="memberships")
     organization = relationship("Organization", back_populates="members")

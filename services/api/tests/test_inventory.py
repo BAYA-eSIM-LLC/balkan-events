@@ -1,28 +1,31 @@
 import pytest
 import asyncio
 from sqlalchemy import text, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from app.services.inventory import reserve_tickets, release_reservation, confirm_sale
 from app.models.inventory import TicketInventory
 from app.models.reservation import Reservation
 from fastapi import HTTPException
+import os
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+async def seed_basic(session: AsyncSession, org_id: int, user_id: int, event_id: int, tt_id: int, qty: int):
+    stmts = [
+        f"INSERT INTO organizations (id, name, slug) VALUES ({org_id}, 'Org{org_id}', 'org-{org_id}') ON CONFLICT DO NOTHING",
+        f"INSERT INTO users (id, email, password_hash, full_name, role) VALUES ({user_id}, 'user{user_id}@test.com', 'hash', 'User {user_id}', 'user') ON CONFLICT DO NOTHING",
+        f"INSERT INTO events (id, organization_id, title, slug, start_at, is_published) VALUES ({event_id}, {org_id}, 'Event {event_id}', 'event-{event_id}', NOW() + INTERVAL '1 day', true) ON CONFLICT DO NOTHING",
+        f"INSERT INTO ticket_types (id, event_id, name, price, quantity_total) VALUES ({tt_id}, {event_id}, 'Type', 10.00, {qty}) ON CONFLICT DO NOTHING",
+        f"INSERT INTO ticket_inventory (ticket_type_id, available, reserved, sold) VALUES ({tt_id}, {qty}, 0, 0) ON CONFLICT (ticket_type_id) DO UPDATE SET available = {qty}, reserved = 0, sold = 0",
+    ]
+    for s in stmts:
+        await session.execute(text(s))
+    await session.commit()
 
 @pytest.mark.asyncio
 async def test_reserve_release_confirm(db_session: AsyncSession):
-    # Seed minimal data
-    await db_session.execute(text("""
-        INSERT INTO organizations (id, name, slug) VALUES (100, 'Inv Org', 'inv-org') ON CONFLICT DO NOTHING;
-        INSERT INTO users (id, email, password_hash, full_name, role) VALUES (100, 'invuser@test.com', 'hash', 'Inv User', 'USER') ON CONFLICT DO NOTHING;
-        INSERT INTO events (id, organization_id, title, slug, start_at, is_published)
-        VALUES (100, 100, 'Inv Event', 'inv-event', NOW() + INTERVAL '1 day', true) ON CONFLICT DO NOTHING;
-        INSERT INTO ticket_types (id, event_id, name, price, quantity_total)
-        VALUES (100, 100, 'VIP', 25.00, 10) ON CONFLICT DO NOTHING;
-        INSERT INTO ticket_inventory (ticket_type_id, available, reserved, sold)
-        VALUES (100, 10, 0, 0) ON CONFLICT (ticket_type_id) DO UPDATE SET available = 10, reserved = 0, sold = 0;
-    """))
-    await db_session.commit()
+    await seed_basic(db_session, 100, 100, 100, 100, 10)
 
-    # Reserve
     res = await reserve_tickets(db_session, 100, 100, 2)
     assert res.quantity == 2
     assert res.status == "active"
@@ -31,13 +34,11 @@ async def test_reserve_release_confirm(db_session: AsyncSession):
     assert inv.available == 8
     assert inv.reserved == 2
 
-    # Release
     await release_reservation(db_session, res.id)
     inv = (await db_session.execute(select(TicketInventory).where(TicketInventory.ticket_type_id == 100))).scalar_one()
     assert inv.available == 10
     assert inv.reserved == 0
 
-    # Reserve again and confirm
     res2 = await reserve_tickets(db_session, 100, 100, 3)
     await confirm_sale(db_session, res2.id)
     inv = (await db_session.execute(select(TicketInventory).where(TicketInventory.ticket_type_id == 100))).scalar_one()
@@ -47,11 +48,7 @@ async def test_reserve_release_confirm(db_session: AsyncSession):
 
 @pytest.mark.asyncio
 async def test_prevent_negative_inventory(db_session: AsyncSession):
-    await db_session.execute(text("""
-        INSERT INTO ticket_inventory (ticket_type_id, available, reserved, sold)
-        VALUES (100, 1, 0, 0) ON CONFLICT (ticket_type_id) DO UPDATE SET available = 1, reserved = 0, sold = 0;
-    """))
-    await db_session.commit()
+    await seed_basic(db_session, 100, 100, 100, 100, 1)
 
     with pytest.raises(HTTPException) as exc:
         await reserve_tickets(db_session, 100, 100, 5)
@@ -62,28 +59,13 @@ async def test_prevent_negative_inventory(db_session: AsyncSession):
 
 @pytest.mark.asyncio
 async def test_concurrent_last_5_tickets():
-    """20 concurrent requests for last 5 tickets. Exactly 5 succeed."""
-    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-    import os
-    DATABASE_URL = os.getenv("DATABASE_URL")
     eng = create_async_engine(DATABASE_URL)
     Session = async_sessionmaker(eng, expire_on_commit=False)
 
-    # Seed
     async with Session() as s:
-        await s.execute(text("""
-            INSERT INTO organizations (id, name, slug) VALUES (200, 'Conc Org', 'conc-org') ON CONFLICT DO NOTHING;
-            INSERT INTO users (id, email, password_hash, full_name, role) VALUES (200, 'conc@test.com', 'hash', 'Conc User', 'USER') ON CONFLICT DO NOTHING;
-            INSERT INTO events (id, organization_id, title, slug, start_at, is_published)
-            VALUES (200, 200, 'Conc Event', 'conc-event', NOW() + INTERVAL '1 day', true) ON CONFLICT DO NOTHING;
-            INSERT INTO ticket_types (id, event_id, name, price, quantity_total)
-            VALUES (200, 200, 'Last', 10.00, 5) ON CONFLICT DO NOTHING;
-            INSERT INTO ticket_inventory (ticket_type_id, available, reserved, sold)
-            VALUES (200, 5, 0, 0) ON CONFLICT (ticket_type_id) DO UPDATE SET available = 5, reserved = 0, sold = 0;
-        """))
-        await s.commit()
+        await seed_basic(s, 200, 200, 200, 200, 5)
 
-    async def attempt(i: int):
+    async def attempt():
         async with Session() as session:
             try:
                 await reserve_tickets(session, 200, 200, 1)
@@ -93,7 +75,7 @@ async def test_concurrent_last_5_tickets():
             except Exception:
                 return False
 
-    results = await asyncio.gather(*[attempt(i) for i in range(20)])
+    results = await asyncio.gather(*[attempt() for _ in range(20)])
     successes = sum(1 for r in results if r)
 
     async with Session() as s:

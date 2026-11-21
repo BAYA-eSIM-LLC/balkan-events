@@ -5,9 +5,7 @@ from app.models.ledger import LedgerEntry
 
 @pytest.mark.asyncio
 async def test_ledger_idempotency(db_session: AsyncSession):
-    await db_session.execute(text("""
-        INSERT INTO organizations (id, name, slug) VALUES (300, 'Led Org', 'led-org') ON CONFLICT DO NOTHING;
-    """))
+    await db_session.execute(text("INSERT INTO organizations (id, name, slug) VALUES (300, 'Led Org', 'led-org') ON CONFLICT DO NOTHING"))
     await db_session.commit()
 
     key = "test-idem-key-001"
@@ -23,7 +21,6 @@ async def test_ledger_idempotency(db_session: AsyncSession):
     db_session.add(entry1)
     await db_session.commit()
 
-    # Second insert with same key should fail unique constraint
     entry2 = LedgerEntry(
         entry_type="sale",
         reference_type="order",

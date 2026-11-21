@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, events
+from app.routers import auth, events, admin
 
 app = FastAPI(title="Balkan Events API", version="0.1.0")
 
@@ -14,6 +14,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(events.router)
+app.include_router(admin.router)
 
 @app.get("/")
 def root():

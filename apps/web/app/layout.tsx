@@ -11,10 +11,16 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="bs">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
+      </head>
       <body>
+        <a href="#main" className="skip-link">Preskoči na sadržaj</a>
         <Header />
-        <main className="max-w-6xl mx-auto px-4 py-6">{children}</main>
-        <footer className="border-t mt-12 py-6 text-center text-sm text-gray-500">
+        <main id="main" className="max-w-6xl mx-auto px-4 py-6">{children}</main>
+        <footer className="border-t mt-12 py-6 text-center text-sm text-ink-muted">
           <div className="flex justify-center gap-4 mb-2">
             <a href="/privacy">Privatnost</a>
             <a href="/terms">Uslovi</a>

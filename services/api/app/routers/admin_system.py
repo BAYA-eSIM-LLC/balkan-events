@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, update
+from sqlalchemy import select, func
 from datetime import datetime
 from app.database import get_db
 from app.deps import get_current_user, require_role
@@ -12,6 +12,7 @@ from app.models.support import SupportTicket, AdminNote
 from app.models.ledger import LedgerEntry
 
 router = APIRouter(prefix="/admin", tags=["admin-system"])
+public_support = APIRouter(prefix="/support", tags=["support"])
 
 ADMIN_ONLY = (UserRole.ADMIN, UserRole.SUPERADMIN)
 MODERATOR_ROLES = (UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.EVENT_MODERATOR)
@@ -19,6 +20,7 @@ REVIEWER_ROLES = (UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.ORGANIZER_REVIEW
 SUPPORT_ROLES = (UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.SUPPORT_ADMIN)
 FINANCE_ROLES = (UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.FINANCE_ADMIN)
 SECURITY_ROLES = (UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.SECURITY_ADMIN)
+NOTE_ROLES = (UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.SUPPORT_ADMIN, UserRole.EVENT_MODERATOR, UserRole.ORGANIZER_REVIEWER)
 
 def require_admin_role(*roles: UserRole):
     return require_role(*roles)
@@ -27,6 +29,11 @@ async def log_audit(db: AsyncSession, user_id: int, action: str, entity_type: st
     entry = AuditLog(user_id=user_id, action=action, entity_type=entity_type, entity_id=entity_id, details=details)
     db.add(entry)
     await db.commit()
+
+def paginate(page: int, page_size: int):
+    page = max(1, page)
+    page_size = min(max(1, page_size), 100)
+    return page, page_size
 
 @router.get("/dashboard")
 async def dashboard(user: User = Depends(require_admin_role(*ADMIN_ONLY)), db: AsyncSession = Depends(get_db)):
@@ -49,24 +56,26 @@ async def dashboard(user: User = Depends(require_admin_role(*ADMIN_ONLY)), db: A
 @router.get("/users")
 async def list_users(
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    page_size: int = Query(20, ge=1, le=100),
     role: str = None,
     active: bool = None,
     user: User = Depends(require_admin_role(*ADMIN_ONLY)),
     db: AsyncSession = Depends(get_db)
 ):
+    page, page_size = paginate(page, page_size)
     q = select(User)
     if role:
         q = q.where(User.role == role)
     if active is not None:
         q = q.where(User.is_active == active)
     total = await db.scalar(select(func.count()).select_from(q.subquery()))
-    q = q.offset((page - 1) * limit).limit(limit)
+    q = q.offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(q)
     users = result.scalars().all()
     return {
         "total": total or 0,
         "page": page,
+        "page_size": page_size,
         "items": [{"id": u.id, "email": u.email, "role": u.role, "is_active": u.is_active, "created_at": u.created_at.isoformat() if u.created_at else None} for u in users]
     }
 
@@ -145,14 +154,29 @@ async def change_event_status(event_id: int, new_status: str, user: User = Depen
     await log_audit(db, user.id, "event.status_changed", "event", event_id, {"from": old, "to": new_status})
     return {"id": event.id, "status": event.status}
 
+# --- Support Tickets (admin) ---
 @router.get("/support/tickets")
-async def list_tickets(status: str = None, user: User = Depends(require_admin_role(*SUPPORT_ROLES)), db: AsyncSession = Depends(get_db)):
+async def list_tickets(
+    status: str = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    user: User = Depends(require_admin_role(*SUPPORT_ROLES)),
+    db: AsyncSession = Depends(get_db)
+):
+    page, page_size = paginate(page, page_size)
     q = select(SupportTicket)
     if status:
         q = q.where(SupportTicket.status == status)
-    result = await db.execute(q.order_by(SupportTicket.created_at.desc()))
+    total = await db.scalar(select(func.count()).select_from(q.subquery()))
+    q = q.order_by(SupportTicket.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(q)
     tickets = result.scalars().all()
-    return [{"id": t.id, "subject": t.subject, "status": t.status, "user_id": t.user_id, "created_at": t.created_at.isoformat() if t.created_at else None} for t in tickets]
+    return {
+        "total": total or 0,
+        "page": page,
+        "page_size": page_size,
+        "items": [{"id": t.id, "subject": t.subject, "status": t.status, "user_id": t.user_id, "assigned_to": t.assigned_to, "created_at": t.created_at.isoformat() if t.created_at else None} for t in tickets]
+    }
 
 @router.post("/support/tickets/{ticket_id}/status")
 async def update_ticket_status(ticket_id: int, status: str, user: User = Depends(require_admin_role(*SUPPORT_ROLES)), db: AsyncSession = Depends(get_db)):
@@ -166,12 +190,106 @@ async def update_ticket_status(ticket_id: int, status: str, user: User = Depends
     await log_audit(db, user.id, "ticket.status_changed", "support_ticket", ticket_id, {"status": status})
     return {"id": ticket.id, "status": ticket.status}
 
+@router.post("/support/tickets/{ticket_id}/assign")
+async def assign_ticket(ticket_id: int, assignee_id: int, user: User = Depends(require_admin_role(*SUPPORT_ROLES)), db: AsyncSession = Depends(get_db)):
+    ticket = await db.get(SupportTicket, ticket_id)
+    if not ticket:
+        raise HTTPException(404, "Ticket not found")
+    assignee = await db.get(User, assignee_id)
+    if not assignee or assignee.role not in ADMIN_ROLES:
+        raise HTTPException(400, "Assignee must be an admin")
+    ticket.assigned_to = assignee_id
+    await db.commit()
+    await log_audit(db, user.id, "ticket.assigned", "support_ticket", ticket_id, {"assignee_id": assignee_id})
+    return {"id": ticket.id, "assigned_to": ticket.assigned_to}
+
+# --- Admin Notes CRUD ---
+@router.post("/notes")
+async def create_note(
+    entity_type: str,
+    entity_id: int,
+    note: str,
+    user: User = Depends(require_admin_role(*NOTE_ROLES)),
+    db: AsyncSession = Depends(get_db)
+):
+    if entity_type not in ("user", "organization", "event", "support_ticket"):
+        raise HTTPException(400, "Invalid entity_type")
+    n = AdminNote(admin_id=user.id, entity_type=entity_type, entity_id=entity_id, note=note)
+    db.add(n)
+    await db.commit()
+    await db.refresh(n)
+    await log_audit(db, user.id, "note.created", entity_type, entity_id, {"note_id": n.id})
+    return {"id": n.id, "entity_type": n.entity_type, "entity_id": n.entity_id, "note": n.note, "created_at": n.created_at.isoformat()}
+
+@router.get("/notes")
+async def list_notes(
+    entity_type: str = None,
+    entity_id: int = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    user: User = Depends(require_admin_role(*NOTE_ROLES)),
+    db: AsyncSession = Depends(get_db)
+):
+    page, page_size = paginate(page, page_size)
+    q = select(AdminNote)
+    if entity_type:
+        q = q.where(AdminNote.entity_type == entity_type)
+    if entity_id is not None:
+        q = q.where(AdminNote.entity_id == entity_id)
+    total = await db.scalar(select(func.count()).select_from(q.subquery()))
+    q = q.order_by(AdminNote.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(q)
+    notes = result.scalars().all()
+    return {
+        "total": total or 0,
+        "page": page,
+        "page_size": page_size,
+        "items": [{"id": n.id, "admin_id": n.admin_id, "entity_type": n.entity_type, "entity_id": n.entity_id, "note": n.note, "created_at": n.created_at.isoformat()} for n in notes]
+    }
+
+@router.patch("/notes/{note_id}")
+async def update_note(note_id: int, note: str, user: User = Depends(require_admin_role(*NOTE_ROLES)), db: AsyncSession = Depends(get_db)):
+    n = await db.get(AdminNote, note_id)
+    if not n:
+        raise HTTPException(404, "Note not found")
+    if n.admin_id != user.id and user.role != UserRole.SUPERADMIN.value:
+        raise HTTPException(403, "Only author or superadmin can edit")
+    n.note = note
+    await db.commit()
+    await log_audit(db, user.id, "note.updated", n.entity_type, n.entity_id, {"note_id": note_id})
+    return {"id": n.id, "note": n.note}
+
+@router.delete("/notes/{note_id}")
+async def delete_note(note_id: int, user: User = Depends(require_admin_role(*NOTE_ROLES)), db: AsyncSession = Depends(get_db)):
+    n = await db.get(AdminNote, note_id)
+    if not n:
+        raise HTTPException(404, "Note not found")
+    if n.admin_id != user.id and user.role != UserRole.SUPERADMIN.value:
+        raise HTTPException(403, "Only author or superadmin can delete")
+    await db.delete(n)
+    await db.commit()
+    await log_audit(db, user.id, "note.deleted", n.entity_type, n.entity_id, {"note_id": note_id})
+    return {"deleted": True, "id": note_id}
+
+# --- Audit with pagination ---
 @router.get("/audit")
-async def audit_log(page: int = 1, limit: int = 50, user: User = Depends(require_admin_role(*SECURITY_ROLES)), db: AsyncSession = Depends(get_db)):
-    q = select(AuditLog).order_by(AuditLog.created_at.desc()).offset((page - 1) * limit).limit(limit)
+async def audit_log(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    user: User = Depends(require_admin_role(*SECURITY_ROLES)),
+    db: AsyncSession = Depends(get_db)
+):
+    page, page_size = paginate(page, page_size)
+    total = await db.scalar(select(func.count(AuditLog.id)))
+    q = select(AuditLog).order_by(AuditLog.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(q)
     logs = result.scalars().all()
-    return [{"id": l.id, "user_id": l.user_id, "action": l.action, "entity_type": l.entity_type, "entity_id": l.entity_id, "details": l.details, "created_at": l.created_at.isoformat() if l.created_at else None} for l in logs]
+    return {
+        "total": total or 0,
+        "page": page,
+        "page_size": page_size,
+        "items": [{"id": l.id, "user_id": l.user_id, "action": l.action, "entity_type": l.entity_type, "entity_id": l.entity_id, "details": l.details, "created_at": l.created_at.isoformat() if l.created_at else None} for l in logs]
+    }
 
 @router.get("/finance/overview")
 async def finance_overview(user: User = Depends(require_admin_role(*FINANCE_ROLES)), db: AsyncSession = Depends(get_db)):
@@ -180,3 +298,39 @@ async def finance_overview(user: User = Depends(require_admin_role(*FINANCE_ROLE
         "ledger_entries": ledger_count or 0,
         "note": "Financial data is append-only. No payouts or live payments are active. Counts only."
     }
+
+# --- Public Support (authenticated user) ---
+@public_support.post("/tickets")
+async def create_ticket(subject: str, body: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    t = SupportTicket(user_id=user.id, subject=subject, body=body, status="OPEN")
+    db.add(t)
+    await db.commit()
+    await db.refresh(t)
+    return {"id": t.id, "subject": t.subject, "status": t.status, "created_at": t.created_at.isoformat()}
+
+@public_support.get("/tickets")
+async def my_tickets(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    page, page_size = paginate(page, page_size)
+    q = select(SupportTicket).where(SupportTicket.user_id == user.id)
+    total = await db.scalar(select(func.count()).select_from(q.subquery()))
+    q = q.order_by(SupportTicket.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(q)
+    tickets = result.scalars().all()
+    return {
+        "total": total or 0,
+        "page": page,
+        "page_size": page_size,
+        "items": [{"id": t.id, "subject": t.subject, "status": t.status, "created_at": t.created_at.isoformat() if t.created_at else None} for t in tickets]
+    }
+
+@public_support.get("/tickets/{ticket_id}")
+async def get_my_ticket(ticket_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    t = await db.get(SupportTicket, ticket_id)
+    if not t or t.user_id != user.id:
+        raise HTTPException(404, "Ticket not found")
+    return {"id": t.id, "subject": t.subject, "body": t.body, "status": t.status, "created_at": t.created_at.isoformat() if t.created_at else None}

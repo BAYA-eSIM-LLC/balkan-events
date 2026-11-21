@@ -29,7 +29,8 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     user = User(email=data.email, password_hash=hash_password(data.password), full_name=data.full_name)
     db.add(user)
     await db.commit()
-    token = create_access_token({"sub": str(user.id), "role": user.role.value})
+    await db.refresh(user)
+    token = create_access_token({"sub": str(user.id), "role": user.role})
     return TokenResponse(access_token=token)
 
 @router.post("/login", response_model=TokenResponse)
@@ -38,5 +39,5 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     user = result.scalar_one_or_none()
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_access_token({"sub": str(user.id), "role": user.role.value})
+    token = create_access_token({"sub": str(user.id), "role": user.role})
     return TokenResponse(access_token=token)

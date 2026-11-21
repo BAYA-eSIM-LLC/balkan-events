@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Balkan Events — Najbolja platforma za događaje na Balkanu</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Inter,system-ui,sans-serif;background:#050505;color:#fff}
+.hero{min-height:100vh;background:linear-gradient(180deg,#050505 0%,#0a0a1a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;position:relative}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,rgba(0,212,255,0.12) 0%,transparent 60%);pointer-events:none}
+h1{font-size:clamp(2.8rem,8vw,5.5rem);font-weight:800;background:linear-gradient(135deg,#00d4ff 0%,#7b2cbf 50%,#ff006e 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:1.5rem;letter-spacing:-0.03em}
+.tagline{font-size:clamp(1.1rem,2.5vw,1.4rem);color:#999;max-width:650px;margin-bottom:2.5rem;line-height:1.7}
+.cta{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.btn{padding:16px 36px;border-radius:12px;font-weight:600;text-decoration:none;font-size:1rem;transition:all .3s}
+.btn-primary{background:linear-gradient(135deg,#00d4ff,#7b2cbf);color:#fff}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 15px 40px rgba(0,212,255,0.25)}
+.btn-outline{border:1px solid #333;color:#fff}
+.btn-outline:hover{border-color:#00d4ff;color:#00d4ff}
+.stats{display:flex;justify-content:center;gap:80px;padding:60px 20px;flex-wrap:wrap;border-bottom:1px solid #1a1a1a}
+.stat{text-align:center}
+.stat-num{font-size:2.8rem;font-weight:800;background:linear-gradient(135deg,#00d4ff,#7b2cbf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{color:#666;margin-top:6px;font-size:0.95rem}
+.section{padding:100px 20px;max-width:1100px;margin:0 auto}
+.section h2{font-size:2.4rem;text-align:center;margin-bottom:50px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+.card{background:#0d0d0d;border:1px solid #1f1f1f;border-radius:16px;padding:32px;transition:all .3s}
+.card:hover{border-color:#00d4ff;transform:translateY(-6px)}
+.card h3{font-size:1.3rem;margin-bottom:12px;color:#00d4ff;font-weight:600}
+.card p{color:#888;line-height:1.7}
+footer{text-align:center;padding:50px 20px;border-top:1px solid #1a1a1a;color:#555;font-size:0.9rem}
+footer a{color:#00d4ff;text-decoration:none;margin:0 12px}
+</style>
+</head>
+<body>
+<section class="hero">
+<h1>Balkan Events</h1>
+<p class="tagline">Otkrij, rezerviši i uživaj u najboljim događajima na Balkanu. Od koncerata do festivala — sve na jednom mjestu.</p>
+<div class="cta">
+<a href="#features" class="btn btn-primary">Istraži događaje</a>
+<a href="/docs" class="btn btn-outline">API Docs</a>
+</div>
+</section>
+<div class="stats">
+<div class="stat"><div class="stat-num">1000+</div><div class="stat-label">Događaja</div></div>
+<div class="stat"><div class="stat-num">50+</div><div class="stat-label">Gradova</div></div>
+<div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Podrška</div></div>
+</div>
+<section class="section" id="features">
+<h2>Zašto Balkan Events?</h2>
+<div class="grid">
+<div class="card"><h3>Događaji</h3><p>Pronađi koncerte, festivale, konferencije i sportske događaje širom Balkana u realnom vremenu.</p></div>
+<div class="card"><h3>Karte sa QR kodom</h3><p>Kupi karte online. Brzo, sigurno i bez čekanja u redu. Skeniraj i uđi.</p></div>
+<div class="card"><h3>Za organizatore</h3><p>Kreiraj događaje, upravljaj kartama, prati statistiku i zaradu na jednom mjestu.</p></div>
+<div class="card"><h3>Mobilna aplikacija</h3><p>Android i iOS aplikacija sa push obavještenjima, favoritima i skeniranjem karata.</p></div>
+<div class="card"><h3>Promo kodovi</h3><p>Kreiraj popuste i promo akcije. Privuci više posjetilaca na svoje događaje.</p></div>
+<div class="card"><h3>Preporuke</h3><p>Pametne preporuke događaja na osnovu tvojih interesa i lokacije.</p></div>
+</div>
+</section>
+<footer>
+<p>© 2026 Balkan Events · BAYA eSIM LLC</p>
+<p style="margin-top:12px"><a href="/docs">API</a><a href="mailto:info@balkanevents.org">Kontakt</a></p>
+</footer>
+</body>
+</html>

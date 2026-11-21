@@ -15,3 +15,4 @@ from app.models.location import Country, City, Region
 from app.models.venue import Venue
 from app.models.performer import Performer, EventPerformer, EventSchedule
 from app.models.org_extended import OrgDocument, OrgNotification
+from app.models.support import SupportTicket, AdminNote

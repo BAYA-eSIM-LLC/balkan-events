@@ -8,49 +8,57 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Inter,system-ui,sans-serif;background:#fff;color:#1a1a1a}
-nav{position:fixed;top:0;left:0;right:0;background:#fff;padding:14px 48px;display:flex;justify-content:space-between;align-items:center;z-index:100;box-shadow:0 1px 0 #eee}
-.logo{font-size:1.6rem;font-weight:800;color:#111;letter-spacing:-0.5px}
+nav{position:fixed;top:0;left:0;right:0;background:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;z-index:100;box-shadow:0 1px 0 #eee}
+.logo{font-size:1.3rem;font-weight:800;color:#111}
 .logo span{color:#ff3366}
-nav-links{display:flex;align-items:center;gap:32px}
-nav a{color:#333;text-decoration:none;font-weight:500;font-size:0.95rem}
-nav a:hover{color:#ff3366}
-.btn-nav{background:#111;color:#fff;padding:10px 20px;border-radius:8px;font-weight:600}
-.btn-nav:hover{background:#333;color:#fff}
-.hero{padding:160px 48px 100px;background:linear-gradient(180deg,#fff 0%,#fafafa 100%);text-align:center}
-.hero h1{font-size:clamp(2.8rem,5vw,4.2rem);font-weight:800;line-height:1.1;letter-spacing:-1px;margin-bottom:16px}
+.menu-btn{background:none;border:none;font-size:1.5rem;cursor:pointer}
+.nav-links{display:none;position:absolute;top:100%;left:0;right:0;background:#fff;padding:20px;flex-direction:column;gap:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
+.nav-links.open{display:flex}
+.nav-links a{color:#333;text-decoration:none;font-weight:500;padding:8px 0}
+.btn-nav{background:#111;color:#fff;padding:12px 20px;border-radius:8px;font-weight:600;text-align:center}
+.hero{padding:100px 20px 60px;text-align:center}
+.hero h1{font-size:2.2rem;font-weight:800;line-height:1.15;margin-bottom:16px}
 .hero h1 span{background:linear-gradient(135deg,#ff3366,#ff6b35);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hero p{font-size:1.25rem;color:#666;max-width:550px;margin:0 auto 40px}
-.search{background:#fff;border:2px solid #eee;border-radius:16px;padding:6px;display:flex;max-width:640px;margin:0 auto;box-shadow:0 8px 30px rgba(0,0,0,0.06)}
-.search input{flex:1;border:none;padding:16px 20px;font-size:1rem;outline:none}
-.search button{background:#111;color:#fff;border:none;padding:14px 28px;border-radius:12px;font-weight:600;cursor:pointer}
-.filters{display:flex;justify-content:center;gap:12px;margin-top:32px;flex-wrap:wrap}
-.filter{padding:10px 20px;border:1px solid #eee;border-radius:100px;background:#fff;font-size:0.9rem;cursor:pointer;transition:all .2s}
-.filter:hover,.filter.active{background:#111;color:#fff;border-color:#111}
-.section{padding:80px 48px;max-width:1200px;margin:0 auto}
-.section-title{font-size:1.8rem;font-weight:700;margin-bottom:32px}
-.events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px}
-.event{background:#fff;border-radius:16px;overflow:hidden;border:1px solid #f0f0f0;transition:all .3s;cursor:pointer}
-.event:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,0.08)}
-.event-img{height:160px;background:linear-gradient(135deg,#ff3366,#ff6b35);display:flex;align-items:flex-end;padding:16px}
-.event-tag{background:#fff;color:#111;padding:4px 12px;border-radius:100px;font-size:0.75rem;font-weight:600}
-.event-body{padding:20px}
-.event-body h3{font-size:1.1rem;font-weight:600;margin-bottom:6px}
-.event-body p{color:#888;font-size:0.9rem}
-.cities{display:flex;gap:16px;overflow-x:auto;padding-bottom:16px}
-.city{min-width:140px;height:100px;background:#f5f5f5;border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:600;cursor:pointer;transition:all .2s}
-.city:hover{background:#111;color:#fff}
-footer{background:#111;color:#fff;padding:60px 48px}
-.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;max-width:1200px;margin:0 auto}
-footer h4{margin-bottom:16px;font-size:0.9rem;text-transform:uppercase;letter-spacing:1px;color:#888}
-footer a{display:block;color:#ccc;text-decoration:none;margin-bottom:10px;font-size:0.95rem}
-footer a:hover{color:#fff}
-.footer-bottom{max-width:1200px;margin:40px auto 0;padding-top:24px;border-top:1px solid #333;display:flex;justify-content:space-between;color:#666;font-size:0.9rem}
-@media(max-width:768px){nav{padding:14px 20px}.hero{padding:120px 20px 60px}.section{padding:60px 20px}.footer-grid{grid-template-columns:1fr 1fr}}
+.hero p{font-size:1rem;color:#666;margin-bottom:24px}
+.search{background:#fff;border:2px solid #eee;border-radius:12px;padding:4px;display:flex;margin-bottom:20px}
+.search input{flex:1;border:none;padding:14px 16px;font-size:1rem;outline:none;min-width:0}
+.search button{background:#111;color:#fff;border:none;padding:12px 20px;border-radius:8px;font-weight:600;cursor:pointer}
+.filters{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.filter{padding:8px 16px;border:1px solid #eee;border-radius:100px;background:#fff;font-size:0.85rem}
+.filter.active{background:#111;color:#fff;border-color:#111}
+.section{padding:40px 20px}
+.section-title{font-size:1.4rem;font-weight:700;margin-bottom:20px}
+.events-grid{display:flex;flex-direction:column;gap:16px}
+.event{background:#fff;border-radius:12px;overflow:hidden;border:1px solid #f0f0f0}
+.event-img{height:120px;background:linear-gradient(135deg,#ff3366,#ff6b35);display:flex;align-items:flex-end;padding:12px}
+.event-tag{background:#fff;color:#111;padding:4px 10px;border-radius:100px;font-size:0.7rem;font-weight:600}
+.event-body{padding:16px}
+.event-body h3{font-size:1rem;font-weight:600;margin-bottom:4px}
+.event-body p{color:#888;font-size:0.85rem}
+.cities{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
+.city{min-width:120px;height:80px;background:#f5f5f5;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.9rem}
+footer{background:#111;color:#fff;padding:40px 20px}
+.footer-logo{font-size:1.3rem;font-weight:800;margin-bottom:12px}
+.footer-logo span{color:#ff3366}
+footer p{color:#888;font-size:0.9rem;margin-bottom:24px;line-height:1.5}
+.footer-links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:24px}
+.footer-links a{color:#ccc;text-decoration:none;font-size:0.9rem}
+.footer-bottom{padding-top:20px;border-top:1px solid #333;color:#666;font-size:0.8rem}
+@media(min-width:768px){
+.menu-btn{display:none}
+.nav-links{display:flex;position:static;flex-direction:row;padding:0;box-shadow:none;gap:32px}
+.hero{padding:140px 48px 80px}
+.hero h1{font-size:3.5rem}
+.section{padding:60px 48px;max-width:1200px;margin:0 auto}
+.events-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+}
+@media(min-width:1024px){.events-grid{grid-template-columns:repeat(4,1fr)}}
 </style>
 </head>
 <body>
 <nav>
 <div class="logo">Balkan<span>Events</span></div>
+<button class="menu-btn" onclick="document.querySelector('.nav-links').classList.toggle('open')">☰</button>
 <div class="nav-links">
 <a href="#events">Događaji</a>
 <a href="#cities">Gradovi</a>
@@ -62,7 +70,7 @@ footer a:hover{color:#fff}
 <h1>Svi događaji<br><span>na jednom mjestu</span></h1>
 <p>Pronađi koncerte, festivale, predstave i sportske događaje širom Balkana.</p>
 <div class="search">
-<input type="text" placeholder="Pretraži događaje, izvođače, gradove...">
+<input type="text" placeholder="Pretraži događaje...">
 <button>Pretraži</button>
 </div>
 <div class="filters">
@@ -82,7 +90,7 @@ footer a:hover{color:#fff}
 <div class="event"><div class="event-img" style="background:linear-gradient(135deg,#ff6b35,#ffcc00)"><span class="event-tag">SPORT</span></div><div class="event-body"><h3>KK Bosna vs Partizan</h3><p>Sarajevo · 28. Nov 2026</p></div></div>
 </div>
 </section>
-<section class="section" id="cities" style="padding-top:0">
+<section class="section" id="cities">
 <h2 class="section-title">Istaknuti gradovi</h2>
 <div class="cities">
 <div class="city">Sarajevo</div>
@@ -91,18 +99,18 @@ footer a:hover{color:#fff}
 <div class="city">Mostar</div>
 <div class="city">Split</div>
 <div class="city">Banja Luka</div>
-<div class="city">Novi Sad</div>
-<div class="city">Podgorica</div>
 </div>
 </section>
 <footer>
-<div class="footer-grid">
-<div><div class="logo" style="color:#fff;margin-bottom:16px">Balkan<span style="color:#ff3366">Events</span></div><p style="color:#888;line-height:1.6">Najbolja platforma za otkrivanje i rezervaciju događaja na Balkanu.</p></div>
-<div><h4>Platforma</h4><a href="#">Događaji</a><a href="#">Gradovi</a><a href="#">Kategorije</a></div>
-<div><h4>Organizatori</h4><a href="#">Kreiraj događaj</a><a href="#">Dashboard</a><a href="#">Cijene</a></div>
-<div><h4>Podrška</h4><a href="#">Kontakt</a><a href="#">FAQ</a><a href="mailto:info@balkanevents.org">info@balkanevents.org</a></div>
+<div class="footer-logo">Balkan<span>Events</span></div>
+<p>Najbolja platforma za otkrivanje i rezervaciju događaja na Balkanu.</p>
+<div class="footer-links">
+<a href="#">Događaji</a>
+<a href="#">Gradovi</a>
+<a href="#">Organizatori</a>
+<a href="#">Kontakt</a>
 </div>
-<div class="footer-bottom"><span>© 2026 Balkan Events</span><span>BAYA eSIM LLC</span></div>
+<div class="footer-bottom">© 2026 Balkan Events · BAYA eSIM LLC</div>
 </footer>
 </body>
 </html>

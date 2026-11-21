@@ -57,14 +57,14 @@ async def test_popular_only_published(client: AsyncClient, db_session: AsyncSess
 
 @pytest.mark.asyncio
 async def test_admin_venue_crud(client: AsyncClient, db_session: AsyncSession):
-    admin = User(email="adminv@example.com", password_hash=hash_password("pass123456"), full_name="Admin", role="ADMIN")
+    admin = User(email="adminv@example.com", password_hash=hash_password("pass123456"), full_name="Admin", role="admin")
     db_session.add(admin)
     await db_session.commit()
 
     login = await client.post("/auth/login", json={"email": "adminv@example.com", "password": "pass123456"})
     headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
 
-    create = await client.post("/admin/venues", headers=headers, json={"name": "Test Venue", "city_id": None, "capacity": 500})
+    create = await client.post("/admin/venues", headers=headers, json={"name": "Test Venue", "capacity": 500})
     assert create.status_code == 200
     vid = create.json()["id"]
 
@@ -77,7 +77,7 @@ async def test_admin_venue_crud(client: AsyncClient, db_session: AsyncSession):
 
 @pytest.mark.asyncio
 async def test_admin_performer_crud(client: AsyncClient, db_session: AsyncSession):
-    admin = User(email="adminp@example.com", password_hash=hash_password("pass123456"), full_name="AdminP", role="ADMIN")
+    admin = User(email="adminp@example.com", password_hash=hash_password("pass123456"), full_name="AdminP", role="admin")
     db_session.add(admin)
     await db_session.commit()
 
@@ -100,7 +100,7 @@ async def test_admin_performer_crud(client: AsyncClient, db_session: AsyncSessio
 
 @pytest.mark.asyncio
 async def test_non_admin_cannot_create_venue(client: AsyncClient, db_session: AsyncSession):
-    user = User(email="userx@example.com", password_hash=hash_password("pass123456"), full_name="User", role="USER")
+    user = User(email="userx@example.com", password_hash=hash_password("pass123456"), full_name="User", role="user")
     db_session.add(user)
     await db_session.commit()
 

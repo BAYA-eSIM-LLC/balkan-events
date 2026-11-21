@@ -7,6 +7,7 @@ from app.routers.search import router as search_router
 from app.routers.admin_catalog import venues as admin_venues, performers as admin_performers, public_performers
 from app.routers.organizer import router as organizer_router, admin_org as admin_org_router
 from app.routers.admin_system import router as admin_system_router, public_support
+from app.routers.scanner import router as scanner_router
 
 app = FastAPI(title="Balkan Events API", version="0.1.0")
 
@@ -37,6 +38,7 @@ app.include_router(profile.router)
 app.include_router(locations_router)
 app.include_router(categories_router)
 app.include_router(locations_admin_router)
+app.include_router(scanner_router)
 
 @app.get("/")
 def root():

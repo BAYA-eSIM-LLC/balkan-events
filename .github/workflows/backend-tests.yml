@@ -49,27 +49,8 @@ jobs:
         working-directory: services/api
         env:
           DATABASE_URL: postgresql+asyncpg://test_user:test_password@localhost:5432/balkan_events_test
-        run: |
-          python -c "
-import asyncio
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
-import os
-
-async def check():
-    eng = create_async_engine(os.environ['DATABASE_URL'])
-    async with eng.connect() as conn:
-        r = await conn.execute(text(\"SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename\"))
-        tables = [row[0] for row in r]
-        print('Tables:', tables)
-        required = ['users', 'organizations', 'events', 'ticket_types', 'ticket_inventory', 'reservations', 'ledger_entries']
-        missing = [t for t in required if t not in tables]
-        assert not missing, f'Missing tables: {missing}'
-        print('Schema OK')
-    await eng.dispose()
-
-asyncio.run(check())
-"
+          PYTHONPATH: .
+        run: python check_schema.py
 
       - name: Run tests
         working-directory: services/api
@@ -77,7 +58,7 @@ asyncio.run(check())
           DATABASE_URL: postgresql+asyncpg://test_user:test_password@localhost:5432/balkan_events_test
           PYTHONPATH: .
           SECRET_KEY: test-secret-key-for-ci-only
-        run: pytest tests/ -v --tb=short --junitxml=test-results.xml || true
+        run: pytest tests/ -v --tb=short --junitxml=test-results.xml
 
       - name: Upload test results
         if: always()

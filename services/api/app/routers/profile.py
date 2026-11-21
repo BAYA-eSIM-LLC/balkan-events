@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Optional
 import secrets, hashlib
 from app.database import get_db
 from app.deps import get_current_user
 from app.models.user import User
 from app.models.user_extended import EmailVerificationToken, PasswordResetToken, UserFavorite, UserActivity
-from app.security import hash_password, verify_password, hash_refresh_token
+from app.models.refresh_token import RefreshToken
+from app.security import hash_password, verify_password
 
 router = APIRouter(prefix="/me", tags=["profile"])
 
@@ -56,8 +57,12 @@ async def change_password(data: PasswordChange, user: User = Depends(get_current
     if not verify_password(data.current_password, user.password_hash):
         raise HTTPException(status_code=400, detail="Current password incorrect")
     user.password_hash = hash_password(data.new_password)
+    # Revoke all active sessions/refresh tokens on password change
+    await db.execute(
+        update(RefreshToken).where(RefreshToken.user_id == user.id, RefreshToken.is_revoked == False).values(is_revoked=True)
+    )
     await db.commit()
-    return {"status": "password changed"}
+    return {"status": "password changed, all sessions revoked"}
 
 @router.post("/verify-email/request")
 async def request_email_verification(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -68,7 +73,6 @@ async def request_email_verification(user: User = Depends(get_current_user), db:
     token = EmailVerificationToken(user_id=user.id, token_hash=token_hash, expires_at=datetime.utcnow() + timedelta(hours=24))
     db.add(token)
     await db.commit()
-    # In production: send email with raw token. For now return for testing.
     return {"status": "verification sent", "debug_token": raw}
 
 @router.post("/verify-email")
@@ -108,8 +112,12 @@ async def reset_password(token: str, new_password: str, db: AsyncSession = Depen
     user = await db.get(User, rt.user_id)
     user.password_hash = hash_password(new_password)
     rt.used_at = datetime.utcnow()
+    # Revoke all sessions on password reset
+    await db.execute(
+        update(RefreshToken).where(RefreshToken.user_id == user.id, RefreshToken.is_revoked == False).values(is_revoked=True)
+    )
     await db.commit()
-    return {"status": "password reset"}
+    return {"status": "password reset, all sessions revoked"}
 
 @router.post("/favorites")
 async def add_favorite(data: FavoriteAdd, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -136,6 +144,10 @@ async def list_activity(user: User = Depends(get_current_user), db: AsyncSession
 
 @router.post("/delete-account")
 async def request_delete_account(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    # Soft deactivate only – does not delete user row, orders, or related data
     user.is_active = False
+    await db.execute(
+        update(RefreshToken).where(RefreshToken.user_id == user.id, RefreshToken.is_revoked == False).values(is_revoked=True)
+    )
     await db.commit()
-    return {"status": "account deactivated, deletion scheduled"}
+    return {"status": "account deactivated (soft). Data retained. Deletion requires separate admin process."}

@@ -7,7 +7,7 @@ class Performer(Base):
     __tablename__ = "performers"
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
-    performer_type = Column(String(50), nullable=False)  # artist, band, athlete, team, speaker, lecturer, other
+    performer_type = Column(String(50), nullable=False)
     bio = Column(Text)
     image_url = Column(String(500))
     website = Column(String(500))
@@ -22,6 +22,7 @@ class EventPerformer(Base):
     role = Column(String(100))
     sort_order = Column(Integer, default=0)
     __table_args__ = (UniqueConstraint('event_id', 'performer_id', name='uq_event_performer'),)
+    event = relationship("Event", back_populates="performers")
     performer = relationship("Performer")
 
 class EventSchedule(Base):
@@ -34,4 +35,5 @@ class EventSchedule(Base):
     end_at = Column(DateTime)
     performer_id = Column(Integer, ForeignKey("performers.id"))
     sort_order = Column(Integer, default=0)
+    event = relationship("Event", back_populates="schedule")
     performer = relationship("Performer")

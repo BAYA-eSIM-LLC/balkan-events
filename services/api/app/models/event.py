@@ -8,12 +8,21 @@ class EventCategory(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
     slug = Column(String(100), unique=True)
+    parent_id = Column(Integer, ForeignKey("event_categories.id"))
+    description = Column(Text)
+    icon = Column(String(100))
+    sort_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+    name_local = Column(String(100))
+    parent = relationship("EventCategory", remote_side=[id], backref="children")
 
 class Event(Base):
     __tablename__ = "events"
     id = Column(Integer, primary_key=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
     category_id = Column(Integer, ForeignKey("event_categories.id"))
+    country_id = Column(Integer, ForeignKey("countries.id"))
+    city_id = Column(Integer, ForeignKey("cities.id"))
     title = Column(String(255), nullable=False)
     slug = Column(String(255), unique=True, index=True)
     description = Column(Text)

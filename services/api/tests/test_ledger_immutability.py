@@ -23,15 +23,17 @@ async def test_ledger_no_silent_modify_or_delete(db_session: AsyncSession):
     await db_session.refresh(entry)
     original_id = entry.id
 
-    # Attempt update should be possible at ORM level currently (append-only enforced by application + unique key)
-    # For Foundation we assert the unique constraint and that delete is not the intended path
+    # Trigger now blocks UPDATE
     entry.amount = 999
-    await db_session.commit()
-    # Re-fetch
-    result = await db_session.execute(select(LedgerEntry).where(LedgerEntry.id == original_id))
-    updated = result.scalar_one()
-    # In production a DB trigger or app-level guard will prevent this; for now we document and test idempotency strongly
-    assert updated.idempotency_key == key
+    raised = False
+    try:
+        await db_session.commit()
+    except Exception as e:
+        raised = True
+        await db_session.rollback()
+        assert "immutable" in str(e).lower() or "forbidden" in str(e).lower()
+
+    assert raised, "ORM UPDATE should be blocked by PostgreSQL trigger"
 
     # Idempotency still holds
     dup = LedgerEntry(
@@ -47,3 +49,4 @@ async def test_ledger_no_silent_modify_or_delete(db_session: AsyncSession):
 
     final = (await db_session.execute(select(LedgerEntry).where(LedgerEntry.idempotency_key == key))).scalars().all()
     assert len(final) == 1
+    assert final[0].id == original_id

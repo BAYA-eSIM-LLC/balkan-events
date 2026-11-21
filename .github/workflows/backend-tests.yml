@@ -42,10 +42,12 @@ jobs:
         working-directory: services/api
         env:
           DATABASE_URL: postgresql+asyncpg://test_user:test_password@localhost:5432/balkan_events_test
+          PYTHONPATH: .
         run: alembic upgrade head
 
       - name: Run tests
         working-directory: services/api
         env:
           DATABASE_URL: postgresql+asyncpg://test_user:test_password@localhost:5432/balkan_events_test
+          PYTHONPATH: .
         run: pytest tests/ -v --tb=short

@@ -1,30 +1,53 @@
 # BALKAN EVENTS
 
-Regional Event Discovery and Ticketing Platform
-Owner: BAYA eSIM LLC
+Regional Event Discovery and Ticketing Platform  
+Owner: BAYA eSIM LLC  
+Production: https://balkanevents.org
 
-## Quick Start (Local)
+## Stack
 
-```bash
-docker compose up -d --build
-```
+- Backend: FastAPI, SQLAlchemy 2, Alembic, PostgreSQL 16, JWT + refresh tokens
+- Frontend: Next.js 15, React 19, TypeScript, Tailwind CSS
 
-- Web: http://localhost:3000
-- API: http://localhost:8000/docs
-- Dashboard: http://localhost:3000/dashboard
-
-## Deploy to Server
+## Local development
 
 ```bash
-git clone https://github.com/BAYA-eSIM-LLC/balkan-events.git
-cd balkan-events
-cp .env.prod.example .env.prod
-# Edit secrets in .env.prod
-docker compose -f docker-compose.prod.yml up -d --build
+# Backend
+cd services/api
+pip install -r requirements.txt
+# set DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/balkan
+alembic upgrade head
+uvicorn app.main:app --reload
+
+# Frontend
+cd apps/web
+npm install
+NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
 ```
 
-## Structure
-- apps/web - Next.js
-- apps/mobile - React Native (iOS + Android)
-- services/api - FastAPI
-- docs/ - Phase 0 + ADRs
+## Environment variables
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `SECRET_KEY` | JWT signing secret |
+| `NEXT_PUBLIC_API_URL` | Public API base URL for frontend |
+
+See `.env.prod.example` for production template. **Never commit real secrets.**
+
+## CI
+
+- Backend: `.github/workflows/backend-tests.yml` (PostgreSQL 16, pytest)
+- Frontend: `.github/workflows/frontend-tests.yml` (Next.js build)
+
+## Documentation
+
+- `docs/ARCHITECTURE.md` – system overview
+- `docs/SECURITY.md` – security findings and recommendations
+- `docs/` – Phase 0 + ADRs
+
+## Notes
+
+- No Stripe or real payments in current phase.
+- LedgerEntry is append-only (PostgreSQL trigger).
+- Migrations 001–009 are additive.

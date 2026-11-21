@@ -18,6 +18,8 @@ from app.models.user_extended import UserFavorite
 router = APIRouter(prefix="/organizer", tags=["organizer"])
 admin_org = APIRouter(prefix="/admin/organizations", tags=["admin-organizations"])
 
+REVIEWER_ROLES = (UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.ORGANIZER_REVIEWER)
+
 def slugify(text: str) -> str:
     s = re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
     return s or "org"
@@ -262,7 +264,7 @@ async def report_finance(org_id: int = Query(...), user: User = Depends(get_curr
     return {"available": False, "message": "No sales data available. Ledger records are the source of truth when sales begin.", "gross": None, "platform_fee": None, "net": None}
 
 # ---------- Admin verification ----------
-@admin_org.get("", dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.SUPERADMIN))])
+@admin_org.get("", dependencies=[Depends(require_role(*REVIEWER_ROLES))])
 async def admin_list_orgs(status: Optional[str] = None, db: AsyncSession = Depends(get_db)):
     q = select(Organization)
     if status:
@@ -270,7 +272,7 @@ async def admin_list_orgs(status: Optional[str] = None, db: AsyncSession = Depen
     result = await db.execute(q.order_by(Organization.created_at.desc()))
     return [{"id": o.id, "name": o.name, "verification_status": o.verification_status} for o in result.scalars().all()]
 
-@admin_org.post("/{org_id}/approve", dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.SUPERADMIN))])
+@admin_org.post("/{org_id}/approve", dependencies=[Depends(require_role(*REVIEWER_ROLES))])
 async def approve_org(org_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     org = await db.get(Organization, org_id)
     if not org:
@@ -284,7 +286,7 @@ async def approve_org(org_id: int, user: User = Depends(get_current_user), db: A
     await db.commit()
     return {"verification_status": org.verification_status}
 
-@admin_org.post("/{org_id}/reject", dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.SUPERADMIN))])
+@admin_org.post("/{org_id}/reject", dependencies=[Depends(require_role(*REVIEWER_ROLES))])
 async def reject_org(org_id: int, reason: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     org = await db.get(Organization, org_id)
     if not org:

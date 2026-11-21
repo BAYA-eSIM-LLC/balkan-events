@@ -9,6 +9,21 @@ class UserRole(str, enum.Enum):
     ORGANIZER = "organizer"
     ADMIN = "admin"
     SUPERADMIN = "superadmin"
+    EVENT_MODERATOR = "event_moderator"
+    ORGANIZER_REVIEWER = "organizer_reviewer"
+    FINANCE_ADMIN = "finance_admin"
+    SUPPORT_ADMIN = "support_admin"
+    SECURITY_ADMIN = "security_admin"
+
+ADMIN_ROLES = {
+    UserRole.ADMIN.value,
+    UserRole.SUPERADMIN.value,
+    UserRole.EVENT_MODERATOR.value,
+    UserRole.ORGANIZER_REVIEWER.value,
+    UserRole.FINANCE_ADMIN.value,
+    UserRole.SUPPORT_ADMIN.value,
+    UserRole.SECURITY_ADMIN.value,
+}
 
 class User(Base):
     __tablename__ = "users"

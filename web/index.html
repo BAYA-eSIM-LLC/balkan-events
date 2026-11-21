@@ -1,89 +1,111 @@
 <!DOCTYPE html>
-<!-- Balkan Events App v2.1 -->
 <html lang="bs">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#ffffff">
-<title>Balkan Events</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Balkan Events — Svi događaji na jednom mjestu</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:Inter,system-ui,sans-serif;background:#f8f8f8;color:#111;padding-bottom:90px}
-header{background:#fff;padding:12px 16px 16px;position:sticky;top:0;z-index:50}
-.header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.logo{font-size:1.3rem;font-weight:800}.logo span{color:#ff3366}
-.icon-btn{width:40px;height:40px;background:#f5f5f5;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
-.search-bar{background:#f5f5f5;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:10px}
-.search-bar input{border:none;background:transparent;flex:1;font-size:1rem;outline:none}
-.filters{display:flex;gap:8px;padding:16px;overflow-x:auto;background:#fff}
-.filter{padding:10px 18px;background:#f5f5f5;border-radius:100px;font-size:0.85rem;font-weight:500;white-space:nowrap}
-.filter.on{background:#111;color:#fff}
-.content{padding:16px}
-.section-title{font-size:1.15rem;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
-.section-title a{color:#ff3366;font-size:0.85rem;text-decoration:none;font-weight:500}
-.card{background:#fff;border-radius:16px;overflow:hidden;margin-bottom:12px}
-.card-img{height:140px;background:linear-gradient(135deg,#ff3366,#ff6b35);display:flex;align-items:flex-start;padding:12px}
-.badge{background:#fff;padding:6px 12px;border-radius:8px;font-size:0.7rem;font-weight:700}
-.card-body{padding:14px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Inter,system-ui,sans-serif;background:#fff;color:#111}
+nav{position:sticky;top:0;background:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee;z-index:100}
+.logo{font-size:1.4rem;font-weight:800}.logo span{color:#ff3366}
+.nav-links{display:flex;gap:28px;align-items:center}
+.nav-links a{color:#333;text-decoration:none;font-weight:500;font-size:0.95rem}
+.nav-links a:hover{color:#ff3366}
+.btn{background:#111;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.9rem}
+.menu-toggle{display:none;background:none;border:none;font-size:1.5rem;cursor:pointer}
+.hero{padding:80px 24px;text-align:center;background:linear-gradient(180deg,#fff,#fafafa)}
+.hero h1{font-size:clamp(2rem,5vw,3.5rem);font-weight:800;line-height:1.1;margin-bottom:16px}
+.hero h1 span{background:linear-gradient(135deg,#ff3366,#ff6b35);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{color:#666;font-size:1.1rem;max-width:500px;margin:0 auto 32px}
+.search{display:flex;max-width:560px;margin:0 auto;background:#fff;border:2px solid #eee;border-radius:12px;overflow:hidden}
+.search input{flex:1;border:none;padding:16px 20px;font-size:1rem;outline:none}
+.search button{background:#111;color:#fff;border:none;padding:16px 28px;font-weight:600;cursor:pointer}
+.filters{display:flex;justify-content:center;gap:10px;margin-top:24px;flex-wrap:wrap}
+.filter{padding:10px 20px;border:1px solid #eee;border-radius:100px;background:#fff;font-size:0.9rem;cursor:pointer}
+.filter:hover,.filter.active{background:#111;color:#fff;border-color:#111}
+.section{padding:60px 24px;max-width:1200px;margin:0 auto}
+.section h2{font-size:1.6rem;font-weight:700;margin-bottom:24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.card{border:1px solid #eee;border-radius:16px;overflow:hidden;transition:all .2s}
+.card:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,0.08)}
+.card-img{height:150px;background:linear-gradient(135deg,#ff3366,#ff6b35);display:flex;align-items:flex-end;padding:12px}
+.tag{background:#fff;padding:4px 10px;border-radius:6px;font-size:0.7rem;font-weight:600}
+.card-body{padding:16px}
 .card-body h3{font-size:1rem;font-weight:600;margin-bottom:4px}
-.card-body p{color:#888;font-size:0.8rem}
-.cities{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px}
-.city{min-width:110px;height:70px;background:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.9rem}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;justify-content:space-around;padding:8px 0 20px;border-top:1px solid #eee}
-.nav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;color:#999;font-size:0.65rem;text-decoration:none;font-weight:500}
-.nav-btn.on{color:#111}
-.nav-btn span{font-size:1.3rem}
+.card-body p{color:#888;font-size:0.85rem}
+.cities{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
+.city{min-width:120px;padding:24px;background:#f5f5f5;border-radius:12px;text-align:center;font-weight:600;cursor:pointer}
+.city:hover{background:#111;color:#fff}
+footer{background:#111;color:#fff;padding:48px 24px}
+.footer-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px}
+footer h4{font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:16px}
+footer a{display:block;color:#ccc;text-decoration:none;margin-bottom:8px;font-size:0.9rem}
+footer a:hover{color:#fff}
+.footer-bottom{max-width:1200px;margin:32px auto 0;padding-top:20px;border-top:1px solid #333;color:#666;font-size:0.85rem}
+@media(max-width:768px){
+.nav-links{display:none;position:absolute;top:100%;left:0;right:0;background:#fff;flex-direction:column;padding:20px;gap:16px;border-bottom:1px solid #eee}
+.nav-links.open{display:flex}
+.menu-toggle{display:block}
+.footer-inner{grid-template-columns:1fr}
+.hero{padding:48px 20px}
+}
 </style>
 </head>
 <body>
-<header>
-<div class="header-row">
+<nav>
 <div class="logo">Balkan<span>Events</span></div>
-<div class="icon-btn">👤</div>
+<button class="menu-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')">☰</button>
+<div class="nav-links">
+<a href="#events">Događaji</a>
+<a href="#cities">Gradovi</a>
+<a href="#">Organizatori</a>
+<a href="#" class="btn">Moje karte</a>
 </div>
-<div class="search-bar">
-<span>🔍</span>
-<input placeholder="Pretraži događaje, gradove...">
+</nav>
+<section class="hero">
+<h1>Svi događaji<br><span>na jednom mjestu</span></h1>
+<p>Pronađi koncerte, festivale, predstave i sportske događaje širom Balkana.</p>
+<div class="search">
+<input placeholder="Pretraži događaje, izvođače, gradove...">
+<button>Pretraži</button>
 </div>
-</header>
 <div class="filters">
-<div class="filter on">Sve</div>
+<div class="filter active">Svi događaji</div>
 <div class="filter">Ovaj vikend</div>
 <div class="filter">Sarajevo</div>
 <div class="filter">Beograd</div>
 <div class="filter">Zagreb</div>
 </div>
-<div class="content">
-<div class="section-title">Popularno <a href="#">Vidi sve →</a></div>
-<div class="card">
-<div class="card-img"><span class="badge">KONCERT</span></div>
-<div class="card-body"><h3>Dubioza Kolektiv</h3><p>Sarajevo · 15. Dec 2026</p></div>
+</section>
+<section class="section" id="events">
+<h2>Izdvojeni događaji</h2>
+<div class="grid">
+<div class="card"><div class="card-img"><span class="tag">KONCERT</span></div><div class="card-body"><h3>Dubioza Kolektiv</h3><p>Sarajevo · 15. Dec 2026</p></div></div>
+<div class="card"><div class="card-img" style="background:linear-gradient(135deg,#7b2cbf,#0066ff)"><span class="tag">FESTIVAL</span></div><div class="card-body"><h3>Exit Festival 2026</h3><p>Novi Sad · 10-13. Jul</p></div></div>
+<div class="card"><div class="card-img" style="background:linear-gradient(135deg,#00c853,#00bcd4)"><span class="tag">STAND-UP</span></div><div class="card-body"><h3>Zoran Kesić</h3><p>Beograd · 22. Nov 2026</p></div></div>
+<div class="card"><div class="card-img" style="background:linear-gradient(135deg,#ff6b35,#ffcc00)"><span class="tag">SPORT</span></div><div class="card-body"><h3>KK Bosna vs Partizan</h3><p>Sarajevo · 28. Nov 2026</p></div></div>
 </div>
-<div class="card">
-<div class="card-img" style="background:linear-gradient(135deg,#7b2cbf,#0066ff)"><span class="badge">FESTIVAL</span></div>
-<div class="card-body"><h3>Exit Festival 2026</h3><p>Novi Sad · 10-13. Jul</p></div>
-</div>
-<div class="card">
-<div class="card-img" style="background:linear-gradient(135deg,#00c853,#00bcd4)"><span class="badge">STAND-UP</span></div>
-<div class="card-body"><h3>Zoran Kesić</h3><p>Beograd · 22. Nov 2026</p></div>
-</div>
-<div class="section-title" style="margin-top:24px">Gradovi <a href="#">Vidi sve →</a></div>
+</section>
+<section class="section" id="cities">
+<h2>Istaknuti gradovi</h2>
 <div class="cities">
 <div class="city">Sarajevo</div>
 <div class="city">Beograd</div>
 <div class="city">Zagreb</div>
 <div class="city">Mostar</div>
 <div class="city">Split</div>
+<div class="city">Banja Luka</div>
 </div>
+</section>
+<footer>
+<div class="footer-inner">
+<div><div class="logo" style="color:#fff;margin-bottom:12px">Balkan<span>Events</span></div><p style="color:#888;line-height:1.6">Najbolja platforma za otkrivanje i rezervaciju događaja na Balkanu.</p></div>
+<div><h4>Platforma</h4><a href="#">Događaji</a><a href="#">Gradovi</a><a href="#">Kategorije</a></div>
+<div><h4>Podrška</h4><a href="#">Organizatori</a><a href="#">Kontakt</a><a href="mailto:info@balkanevents.org">info@balkanevents.org</a></div>
 </div>
-<nav class="bottom-nav">
-<a href="#" class="nav-btn on"><span>🏠</span>Početna</a>
-<a href="#" class="nav-btn"><span>🔍</span>Istraži</a>
-<a href="#" class="nav-btn"><span>🎟️</span>Karte</a>
-<a href="#" class="nav-btn"><span>❤️</span>Favoriti</a>
-<a href="#" class="nav-btn"><span>👤</span>Profil</a>
-</nav>
+<div class="footer-bottom">© 2026 Balkan Events · BAYA eSIM LLC</div>
+</footer>
 </body>
 </html>

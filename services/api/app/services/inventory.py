@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
+from datetime import datetime
 from app.models.inventory import TicketInventory
 from app.models.reservation import Reservation
 from fastapi import HTTPException
@@ -28,7 +29,7 @@ async def release_reservation(db: AsyncSession, reservation_id: int):
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id).with_for_update())
     res = result.scalar_one_or_none()
     if not res or res.status != "active":
-        return
+        raise HTTPException(status_code=409, detail="Reservation not active or already processed")
     inv_result = await db.execute(
         select(TicketInventory).where(TicketInventory.ticket_type_id == res.ticket_type_id).with_for_update()
     )
@@ -43,7 +44,7 @@ async def confirm_sale(db: AsyncSession, reservation_id: int):
     result = await db.execute(select(Reservation).where(Reservation.id == reservation_id).with_for_update())
     res = result.scalar_one_or_none()
     if not res or res.status != "active":
-        raise HTTPException(status_code=409, detail="Reservation not active")
+        raise HTTPException(status_code=409, detail="Reservation not active or already processed")
     inv_result = await db.execute(
         select(TicketInventory).where(TicketInventory.ticket_type_id == res.ticket_type_id).with_for_update()
     )
@@ -53,3 +54,29 @@ async def confirm_sale(db: AsyncSession, reservation_id: int):
     inv.version += 1
     res.status = "confirmed"
     await db.commit()
+
+async def release_expired_reservations(db: AsyncSession) -> int:
+    """Release all active reservations past their expires_at. Returns count released."""
+    now = datetime.utcnow()
+    result = await db.execute(
+        select(Reservation).where(
+            Reservation.status == "active",
+            Reservation.expires_at < now
+        ).with_for_update()
+    )
+    expired = result.scalars().all()
+    count = 0
+    for res in expired:
+        inv_result = await db.execute(
+            select(TicketInventory).where(TicketInventory.ticket_type_id == res.ticket_type_id).with_for_update()
+        )
+        inv = inv_result.scalar_one_or_none()
+        if inv:
+            inv.available += res.quantity
+            inv.reserved -= res.quantity
+            inv.version += 1
+        res.status = "released"
+        count += 1
+    if count:
+        await db.commit()
+    return count

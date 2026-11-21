@@ -20,7 +20,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
 
 def require_role(*roles: UserRole):
     async def checker(user: User = Depends(get_current_user)):
-        if user.role not in roles:
+        role_values = [r.value for r in roles]
+        if user.role not in role_values:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
         return user
     return checker
@@ -33,7 +34,7 @@ async def get_org_member(org_id: int, user: User = Depends(get_current_user), db
         )
     )
     member = result.scalar_one_or_none()
-    if not member and user.role not in (UserRole.ADMIN, UserRole.SUPERADMIN):
+    if not member and user.role not in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a member")
     return member
 

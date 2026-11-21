@@ -20,6 +20,7 @@ class TicketType(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     event = relationship("Event", back_populates="ticket_types")
     tickets = relationship("Ticket", back_populates="ticket_type")
+    inventory = relationship("TicketInventory", back_populates="ticket_type", uselist=False)
 
     @property
     def quantity_available(self):

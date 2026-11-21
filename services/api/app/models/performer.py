@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, UniqueConstraint, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -7,10 +7,13 @@ class Performer(Base):
     __tablename__ = "performers"
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
+    slug = Column(String(255), unique=True)
     performer_type = Column(String(50), nullable=False)
     bio = Column(Text)
     image_url = Column(String(500))
     website = Column(String(500))
+    social_links = Column(JSON)
+    country_id = Column(Integer, ForeignKey("countries.id"))
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

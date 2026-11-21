@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, events, admin, profile
 from app.routers.locations import router as locations_router, categories_router, admin_router as locations_admin_router
 from app.routers.events_engine import public as events_public, organizer as events_organizer, admin as events_admin, venues_public
+from app.routers.search import router as search_router
+from app.routers.admin_catalog import venues as admin_venues, performers as admin_performers, public_performers
 
 app = FastAPI(title="Balkan Events API", version="0.1.0")
 
@@ -15,10 +17,14 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(search_router)
 app.include_router(events_public)
 app.include_router(events_organizer)
 app.include_router(events_admin)
 app.include_router(venues_public)
+app.include_router(admin_venues)
+app.include_router(admin_performers)
+app.include_router(public_performers)
 app.include_router(events.router)
 app.include_router(admin.router)
 app.include_router(profile.router)

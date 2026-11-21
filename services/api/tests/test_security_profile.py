@@ -98,8 +98,8 @@ async def test_account_deactivation_soft_only(client: AsyncClient, db_session: A
     deact = await client.post("/me/delete-account", headers=headers)
     assert deact.status_code == 200
 
-    db_session.expire_all()
-    u = (await db_session.execute(select(User).where(User.id == user.id))).scalar_one()
-    assert u.is_active is False
+    # Raw SQL to bypass any session cache
+    row = (await db_session.execute(text(f"SELECT is_active FROM users WHERE id = {user.id}"))).first()
+    assert row[0] is False
     order_count = (await db_session.execute(text(f"SELECT COUNT(*) FROM orders WHERE user_id = {user.id}"))).scalar()
     assert order_count >= 1

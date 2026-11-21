@@ -2,7 +2,6 @@ import pytest
 from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.ledger import LedgerEntry
-from sqlalchemy.exc import DBAPIError
 
 @pytest.mark.asyncio
 async def test_ledger_insert_still_works(db_session: AsyncSession):
@@ -40,15 +39,21 @@ async def test_ledger_update_blocked(db_session: AsyncSession):
     )
     db_session.add(entry)
     await db_session.commit()
-    await db_session.refresh(entry)
+    entry_id = entry.id
 
-    with pytest.raises(Exception):
+    raised = False
+    try:
         await db_session.execute(
             text("UPDATE ledger_entries SET amount = 999 WHERE id = :id"),
-            {"id": entry.id}
+            {"id": entry_id}
         )
         await db_session.commit()
-    await db_session.rollback()
+    except Exception as e:
+        raised = True
+        await db_session.rollback()
+        assert "immutable" in str(e).lower() or "forbidden" in str(e).lower()
+
+    assert raised, "UPDATE should have been blocked by trigger"
 
 @pytest.mark.asyncio
 async def test_ledger_delete_blocked(db_session: AsyncSession):
@@ -66,16 +71,22 @@ async def test_ledger_delete_blocked(db_session: AsyncSession):
     )
     db_session.add(entry)
     await db_session.commit()
-    await db_session.refresh(entry)
+    entry_id = entry.id
 
-    with pytest.raises(Exception):
+    raised = False
+    try:
         await db_session.execute(
             text("DELETE FROM ledger_entries WHERE id = :id"),
-            {"id": entry.id}
+            {"id": entry_id}
         )
         await db_session.commit()
-    await db_session.rollback()
+    except Exception as e:
+        raised = True
+        await db_session.rollback()
+        assert "immutable" in str(e).lower() or "forbidden" in str(e).lower()
 
-    # Confirm the record still exists
-    result = await db_session.execute(select(LedgerEntry).where(LedgerEntry.id == entry.id))
+    assert raised, "DELETE should have been blocked by trigger"
+
+    # Confirm the record still exists after rollback
+    result = await db_session.execute(select(LedgerEntry).where(LedgerEntry.id == entry_id))
     assert result.scalar_one_or_none() is not None

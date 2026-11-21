@@ -1,92 +1,89 @@
 <!DOCTYPE html>
+<!-- Balkan Events App v2.1 -->
 <html lang="bs">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#111">
+<meta name="theme-color" content="#ffffff">
 <title>Balkan Events</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:Inter,system-ui,sans-serif;background:#f5f5f5;color:#111;padding-bottom:80px}
-header{background:#fff;padding:16px 20px;position:sticky;top:0;z-index:50;border-bottom:1px solid #eee}
-.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.logo{font-size:1.4rem;font-weight:800}.logo span{color:#ff3366}
-.avatar{width:36px;height:36px;background:#111;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600}
-.search{background:#f5f5f5;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:10px}
-.search input{border:none;background:transparent;flex:1;font-size:1rem;outline:none}
-.chips{display:flex;gap:8px;padding:16px 20px;overflow-x:auto}
-.chip{padding:10px 18px;background:#fff;border-radius:100px;font-size:0.9rem;font-weight:500;white-space:nowrap;border:1px solid #eee}
-.chip.active{background:#111;color:#fff;border-color:#111}
-.section{padding:0 20px 24px}
-.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.section-header h2{font-size:1.2rem;font-weight:700}
-.section-header a{color:#ff3366;text-decoration:none;font-size:0.9rem;font-weight:500}
-.event-card{background:#fff;border-radius:16px;overflow:hidden;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
-.event-img{height:160px;background:linear-gradient(135deg,#ff3366,#ff6b35);position:relative}
-.event-badge{position:absolute;top:12px;left:12px;background:#fff;padding:6px 12px;border-radius:8px;font-size:0.75rem;font-weight:600}
-.event-info{padding:16px}
-.event-info h3{font-size:1.05rem;font-weight:600;margin-bottom:4px}
-.event-info p{color:#888;font-size:0.85rem}
-.cities-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
-.city-card{min-width:140px;height:90px;background:#fff;border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
-nav-bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;justify-content:space-around;padding:12px 0 24px;border-top:1px solid #eee}
-nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;color:#888;font-size:0.7rem;text-decoration:none}
-nav-item.active{color:#111}
-nav-item svg{width:24px;height:24px}
+body{font-family:Inter,system-ui,sans-serif;background:#f8f8f8;color:#111;padding-bottom:90px}
+header{background:#fff;padding:12px 16px 16px;position:sticky;top:0;z-index:50}
+.header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.logo{font-size:1.3rem;font-weight:800}.logo span{color:#ff3366}
+.icon-btn{width:40px;height:40px;background:#f5f5f5;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.search-bar{background:#f5f5f5;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:10px}
+.search-bar input{border:none;background:transparent;flex:1;font-size:1rem;outline:none}
+.filters{display:flex;gap:8px;padding:16px;overflow-x:auto;background:#fff}
+.filter{padding:10px 18px;background:#f5f5f5;border-radius:100px;font-size:0.85rem;font-weight:500;white-space:nowrap}
+.filter.on{background:#111;color:#fff}
+.content{padding:16px}
+.section-title{font-size:1.15rem;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.section-title a{color:#ff3366;font-size:0.85rem;text-decoration:none;font-weight:500}
+.card{background:#fff;border-radius:16px;overflow:hidden;margin-bottom:12px}
+.card-img{height:140px;background:linear-gradient(135deg,#ff3366,#ff6b35);display:flex;align-items:flex-start;padding:12px}
+.badge{background:#fff;padding:6px 12px;border-radius:8px;font-size:0.7rem;font-weight:700}
+.card-body{padding:14px}
+.card-body h3{font-size:1rem;font-weight:600;margin-bottom:4px}
+.card-body p{color:#888;font-size:0.8rem}
+.cities{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px}
+.city{min-width:110px;height:70px;background:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.9rem}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;justify-content:space-around;padding:8px 0 20px;border-top:1px solid #eee}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;color:#999;font-size:0.65rem;text-decoration:none;font-weight:500}
+.nav-btn.on{color:#111}
+.nav-btn span{font-size:1.3rem}
 </style>
 </head>
 <body>
 <header>
-<div class="header-top">
+<div class="header-row">
 <div class="logo">Balkan<span>Events</span></div>
-<div class="avatar">D</div>
+<div class="icon-btn">👤</div>
 </div>
-<div class="search">
+<div class="search-bar">
 <span>🔍</span>
-<input type="text" placeholder="Pretraži događaje...">
+<input placeholder="Pretraži događaje, gradove...">
 </div>
 </header>
-<div class="chips">
-<div class="chip active">Sve</div>
-<div class="chip">Ovaj vikend</div>
-<div class="chip">Sarajevo</div>
-<div class="chip">Beograd</div>
-<div class="chip">Zagreb</div>
-<div class="chip">Mostar</div>
+<div class="filters">
+<div class="filter on">Sve</div>
+<div class="filter">Ovaj vikend</div>
+<div class="filter">Sarajevo</div>
+<div class="filter">Beograd</div>
+<div class="filter">Zagreb</div>
 </div>
-<section class="section">
-<div class="section-header"><h2>Popularno</h2><a href="#">Vidi sve</a></div>
-<div class="event-card">
-<div class="event-img"><span class="event-badge">KONCERT</span></div>
-<div class="event-info"><h3>Dubioza Kolektiv</h3><p>Sarajevo · 15. Dec 2026</p></div>
+<div class="content">
+<div class="section-title">Popularno <a href="#">Vidi sve →</a></div>
+<div class="card">
+<div class="card-img"><span class="badge">KONCERT</span></div>
+<div class="card-body"><h3>Dubioza Kolektiv</h3><p>Sarajevo · 15. Dec 2026</p></div>
 </div>
-<div class="event-card">
-<div class="event-img" style="background:linear-gradient(135deg,#7b2cbf,#0066ff)"><span class="event-badge">FESTIVAL</span></div>
-<div class="event-info"><h3>Exit Festival 2026</h3><p>Novi Sad · 10-13. Jul</p></div>
+<div class="card">
+<div class="card-img" style="background:linear-gradient(135deg,#7b2cbf,#0066ff)"><span class="badge">FESTIVAL</span></div>
+<div class="card-body"><h3>Exit Festival 2026</h3><p>Novi Sad · 10-13. Jul</p></div>
 </div>
-<div class="event-card">
-<div class="event-img" style="background:linear-gradient(135deg,#00c853,#00bcd4)"><span class="event-badge">STAND-UP</span></div>
-<div class="event-info"><h3>Zoran Kesić</h3><p>Beograd · 22. Nov 2026</p></div>
+<div class="card">
+<div class="card-img" style="background:linear-gradient(135deg,#00c853,#00bcd4)"><span class="badge">STAND-UP</span></div>
+<div class="card-body"><h3>Zoran Kesić</h3><p>Beograd · 22. Nov 2026</p></div>
 </div>
-</section>
-<section class="section">
-<div class="section-header"><h2>Gradovi</h2><a href="#">Vidi sve</a></div>
-<div class="cities-scroll">
-<div class="city-card">Sarajevo</div>
-<div class="city-card">Beograd</div>
-<div class="city-card">Zagreb</div>
-<div class="city-card">Mostar</div>
-<div class="city-card">Split</div>
+<div class="section-title" style="margin-top:24px">Gradovi <a href="#">Vidi sve →</a></div>
+<div class="cities">
+<div class="city">Sarajevo</div>
+<div class="city">Beograd</div>
+<div class="city">Zagreb</div>
+<div class="city">Mostar</div>
+<div class="city">Split</div>
 </div>
-</section>
-<nav-bottom>
-<a href="#" class="nav-item active"><span style="font-size:1.4rem">🏠</span>Početna</a>
-<a href="#" class="nav-item"><span style="font-size:1.4rem">🔍</span>Istraži</a>
-<a href="#" class="nav-item"><span style="font-size:1.4rem">🎟️</span>Karte</a>
-<a href="#" class="nav-item"><span style="font-size:1.4rem">♡</span>Favoriti</a>
-<a href="#" class="nav-item"><span style="font-size:1.4rem">👤</span>Profil</a>
-</nav-bottom>
+</div>
+<nav class="bottom-nav">
+<a href="#" class="nav-btn on"><span>🏠</span>Početna</a>
+<a href="#" class="nav-btn"><span>🔍</span>Istraži</a>
+<a href="#" class="nav-btn"><span>🎟️</span>Karte</a>
+<a href="#" class="nav-btn"><span>❤️</span>Favoriti</a>
+<a href="#" class="nav-btn"><span>👤</span>Profil</a>
+</nav>
 </body>
 </html>

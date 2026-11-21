@@ -12,7 +12,7 @@ async def test_list_events_empty(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_create_and_list_event(client: AsyncClient, db_session: AsyncSession):
     await db_session.execute(text("INSERT INTO organizations (id, name, slug) VALUES (400, 'Evt Org', 'evt-org') ON CONFLICT DO NOTHING"))
-    await db_session.execute(text("INSERT INTO events (id, organization_id, title, slug, start_at, is_published, city) VALUES (400, 400, 'Public Event', 'public-event', NOW() + INTERVAL '2 days', true, 'Sarajevo') ON CONFLICT DO NOTHING"))
+    await db_session.execute(text("INSERT INTO events (id, organization_id, title, slug, start_at, is_published, status, city) VALUES (400, 400, 'Public Event', 'public-event', NOW() + INTERVAL '2 days', true, 'PUBLISHED', 'Sarajevo') ON CONFLICT DO NOTHING"))
     await db_session.commit()
 
     resp = await client.get("/events/")
@@ -20,6 +20,6 @@ async def test_create_and_list_event(client: AsyncClient, db_session: AsyncSessi
     data = resp.json()
     assert any(e["slug"] == "public-event" for e in data)
 
-    detail = await client.get("/events/public-event")
+    detail = await client.get("/events/slug/public-event")
     assert detail.status_code == 200
     assert detail.json()["title"] == "Public Event"

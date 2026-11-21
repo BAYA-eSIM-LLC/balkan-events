@@ -3,28 +3,25 @@ from httpx import AsyncClient
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.event import Event, EventStatus
-from app.models.organization import Organization, OrganizationMember
+from app.models.organization import Organization, OrganizationMember, OrgRole
 from app.models.user import User
 from app.security import hash_password
 
 @pytest.mark.asyncio
 async def test_event_lifecycle_and_visibility(client: AsyncClient, db_session: AsyncSession):
-    # Create org + user
     user = User(email="orguser@example.com", password_hash=hash_password("pass123456"), full_name="Org User", role="ORGANIZER")
     db_session.add(user)
     await db_session.flush()
     org = Organization(name="Test Org", slug="test-org")
     db_session.add(org)
     await db_session.flush()
-    db_session.add(OrganizationMember(user_id=user.id, organization_id=org.id, role="OWNER"))
+    db_session.add(OrganizationMember(user_id=user.id, organization_id=org.id, role=OrgRole.OWNER))
     await db_session.commit()
 
-    # Login
     login = await client.post("/auth/login", json={"email": "orguser@example.com", "password": "pass123456"})
     token = login.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    # Create draft
     create = await client.post("/organizer/events", headers=headers, json={
         "title": "Test Concert",
         "organization_id": org.id,
@@ -35,11 +32,9 @@ async def test_event_lifecycle_and_visibility(client: AsyncClient, db_session: A
     eid = create.json()["id"]
     assert create.json()["status"] == "DRAFT"
 
-    # Not visible publicly
     pub = await client.get(f"/events/{eid}")
     assert pub.status_code == 404
 
-    # Submit
     sub = await client.post(f"/organizer/events/{eid}/submit", headers=headers)
     assert sub.status_code == 200
     assert sub.json()["status"] == "SUBMITTED"
@@ -53,7 +48,7 @@ async def test_idor_protection(client: AsyncClient, db_session: AsyncSession):
     org = Organization(name="Org1", slug="org1")
     db_session.add(org)
     await db_session.flush()
-    db_session.add(OrganizationMember(user_id=u1.id, organization_id=org.id, role="OWNER"))
+    db_session.add(OrganizationMember(user_id=u1.id, organization_id=org.id, role=OrgRole.OWNER))
     e = Event(organization_id=org.id, title="Private", slug="private-evt", start_at=datetime.utcnow() + timedelta(days=1), status=EventStatus.DRAFT.value)
     db_session.add(e)
     await db_session.commit()

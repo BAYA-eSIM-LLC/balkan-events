@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, events, admin, profile
 from app.routers.locations import router as locations_router, categories_router, admin_router as locations_admin_router
+from app.routers.events_engine import public as events_public, organizer as events_organizer, admin as events_admin, venues_public
 
 app = FastAPI(title="Balkan Events API", version="0.1.0")
 
@@ -20,6 +21,10 @@ app.include_router(profile.router)
 app.include_router(locations_router)
 app.include_router(categories_router)
 app.include_router(locations_admin_router)
+app.include_router(events_public)
+app.include_router(events_organizer)
+app.include_router(events_admin)
+app.include_router(venues_public)
 
 @app.get("/")
 def root():

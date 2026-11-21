@@ -10,3 +10,4 @@ from app.models.reservation import Reservation
 from app.models.payout import OrganizerPayout
 from app.models.ledger import LedgerEntry
 from app.models.refresh_token import RefreshToken
+from app.models.user_extended import EmailVerificationToken, PasswordResetToken, UserFavorite, UserActivity

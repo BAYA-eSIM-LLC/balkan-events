@@ -1,5 +1,6 @@
 import './globals.css';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -19,16 +20,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <a href="#main" className="skip-link">Preskoči na sadržaj</a>
         <Header />
-        <main id="main" className="max-w-6xl mx-auto px-4 py-6">{children}</main>
-        <footer className="border-t mt-12 py-6 text-center text-sm text-ink-muted">
-          <div className="flex justify-center gap-4 mb-2">
-            <a href="/privacy">Privatnost</a>
-            <a href="/terms">Uslovi</a>
-            <a href="/refund">Povrat</a>
-            <a href="/support">Podrška</a>
-          </div>
-          © {new Date().getFullYear()} BALKAN EVENTS
-        </footer>
+        <main id="main">{children}</main>
+        <Footer />
       </body>
     </html>
   );

@@ -3,13 +3,19 @@
 @tailwind utilities;
 
 :root {
-  --navy: #070b14;
-  --navy-2: #0f172a;
-  --violet: #7c3aed;
-  --violet-2: #a78bfa;
-  --gold: #d4af77;
-  --ink: #0f172a;
+  --bg: #f6f5fb;
+  --surface: #ffffff;
+  --ink: #14122b;
+  --ink-2: #5b5876;
+  --line: #e4e1f0;
+  --primary: #6d3df5;
+  --primary-soft: #efe9ff;
+  --night: #0d0b1f;
+  --night-2: #171433;
+  --warn: #f5a524;
+  --radius: 16px;
 }
-body { @apply bg-white text-ink antialiased; }
-.font-display { font-family: 'Fraunces', Georgia, serif; }
-.btn-violet { background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%); }
+body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+.font-display { font-family: Sora, Inter, system-ui, sans-serif; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: #7c50ff; }

@@ -1,4 +1,3 @@
-import Header from '@/components/Header';
 import HeroBanner from '@/components/HeroBanner';
 import Link from 'next/link';
 
@@ -18,6 +17,40 @@ const categories = [
   { name: 'Kultura', href: '/search?category=kultura' },
 ];
 
+const featured = [
+  { title: 'Koncert uživo', img: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?auto=format&fit=crop&w=600&q=80', city: 'Sarajevo' },
+  { title: 'Festival', img: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=600&q=80', city: 'Zagreb' },
+  { title: 'Sportski događaj', img: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=600&q=80', city: 'Beograd' },
+  { title: 'Pozorišna predstava', img: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=600&q=80', city: 'Mostar' },
+];
+
+const concerts = [
+  { title: 'Live nastup', img: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=600&q=80' },
+  { title: 'Rock koncert', img: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80' },
+  { title: 'Pop večer', img: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=600&q=80' },
+];
+
+const festivals = [
+  { title: 'Open air', img: 'https://images.unsplash.com/photo-1459749411177-04de6a6f8c9b?auto=format&fit=crop&w=600&q=80' },
+  { title: 'Muzički festival', img: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=600&q=80' },
+  { title: 'Ljetni festival', img: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=600&q=80' },
+];
+
+function Card({ title, img, city }: { title: string; img: string; city?: string }) {
+  return (
+    <Link href="/search" className="group block">
+      <div className="aspect-[4/5] relative rounded-xl overflow-hidden bg-zinc-100">
+        <img src={img} alt={title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+        <div className="absolute bottom-3 left-3 text-white">
+          <p className="font-semibold text-sm">{title}</p>
+          {city && <p className="text-xs text-white/70">{city}</p>}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="py-16 border-b border-zinc-100">
@@ -35,27 +68,26 @@ export default function Home() {
       <HeroBanner />
 
       <Section title="Istaknuti događaji">
-        <div className="bg-zinc-50 rounded-xl p-8 text-center text-zinc-500">
-          <p>Događaji će biti prikazani čim budu dostupni u sistemu.</p>
-          <Link href="/search" className="inline-block mt-4 text-[#e11d48] font-medium hover:underline">Pogledaj sve događaje</Link>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {featured.map(e => <Card key={e.title} {...e} />)}
         </div>
       </Section>
 
       <Section title="Najpopularniji koncerti">
-        <div className="bg-zinc-50 rounded-xl p-8 text-center text-zinc-500">
-          <p>Popularni koncerti će se pojaviti ovdje.</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {concerts.map(e => <Card key={e.title} {...e} />)}
         </div>
       </Section>
 
       <Section title="Festivali">
-        <div className="bg-zinc-50 rounded-xl p-8 text-center text-zinc-500">
-          <p>Festivali će biti prikazani čim budu objavljeni.</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {festivals.map(e => <Card key={e.title} {...e} />)}
         </div>
       </Section>
 
       <Section title="Događaji ovog vikenda">
-        <div className="bg-zinc-50 rounded-xl p-8 text-center text-zinc-500">
-          <p>Vikend događaji će biti dostupni uskoro.</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {featured.slice(0, 3).map(e => <Card key={e.title} {...e} />)}
         </div>
       </Section>
 

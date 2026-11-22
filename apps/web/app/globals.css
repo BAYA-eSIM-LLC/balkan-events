@@ -3,28 +3,13 @@
 @tailwind utilities;
 
 :root {
-  --color-navy: #0B1020;
-  --color-navy-2: #171F38;
-  --color-violet: #7047EB;
-  --color-gold: #C7A76C;
-  --color-ink: #0F172A;
-  --color-muted: #A5AEC2;
-  --focus-ring: 0 0 0 3px rgb(112 71 235 / 0.4);
+  --navy: #070b14;
+  --navy-2: #0f172a;
+  --violet: #7c3aed;
+  --violet-2: #a78bfa;
+  --gold: #d4af77;
+  --ink: #0f172a;
 }
-
-@layer base {
-  body { @apply bg-white text-ink antialiased; font-family: Inter, system-ui, sans-serif; }
-  :focus-visible { outline: none; box-shadow: var(--focus-ring); }
-  h1, h2, .font-display { font-family: Fraunces, serif; }
-}
-
-.skip-link {
-  @apply sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-violet-600 focus:text-white focus:px-4 focus:py-2 focus:rounded;
-}
-
-.btn-gradient {
-  background: linear-gradient(135deg, #7047EB 0%, #9B6CFF 100%);
-}
-.btn-gradient:hover {
-  background: linear-gradient(135deg, #5B36C7 0%, #7C4DFF 100%);
-}
+body { @apply bg-white text-ink antialiased; }
+.font-display { font-family: 'Fraunces', Georgia, serif; }
+.btn-violet { background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%); }

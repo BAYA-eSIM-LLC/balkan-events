@@ -8,9 +8,12 @@ export default function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-black text-white border-b border-zinc-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5 font-bold text-lg tracking-tight">
-          <span className="w-8 h-8 bg-[#e11d48] rounded-md flex items-center justify-center text-xs font-black">BE</span>
-          BALKAN EVENTS
+        <Link href="/" className="flex items-center gap-3">
+          <span className="w-8 h-8 bg-[#e11d48] rounded-md flex items-center justify-center text-xs font-black shrink-0">BE</span>
+          <span className="flex flex-col leading-[1.1] text-xs sm:text-sm font-bold uppercase tracking-wide">
+            <span>Balkan</span>
+            <span>Events</span>
+          </span>
         </Link>
 
         <nav className="hidden lg:flex items-center gap-7 text-sm text-zinc-300">

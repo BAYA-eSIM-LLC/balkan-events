@@ -23,7 +23,7 @@ export default async function Home() {
   return (
     <div className="bg-[#f6f5fb] min-h-screen">
       {/* HERO */}
-      <section className="relative bg-[#0d0b1f] text-white overflow-hidden pt-36 pb-24">
+      <section className="relative bg-[#0d0b1f] text-white overflow-hidden pt-24 md:pt-32 pb-24">
         <div className="absolute inset-0 bg-gradient-to-r from-[#0d0b1f] via-[#0d0b1f]/90 to-transparent" />
         <div className="absolute right-0 top-0 w-1/2 h-full bg-[radial-gradient(ellipse_at_70%_30%,rgba(139,98,255,.5),transparent_60%)]" />
         <div className="relative max-w-5xl mx-auto px-6">
@@ -44,8 +44,8 @@ export default async function Home() {
       <div className="max-w-5xl mx-auto px-6 -mt-8 relative z-10">
         <nav className="bg-white rounded-2xl p-2 shadow-lg grid grid-cols-4 md:grid-cols-8 gap-1">
           {cats.map(c => (
-            <Link key={c.label} href={c.href} className="flex flex-col items-center gap-1 py-3 px-1 rounded-xl text-sm font-medium hover:bg-[#efe9ff] transition">
-              <span className="text-[#6d3df5] text-xl">●</span>
+            <Link key={c.label} href={c.href} className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl text-xs md:text-sm font-medium hover:bg-[#efe9ff] transition">
+              <svg className="w-6 h-6 text-[#6d3df5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
               {c.label}
             </Link>
           ))}

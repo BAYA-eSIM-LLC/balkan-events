@@ -1,9 +1,10 @@
+export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Države' };
 
 export default async function CountriesPage() {
   let countries: any[] = [];
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/locations/countries`, { next: { revalidate: 60 } });
+    const res = await fetch(`${process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || '/api'}/locations/countries`, { next: { revalidate: 60 } });
     if (res.ok) countries = await res.json();
   } catch {}
   return (

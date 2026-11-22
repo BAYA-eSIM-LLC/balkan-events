@@ -13,7 +13,7 @@ export default function SupportPage() {
     const token = localStorage.getItem('access_token');
     if (!token) { setError('Prijavite se za slanje upita'); return; }
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/support/tickets?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/support/tickets?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

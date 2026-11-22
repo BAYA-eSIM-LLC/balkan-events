@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { fetchEvents } from '@/lib/api';
 
 export const metadata = { title: 'Kategorije' };
@@ -5,7 +6,7 @@ export const metadata = { title: 'Kategorije' };
 export default async function CategoriesPage() {
   let cats: any[] = [];
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/categories`, { next: { revalidate: 60 } });
+    const res = await fetch(`${process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || '/api'}/categories`, { next: { revalidate: 60 } });
     if (res.ok) cats = await res.json();
   } catch {}
   return (

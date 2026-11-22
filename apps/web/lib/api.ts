@@ -1,4 +1,9 @@
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Client (browser) uses relative /api (nginx proxy).
+// Server (SSR) uses internal Docker URL so server components can reach the API.
+const isServer = typeof window === 'undefined';
+export const API = isServer
+  ? (process.env.INTERNAL_API_URL || 'http://api:8000')
+  : (process.env.NEXT_PUBLIC_API_URL || '/api');
 
 export interface EventItem {
   id: number;

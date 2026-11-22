@@ -7,7 +7,7 @@ export default function ForgotPasswordPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/auth/forgot-password`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),

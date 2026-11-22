@@ -9,7 +9,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (!token) return;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/auth/me`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     }).then(r => r.ok ? r.json() : null).then(setUser);
   }, []);

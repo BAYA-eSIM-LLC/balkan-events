@@ -1,9 +1,10 @@
+export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Gradovi' };
 
 export default async function CitiesPage() {
   let cities: any[] = [];
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/locations/cities?limit=50`, { next: { revalidate: 60 } });
+    const res = await fetch(`${process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || '/api'}/locations/cities?limit=50`, { next: { revalidate: 60 } });
     if (res.ok) cities = await res.json();
   } catch {}
   return (

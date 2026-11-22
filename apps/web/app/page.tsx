@@ -1,102 +1,79 @@
+import Header from '@/components/Header';
 import HeroBanner from '@/components/HeroBanner';
-import { EventCard, SectionHeading, EmptyState } from '@/components/ui';
-import { fetchEvents } from '@/lib/api';
 import Link from 'next/link';
 
-const HERO = 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=2000&q=85';
+const cities = [
+  { name: 'Sarajevo', img: 'https://images.unsplash.com/photo-1555990793-da11153b2473?auto=format&fit=crop&w=800&q=80' },
+  { name: 'Zagreb', img: 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&w=800&q=80' },
+  { name: 'Beograd', img: 'https://images.unsplash.com/photo-1548783307-f63adc3f200b?auto=format&fit=crop&w=800&q=80' },
+  { name: 'Mostar', img: 'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=80' },
+];
 
 const cats = [
-  { label: 'Koncerti', img: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=80', href: '/search?q=koncert' },
-  { label: 'Festivali', img: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=800&q=80', href: '/search?q=festival' },
-  { label: 'Sport', img: 'https://images.unsplash.com/photo-1461896836934-ffe607ba6851?auto=format&fit=crop&w=800&q=80', href: '/search?q=sport' },
-  { label: 'Teatar', img: 'https://images.unsplash.com/photo-1503095396549-807759245b35?auto=format&fit=crop&w=800&q=80', href: '/search?q=teatar' },
-  { label: 'Noćni život', img: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80', href: '/search?q=night' },
-  { label: 'Stand-up', img: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&w=800&q=80', href: '/search?q=standup' },
-  { label: 'Konferencije', img: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80', href: '/search?q=conference' },
-  { label: 'Kultura', img: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=800&q=80', href: '/search?q=kultura' },
+  { name: 'Koncerti', icon: '🎤' },
+  { name: 'Festivali', icon: '🎪' },
+  { name: 'Sport', icon: '⚽' },
+  { name: 'Teatar', icon: '🎭' },
+  { name: 'Stand-up', icon: '😂' },
+  { name: 'Noćni život', icon: '🌙' },
 ];
 
-const cities = [
-  { name: 'Sarajevo', img: 'https://images.unsplash.com/photo-1541427468627-a89a96e5ca1d?auto=format&fit=crop&w=700&q=80' },
-  { name: 'Beograd', img: 'https://images.unsplash.com/photo-1541343672885-9be56236302a?auto=format&fit=crop&w=700&q=80' },
-  { name: 'Zagreb', img: 'https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?auto=format&fit=crop&w=700&q=80' },
-  { name: 'Mostar', img: 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&w=700&q=80' },
-];
-
-export default async function Home() {
-  const [popular, upcoming] = await Promise.all([
-    fetchEvents('/events/popular?limit=6'),
-    fetchEvents('/events/upcoming?limit=8'),
-  ]);
-  const featured = popular.filter(e => e.is_featured).slice(0, 3);
-
+export default function Home() {
   return (
-    <div className="bg-[#f6f5fb]">
-      {/* HERO */}
+    <>
+      <Header />
       <HeroBanner />
 
-      {/* CATEGORIES */}
-      <section className="max-w-6xl mx-auto px-5 py-14">
-        <SectionHeading title="Istraži po kategorijama" />
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          {cats.map(c => (
-            <Link key={c.label} href={c.href} className="group relative aspect-[4/3] rounded-2xl overflow-hidden shadow-sm">
-              <img src={c.img} alt="" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <span className="absolute bottom-3 left-3 text-white font-medium text-base md:text-lg">{c.label}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* FEATURED */}
-      <section className="max-w-6xl mx-auto px-5 py-4">
-        <SectionHeading title="Istaknuti događaji" />
-        {featured.length > 0 ? (
-          <div className="mt-6 grid md:grid-cols-3 gap-5">
-            {featured.map(e => <EventCard key={e.id} event={e} />)}
+      <section className="py-12 bg-zinc-950 text-white">
+        <div className="max-w-6xl mx-auto px-5">
+          <h2 className="text-2xl font-bold mb-6">Gradovi</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {cities.map(c => (
+              <Link key={c.name} href={`/search?city=${c.name}`} className="relative aspect-[4/5] rounded-2xl overflow-hidden group">
+                <img src={c.img} alt={c.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                <span className="absolute bottom-3 left-3 font-semibold">{c.name}</span>
+              </Link>
+            ))}
           </div>
-        ) : (
-          <EmptyState title="Još nema istaknutih događaja" description="Organizatori uskoro objavljuju prve događaje." action={<a href="/categories" className="inline-block bg-[#6d3df5] text-white px-5 py-2.5 rounded-xl text-sm font-medium">Istraži kategorije</a>} />
-        )}
+        </div>
       </section>
 
-      {/* UPCOMING */}
-      <section className="max-w-6xl mx-auto px-5 py-10">
-        <SectionHeading title="Nadolazeći događaji" />
-        {upcoming.length > 0 ? (
-          <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {upcoming.map(e => <EventCard key={e.id} event={e} />)}
+      <section className="py-12 bg-zinc-900 text-white">
+        <div className="max-w-6xl mx-auto px-5">
+          <h2 className="text-2xl font-bold mb-6">Kategorije</h2>
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+            {cats.map(c => (
+              <Link key={c.name} href={`/search?category=${c.name}`} className="bg-zinc-800 hover:bg-zinc-700 rounded-xl p-4 text-center transition">
+                <span className="text-2xl">{c.icon}</span>
+                <p className="mt-2 text-sm">{c.name}</p>
+              </Link>
+            ))}
           </div>
-        ) : (
-          <EmptyState title="Nema nadolazećih događaja" description="Provjeri ponovno uskoro." />
-        )}
-      </section>
-
-      {/* CITIES */}
-      <section className="max-w-6xl mx-auto px-5 py-10">
-        <SectionHeading title="Popularni gradovi" />
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          {cities.map(c => (
-            <Link key={c.name} href={`/search?q=${encodeURIComponent(c.name)}`} className="group relative aspect-square rounded-2xl overflow-hidden shadow-sm">
-              <img src={c.img} alt={c.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition" />
-              <span className="absolute inset-0 flex items-center justify-center text-white text-xl md:text-2xl font-display font-semibold">{c.name}</span>
-            </Link>
-          ))}
         </div>
       </section>
 
-      {/* ORGANIZER CTA */}
-      <section className="relative mt-12 overflow-hidden">
-        <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1600&q=80" alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0d0b1f]/95 to-[#6d3df5]/70" />
-        <div className="relative max-w-6xl mx-auto px-5 py-20 text-white">
-          <h2 className="text-3xl md:text-5xl font-display font-extrabold max-w-lg">Organizuješ događaj?</h2>
-          <p className="mt-4 text-lg text-white/75 max-w-md">Kreiraj profil i dosegni publiku širom Balkana.</p>
-          <Link href="/organizer" className="inline-block mt-6 bg-white text-[#0d0b1f] font-semibold px-8 py-4 rounded-2xl hover:bg-gray-100 transition">Postani organizator</Link>
+      <section className="py-12 bg-zinc-950 text-white">
+        <div className="max-w-4xl mx-auto px-5 text-center">
+          <h2 className="text-2xl font-bold">Organiziraš događaje?</h2>
+          <p className="mt-3 text-white/70">Kreiraj događaj, prodaj ulaznice i prati prodaju.</p>
+          <Link href="/organizer" className="inline-block mt-6 bg-[#ff4d4d] hover:bg-[#ff6b6b] px-8 py-3 rounded-xl font-semibold transition">Postani organizator</Link>
         </div>
       </section>
-    </div>
+
+      <footer className="bg-black text-white/60 py-10 text-sm">
+        <div className="max-w-6xl mx-auto px-5 flex flex-col md:flex-row justify-between gap-6">
+          <div>
+            <p className="font-semibold text-white">BALKAN EVENTS</p>
+            <p className="mt-2">Događaji na Balkanu.</p>
+          </div>
+          <div className="flex gap-6">
+            <Link href="/privacy" className="hover:text-white">Privatnost</Link>
+            <Link href="/terms" className="hover:text-white">Uvjeti</Link>
+            <Link href="/support" className="hover:text-white">Podrška</Link>
+          </div>
+        </div>
+      </footer>
+    </>
   );
 }

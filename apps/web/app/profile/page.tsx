@@ -15,18 +15,18 @@ export default function Profile() {
   }, []);
 
   if (err) return (
-    <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+    <div className="min-h-screen bg-[#f6f5fb] flex items-center justify-center">
       <div className="text-center">
         <p className="text-gray-600">{err}</p>
-        <Link href="/login" className="mt-4 inline-block text-[#7047EB]">Prijavi se</Link>
+        <Link href="/login" className="mt-4 inline-block text-[#6d3df5]">Prijavi se</Link>
       </div>
     </div>
   );
-  if (!user) return <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">Učitavanje...</div>;
+  if (!user) return <div className="min-h-screen bg-[#f6f5fb] flex items-center justify-center">Učitavanje...</div>;
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
-      <div className="bg-[#0b1020] text-white py-12">
+    <div className="min-h-screen bg-[#f6f5fb]">
+      <div className="bg-[#0d0b1f] text-white py-12">
         <div className="max-w-3xl mx-auto px-5">
           <h1 className="text-3xl font-display font-semibold">Moj profil</h1>
           <p className="text-white/70 mt-1">{user.email}</p>

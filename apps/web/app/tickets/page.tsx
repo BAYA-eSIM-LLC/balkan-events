@@ -19,8 +19,8 @@ export default function Tickets() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
-      <div className="bg-[#0b1020] text-white py-12">
+    <div className="min-h-screen bg-[#f6f5fb]">
+      <div className="bg-[#0d0b1f] text-white py-12">
         <div className="max-w-4xl mx-auto px-5">
           <h1 className="text-3xl font-display font-semibold">Moje ulaznice</h1>
         </div>
@@ -36,7 +36,7 @@ export default function Tickets() {
         {!loading && !missing && tickets.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-600">Nemaš kupljenih ulaznica.</p>
-            <Link href="/search" className="mt-4 inline-block text-[#7047EB]">Pronađi događaje</Link>
+            <Link href="/search" className="mt-4 inline-block text-[#6d3df5]">Pronađi događaje</Link>
           </div>
         )}
         <div className="space-y-4">

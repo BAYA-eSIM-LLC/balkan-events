@@ -1,18 +1,35 @@
 import Link from 'next/link';
-import { EventItem, formatDate } from '@/lib/api';
 
-export default function EventCard({ event }: { event: EventItem }) {
-  const img = event.image_url || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=600&q=80';
+type Props = {
+  slug?: string;
+  title: string;
+  image?: string;
+  date?: string;
+  city?: string;
+  price?: string;
+  availability?: string;
+};
+
+export default function EventCard({ slug, title, image, date, city, price, availability }: Props) {
+  const href = slug ? `/events/${slug}` : '/search';
   return (
-    <Link href={`/events/${event.slug}`} className="group block bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      <div className="relative h-44 overflow-hidden">
-        <img src={img} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition" />
+    <Link href={href} className="group block bg-white rounded-xl overflow-hidden border border-zinc-200 hover:shadow-lg transition">
+      <div className="aspect-[4/5] relative bg-zinc-100">
+        {image ? (
+          <img src={image} alt={title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-zinc-400 text-sm">Nema fotografije</div>
+        )}
+        {date && <span className="absolute top-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded">{date}</span>}
       </div>
       <div className="p-4">
-        <h3 className="font-semibold text-[#0d0b1f] line-clamp-2 group-hover:text-[#6d3df5] transition">{event.title}</h3>
-        <p className="text-sm text-gray-500 mt-1">{event.city}{event.country ? `, ${event.country}` : ''}</p>
-        <p className="text-sm text-[#6d3df5] mt-1">{formatDate(event.start_at, event.timezone)}</p>
+        <h3 className="font-semibold text-base leading-snug line-clamp-2">{title}</h3>
+        {city && <p className="text-sm text-zinc-500 mt-1">{city}</p>}
+        <div className="mt-3 flex items-center justify-between">
+          <span className="font-semibold text-[#e11d48]">{price || 'Cijena uskoro'}</span>
+          {availability && <span className="text-xs text-zinc-500">{availability}</span>}
+        </div>
+        <span className="inline-block mt-3 text-sm font-medium text-[#e11d48] group-hover:underline">Kupi ulaznicu</span>
       </div>
     </Link>
   );

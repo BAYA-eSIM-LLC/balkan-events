@@ -6,35 +6,45 @@ export default function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur border-b border-white/10">
-      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-bold text-white">
-          <span className="w-8 h-8 bg-[#ff4d4d] rounded-lg flex items-center justify-center text-sm">BE</span>
-          <span className="hidden sm:inline">BALKAN EVENTS</span>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-black text-white border-b border-zinc-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2.5 font-bold text-lg tracking-tight">
+          <span className="w-8 h-8 bg-[#e11d48] rounded-md flex items-center justify-center text-xs font-black">BE</span>
+          BALKAN EVENTS
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6 text-sm text-white/80">
-          <Link href="/search" className="hover:text-white">Događaji</Link>
-          <Link href="/search" className="hover:text-white">Kategorije</Link>
-          <Link href="/organizer" className="hover:text-white">Organizatori</Link>
+        <nav className="hidden lg:flex items-center gap-7 text-sm text-zinc-300">
+          <Link href="/" className="hover:text-white transition">Početna</Link>
+          <Link href="/search" className="hover:text-white transition">Događaji</Link>
+          <Link href="/search?category=koncerti" className="hover:text-white transition">Koncerti</Link>
+          <Link href="/search?category=festivali" className="hover:text-white transition">Festivali</Link>
+          <Link href="/search?category=pozoriste" className="hover:text-white transition">Pozorište</Link>
+          <Link href="/cities" className="hover:text-white transition">Gradovi</Link>
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link href="/search" className="text-white/80 hover:text-white">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <Link href="/search" className="hidden sm:flex items-center gap-1.5 text-sm text-zinc-300 hover:text-white">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            Pretraga
           </Link>
-          <Link href="/register" className="bg-[#ff4d4d] hover:bg-[#ff6b6b] text-white px-4 py-1.5 rounded-full text-sm font-medium transition">Registracija</Link>
-          <button onClick={() => setOpen(!open)} className="md:hidden text-white">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+          <Link href="/login" className="hidden sm:inline text-sm text-zinc-300 hover:text-white">Prijava</Link>
+          <Link href="/register" className="bg-[#e11d48] hover:bg-[#be123c] text-white px-4 py-1.5 rounded-md text-sm font-medium transition">Registracija</Link>
+          <button onClick={() => setOpen(!open)} className="lg:hidden p-2 -mr-2">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={open ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} /></svg>
           </button>
         </div>
       </div>
 
       {open && (
-        <div className="md:hidden bg-black border-t border-white/10 px-4 py-4 space-y-3 text-white">
-          <Link href="/search" onClick={() => setOpen(false)} className="block">Događaji</Link>
-          <Link href="/organizer" onClick={() => setOpen(false)} className="block">Organizatori</Link>
-          <Link href="/login" onClick={() => setOpen(false)} className="block">Prijava</Link>
+        <div className="lg:hidden bg-zinc-950 border-t border-zinc-800 px-4 py-4 space-y-3">
+          <Link href="/" onClick={() => setOpen(false)} className="block py-2">Početna</Link>
+          <Link href="/search" onClick={() => setOpen(false)} className="block py-2">Događaji</Link>
+          <Link href="/search?category=koncerti" onClick={() => setOpen(false)} className="block py-2">Koncerti</Link>
+          <Link href="/search?category=festivali" onClick={() => setOpen(false)} className="block py-2">Festivali</Link>
+          <Link href="/search?category=pozoriste" onClick={() => setOpen(false)} className="block py-2">Pozorište</Link>
+          <Link href="/cities" onClick={() => setOpen(false)} className="block py-2">Gradovi</Link>
+          <Link href="/login" onClick={() => setOpen(false)} className="block py-2">Prijava</Link>
+          <Link href="/organizer" onClick={() => setOpen(false)} className="block py-2">Organizatori</Link>
         </div>
       )}
     </header>

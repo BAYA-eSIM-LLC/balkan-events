@@ -7,37 +7,37 @@ export default function HeroBanner() {
   const [sent, setSent] = useState(false);
 
   return (
-    <section className="relative min-h-[100vh] flex items-center text-white overflow-hidden pt-16 pb-28">
-      <img src="https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?auto=format&fit=crop&w=1800&q=80" alt="" className="absolute inset-0 w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/85" />
+    <section className="relative min-h-[85vh] flex items-center text-white overflow-hidden">
+      <img src="https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?auto=format&fit=crop&w=2000&q=80" alt="Koncert" className="absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/40" />
 
-      <div className="relative max-w-lg mx-auto px-5 w-full text-center">
-        <h1 className="text-4xl sm:text-5xl font-bold leading-tight">Najveći događaji<br />na Balkanu</h1>
-        <p className="mt-4 text-white/80 text-base">Pronađi koncerte, festivale i predstave u svom gradu.</p>
+      <div className="relative max-w-3xl mx-auto px-6 py-20 w-full text-center lg:text-left">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">Doživi najbolje događaje na Balkanu</h1>
+        <p className="mt-5 text-lg sm:text-xl text-white/80 max-w-xl mx-auto lg:mx-0">Pronađi događaje, rezerviši svoje mjesto i kupi ulaznice jednostavno i sigurno.</p>
 
-        <div className="mt-6 flex gap-2 justify-center overflow-x-auto pb-1">
-          {['Danas', 'Vikend', 'Besplatno', 'Blizu mene'].map(f => (
-            <Link key={f} href={`/search?filter=${f.toLowerCase()}`} className="shrink-0 px-4 py-2 rounded-full text-sm bg-white/15 border border-white/25 hover:bg-white/25 transition">
+        <form action="/search" className="mt-8 flex flex-col sm:flex-row gap-3 max-w-lg mx-auto lg:mx-0">
+          <input name="q" placeholder="Traži događaj, izvođača ili grad" className="flex-1 bg-white text-zinc-900 rounded-lg px-5 py-4 text-base placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#e11d48]" />
+          <button type="submit" className="bg-[#e11d48] hover:bg-[#be123c] px-8 py-4 rounded-lg font-semibold transition">Pretraži</button>
+        </form>
+
+        <div className="mt-6 flex flex-wrap gap-2 justify-center lg:justify-start">
+          {['Danas', 'Ovaj vikend', 'Besplatno', 'U mojoj blizini'].map(f => (
+            <Link key={f} href={`/search?filter=${encodeURIComponent(f.toLowerCase())}`} className="px-4 py-2 rounded-full text-sm bg-white/10 border border-white/20 hover:bg-white/20 transition">
               {f}
             </Link>
           ))}
         </div>
 
-        <form action="/search" className="mt-5 flex gap-2">
-          <input name="q" placeholder="Traži događaj ili grad" className="flex-1 bg-white text-zinc-900 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d4d]" />
-          <button type="submit" className="bg-[#ff4d4d] hover:bg-[#ff6b6b] px-5 py-3.5 rounded-xl font-semibold text-sm transition">Traži</button>
-        </form>
-
         {!sent ? (
-          <form onSubmit={(e) => { e.preventDefault(); setSent(true); }} className="mt-8 bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/15">
-            <p className="text-sm font-medium mb-2">Prvi događaji stižu uskoro</p>
+          <form onSubmit={(e) => { e.preventDefault(); if (email) setSent(true); }} className="mt-10 bg-white/10 backdrop-blur rounded-xl p-5 border border-white/15 max-w-md mx-auto lg:mx-0">
+            <p className="text-sm font-medium mb-3">Prvi događaji stižu uskoro. Ostavi email za obavijest.</p>
             <div className="flex gap-2">
-              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="Tvoj email" className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm placeholder:text-white/50 focus:outline-none" />
-              <button type="submit" className="bg-[#ff4d4d] px-4 py-2 rounded-lg text-sm font-medium">Obavijesti me</button>
+              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="tvoj@email.com" className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-sm placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-[#e11d48]" />
+              <button type="submit" className="bg-[#e11d48] hover:bg-[#be123c] px-4 py-2.5 rounded-lg text-sm font-medium transition">Obavijesti me</button>
             </div>
           </form>
         ) : (
-          <p className="mt-8 text-sm text-green-300">Hvala! Javit ćemo ti se.</p>
+          <p className="mt-10 text-sm text-emerald-300">Hvala! Javit ćemo ti se čim događaji budu dostupni.</p>
         )}
       </div>
     </section>

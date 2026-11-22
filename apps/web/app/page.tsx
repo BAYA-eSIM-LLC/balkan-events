@@ -77,7 +77,7 @@ export default async function Home() {
             {featured.map(e => <EventCard key={e.id} event={e} />)}
           </div>
         ) : (
-          <EmptyState title="Još nema istaknutih događaja" description="Organizatori uskoro objavljuju prve događaje." action={{ label: 'Istraži kategorije', href: '/categories' }} />
+          <EmptyState title="Još nema istaknutih događaja" description="Organizatori uskoro objavljuju prve događaje." action={<a href="/categories" className="inline-block bg-[#6d3df5] text-white px-5 py-2.5 rounded-xl text-sm font-medium">Istraži kategorije</a>} />
         )}
       </section>
 

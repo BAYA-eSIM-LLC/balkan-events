@@ -15,25 +15,29 @@ export default function Login() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    if (!res.ok) { setErr('Prijava nije uspjela'); return; }
+    if (!res.ok) { setErr('Prijava nije uspjela. Provjeri podatke.'); return; }
     const data = await res.json();
     localStorage.setItem('token', data.access_token);
     window.location.href = '/profile';
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1020] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#0d0b1f] to-[#1a1535] flex items-center justify-center px-4 pt-16">
       <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl">
-        <h1 className="text-3xl font-display font-semibold text-[#0b1020]">Prijava</h1>
-        <p className="text-gray-500 mt-2">Dobrodošao nazad na BALKAN EVENTS</p>
-        <form onSubmit={submit} className="mt-8 space-y-4">
-          <input type="email" required placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#7047EB] outline-none" />
-          <input type="password" required placeholder="Lozinka" value={password} onChange={e => setPassword(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#7047EB] outline-none" />
-          {err && <p className="text-red-600 text-sm">{err}</p>}
-          <button type="submit" className="w-full bg-gradient-to-r from-[#7047EB] to-[#9B6CFF] text-white py-3 rounded-xl font-medium">Prijavi se</button>
+        <div className="flex items-center gap-2 mb-4">
+          <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6d3df5] to-[#d4af77] grid place-items-center text-white text-xs font-bold">B</span>
+          <span className="font-display font-bold text-sm">BALKAN EVENTS</span>
+        </div>
+        <h1 className="text-2xl font-display font-extrabold text-[#0d0b1f]">Prijava</h1>
+        <p className="text-gray-500 text-sm mt-1">Dobrodošao nazad</p>
+        <form onSubmit={submit} className="mt-6 space-y-4">
+          <input type="email" required placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#6d3df5] outline-none" />
+          <input type="password" required placeholder="Lozinka" value={password} onChange={e => setPassword(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#6d3df5] outline-none" />
+          {err && <p className="text-red-500 text-sm">{err}</p>}
+          <button type="submit" className="w-full bg-[#6d3df5] hover:bg-[#7c50ff] text-white py-3 rounded-xl font-medium transition">Prijavi se</button>
         </form>
-        <p className="mt-6 text-sm text-center text-gray-500">
-          Nemaš račun? <Link href="/register" className="text-[#7047EB] font-medium">Registruj se</Link>
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Nemaš račun? <Link href="/register" className="text-[#6d3df5] font-medium">Registruj se</Link>
         </p>
       </div>
     </div>

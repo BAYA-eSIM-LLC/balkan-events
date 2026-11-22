@@ -1,10 +1,15 @@
-export const metadata = { title: 'Politika privatnosti' };
-export default function PrivacyPage() {
+export default function Page() {
   return (
-    <article className="prose">
-      <h1 className="text-2xl font-bold mb-4">Politika privatnosti</h1>
-      <p>BALKAN EVENTS poštuje privatnost korisnika. Prikupljamo samo podatke potrebne za pružanje usluge (email, ime, aktivnosti na platformi). Podaci se ne dijele s trećim stranama bez pristanka, osim kada je to zakonski obavezno.</p>
-      <p className="mt-2">Za brisanje računa ili pristup podacima kontaktirajte podršku.</p>
-    </article>
+    <div className="min-h-screen bg-[#fafafa]">
+      <div className="bg-[#0b1020] text-white py-12">
+        <div className="max-w-3xl mx-auto px-5">
+          <h1 className="text-3xl font-display font-semibold">Politika privatnosti</h1>
+        </div>
+      </div>
+      <div className="max-w-3xl mx-auto px-5 py-10 prose prose-gray">
+        <p>Ova stranica će biti ažurirana s punim pravnim tekstom prije produkcijskog puštanja.</p>
+        <p className="text-sm text-gray-500 mt-4">Kontakt: support@balkanevents.org</p>
+      </div>
+    </div>
   );
 }

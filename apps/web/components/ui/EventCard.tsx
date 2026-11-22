@@ -1,32 +1,32 @@
 import Link from 'next/link';
 import { EventItem, formatDate } from '@/lib/api';
-import { Badge } from './Badge';
 
-export function EventCard({ event }: { event: EventItem }) {
+const FALLBACK = 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80';
+
+export function EventCard({ event, large = false }: { event: EventItem; large?: boolean }) {
+  const img = event.image_url || FALLBACK;
   return (
     <Link
       href={`/events/${event.slug}`}
-      className="group block bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-card hover:shadow-card-hover transition-shadow"
+      className={`group block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-black/5 ${large ? 'md:col-span-1' : ''}`}
     >
-      <div className="relative h-48 bg-gray-100">
-        {event.image_url ? (
-          <img src={event.image_url} alt={event.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-ink-subtle text-sm">Nema slike</div>
-        )}
+      <div className={`relative overflow-hidden ${large ? 'aspect-[4/5]' : 'aspect-[16/10]'}`}>
+        <img
+          src={img}
+          alt={event.title}
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
         {event.is_featured && (
-          <div className="absolute top-3 left-3">
-            <Badge variant="accent">Istaknuto</Badge>
-          </div>
+          <span className="absolute top-3 left-3 bg-[#C7A76C] text-[#0b1020] text-xs font-semibold px-2.5 py-1 rounded-full">
+            Istaknuto
+          </span>
         )}
-      </div>
-      <div className="p-4">
-        <h3 className="font-semibold text-ink line-clamp-2 group-hover:text-brand-700 transition-colors">{event.title}</h3>
-        <p className="text-sm text-ink-muted mt-1">{event.city}{event.country ? `, ${event.country}` : ''}</p>
-        <p className="text-sm text-brand-600 mt-1 font-medium">{formatDate(event.start_at, event.timezone)}</p>
-        {event.short_description && (
-          <p className="text-sm text-ink-muted mt-2 line-clamp-2">{event.short_description}</p>
-        )}
+        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+          <h3 className="font-semibold text-lg leading-tight line-clamp-2">{event.title}</h3>
+          <p className="text-sm text-white/80 mt-1">{event.city || 'Lokacija'}</p>
+          <p className="text-sm text-[#C7A76C] mt-0.5">{formatDate(event.start_at, event.timezone)}</p>
+        </div>
       </div>
     </Link>
   );

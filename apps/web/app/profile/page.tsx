@@ -2,36 +2,49 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-const API = process.env.NEXT_PUBLIC_API_URL || '/api';
-
-export default function ProfilePage() {
+export default function Profile() {
   const [user, setUser] = useState<any>(null);
-  const [error, setError] = useState('');
+  const [err, setErr] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) { setError('Nisi prijavljen.'); return; }
-    fetch(`${API}/me`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null)
-      .then(setUser)
-      .catch(() => setError('Greška pri učitavanju profila'));
+    const token = localStorage.getItem('token');
+    if (!token) { setErr('Nisi prijavljen'); return; }
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(r => r.ok ? r.json() : Promise.reject()).then(setUser).catch(() => setErr('Ne mogu učitati profil'));
   }, []);
 
-  if (error) return <div className="max-w-2xl mx-auto px-6 py-16 text-center text-gray-500">{error} <Link href="/login" className="text-violet-600">Prijava</Link></div>;
-  if (!user) return <div className="max-w-2xl mx-auto px-6 py-16 text-center text-gray-400">Učitavanje...</div>;
+  if (err) return (
+    <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-gray-600">{err}</p>
+        <Link href="/login" className="mt-4 inline-block text-[#7047EB]">Prijavi se</Link>
+      </div>
+    </div>
+  );
+  if (!user) return <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">Učitavanje...</div>;
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-display font-bold mb-6">Profil</h1>
-      <div className="space-y-4 bg-gray-50 rounded-2xl p-6">
-        <div><span className="text-sm text-gray-500">Ime</span><div className="font-medium">{user.full_name || '–'}</div></div>
-        <div><span className="text-sm text-gray-500">Email</span><div className="font-medium">{user.email}</div></div>
-        <div><span className="text-sm text-gray-500">Uloga</span><div className="font-medium">{user.role}</div></div>
-        <div><span className="text-sm text-gray-500">Verificiran</span><div className="font-medium">{user.is_verified ? 'Da' : 'Ne'}</div></div>
+    <div className="min-h-screen bg-[#fafafa]">
+      <div className="bg-[#0b1020] text-white py-12">
+        <div className="max-w-3xl mx-auto px-5">
+          <h1 className="text-3xl font-display font-semibold">Moj profil</h1>
+          <p className="text-white/70 mt-1">{user.email}</p>
+        </div>
       </div>
-      <div className="mt-6 flex gap-3">
-        <Link href="/dashboard" className="text-violet-600 text-sm">Dashboard</Link>
-        <Link href="/tickets" className="text-violet-600 text-sm">Ulaznice</Link>
+      <div className="max-w-3xl mx-auto px-5 py-8 space-y-4">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-black/5">
+          <p className="text-sm text-gray-500">Ime</p>
+          <p className="font-medium">{user.full_name || user.name || '—'}</p>
+        </div>
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-black/5">
+          <p className="text-sm text-gray-500">Email</p>
+          <p className="font-medium">{user.email}</p>
+        </div>
+        <Link href="/tickets" className="block bg-white rounded-2xl p-6 shadow-sm border border-black/5 hover:border-[#7047EB]/30">
+          <p className="font-medium">Moje ulaznice</p>
+          <p className="text-sm text-gray-500 mt-1">Pregledaj kupljene ulaznice</p>
+        </Link>
       </div>
     </div>
   );

@@ -1,11 +1,13 @@
 'use client';
-export default function ScannerPage() {
+export default function Scanner() {
   return (
-    <div className="max-w-lg mx-auto px-6 py-16 text-center">
-      <h1 className="text-3xl font-display font-bold mb-4">Mobilni scanner</h1>
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-amber-800">
-        Scanner API (validacija QR ulaznica) nije prisutan na grani main. CORE 2 rad je zaustavljen i nije spojen. Nije moguće povezati scanner dok se backend endpointi ne dodaju.
+    <div className="min-h-screen bg-[#0b1020] text-white flex flex-col items-center justify-center px-5 text-center">
+      <h1 className="text-3xl font-display font-semibold">Scanner</h1>
+      <p className="mt-4 text-white/70 max-w-sm">Provjera QR ulaznica. Funkcija zahtijeva deployani scanner API koji trenutno nije dostupan na produkciji.</p>
+      <div className="mt-8 w-64 h-64 border-2 border-dashed border-white/30 rounded-2xl flex items-center justify-center text-white/50">
+        Kamera / QR
       </div>
+      <p className="mt-6 text-sm text-amber-300">Backend endpoint nije aktivan</p>
     </div>
   );
 }

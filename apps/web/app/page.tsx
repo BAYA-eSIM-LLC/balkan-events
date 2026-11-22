@@ -1,3 +1,4 @@
+import HeroBanner from '@/components/HeroBanner';
 import { EventCard, SectionHeading, EmptyState } from '@/components/ui';
 import { fetchEvents } from '@/lib/api';
 import Link from 'next/link';
@@ -32,28 +33,7 @@ export default async function Home() {
   return (
     <div className="bg-[#f6f5fb]">
       {/* HERO */}
-      <section className="relative min-h-[78vh] md:min-h-[88vh] flex items-center text-white overflow-hidden pt-16">
-        <img src={HERO} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0d0b1f]/95 via-[#0d0b1f]/70 to-[#0d0b1f]/30" />
-        <div className="relative max-w-6xl mx-auto px-5 py-20 w-full">
-          <p className="text-xs md:text-sm tracking-[0.28em] text-[#d4af77] font-medium mb-4">DISCOVER · EXPERIENCE · CONNECT</p>
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-extrabold leading-[1.02] max-w-3xl">
-            Najveći događaji na Balkanu
-          </h1>
-          <p className="mt-5 text-lg md:text-xl text-white/75 max-w-lg">
-            Koncerti, festivali, sport i kultura. Jedno mjesto za BiH, Hrvatsku, Srbiju i šire.
-          </p>
-          <form action="/search" className="mt-8 flex flex-col sm:flex-row gap-2 max-w-xl">
-            <input name="q" placeholder="Traži događaj, izvođača ili grad" className="flex-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-5 py-4 text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-[#6d3df5]" />
-            <button type="submit" className="bg-[#6d3df5] hover:bg-[#7c50ff] px-8 py-4 rounded-2xl font-semibold transition">Pretraži</button>
-          </form>
-          <div className="mt-6 flex flex-wrap gap-2 text-sm">
-            {['Ovaj vikend','Sarajevo','Beograd','Zagreb'].map(t => (
-              <Link key={t} href={`/search?q=${encodeURIComponent(t)}`} className="px-4 py-1.5 rounded-full bg-white/10 border border-white/15 hover:bg-white/20 transition">{t}</Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HeroBanner />
 
       {/* CATEGORIES */}
       <section className="max-w-6xl mx-auto px-5 py-14">

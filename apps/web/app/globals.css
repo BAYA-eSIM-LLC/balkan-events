@@ -3,34 +3,27 @@
 @tailwind utilities;
 
 :root {
-  --color-brand: #0284c7;
-  --color-brand-dark: #0369a1;
-  --color-accent: #f59e0b;
+  --color-navy: #0b1220;
+  --color-navy-2: #111827;
+  --color-electric: #2563eb;
+  --color-purple: #7c3aed;
+  --color-pink: #ec4899;
   --color-ink: #0f172a;
-  --color-ink-muted: #475569;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f8fafc;
-  --radius-card: 1rem;
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.05);
-  --focus-ring: 0 0 0 3px rgb(14 165 233 / 0.4);
+  --focus-ring: 0 0 0 3px rgb(124 58 237 / 0.4);
 }
 
 @layer base {
-  body {
-    @apply bg-surface-muted text-ink antialiased;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-  }
-  a {
-    @apply text-brand-600 hover:text-brand-700 transition-colors;
-  }
-  :focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
-  }
+  body { @apply bg-white text-ink antialiased; }
+  :focus-visible { outline: none; box-shadow: var(--focus-ring); }
 }
 
-@layer components {
-  .skip-link {
-    @apply sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-brand-600 focus:text-white focus:px-4 focus:py-2 focus:rounded;
-  }
+.skip-link {
+  @apply sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-purple-600 focus:text-white focus:px-4 focus:py-2 focus:rounded;
+}
+
+.btn-gradient {
+  background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+}
+.btn-gradient:hover {
+  background: linear-gradient(135deg, #6d28d9 0%, #db2777 100%);
 }

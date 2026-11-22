@@ -9,53 +9,28 @@ const cities = [
 ];
 
 const categories = [
-  { name: 'Koncerti', href: '/search?category=koncerti' },
-  { name: 'Festivali', href: '/search?category=festivali' },
-  { name: 'Pozorište', href: '/search?category=pozoriste' },
-  { name: 'Sport', href: '/search?category=sport' },
-  { name: 'Stand-up', href: '/search?category=standup' },
-  { name: 'Kultura', href: '/search?category=kultura' },
+  { name: 'Koncerti', href: '/search?category=koncerti', icon: '🎤' },
+  { name: 'Festivali', href: '/search?category=festivali', icon: '🎪' },
+  { name: 'Pozorište', href: '/search?category=pozoriste', icon: '🎭' },
+  { name: 'Sport', href: '/search?category=sport', icon: '⚽' },
+  { name: 'Stand-up', href: '/search?category=standup', icon: '😂' },
+  { name: 'Kultura', href: '/search?category=kultura', icon: '🎨' },
 ];
 
-const featured = [
-  { title: 'Koncert uživo', img: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?auto=format&fit=crop&w=600&q=80', city: 'Sarajevo' },
-  { title: 'Festival', img: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=600&q=80', city: 'Zagreb' },
-  { title: 'Sportski događaj', img: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=600&q=80', city: 'Beograd' },
-  { title: 'Pozorišna predstava', img: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=600&q=80', city: 'Mostar' },
-];
-
-const concerts = [
-  { title: 'Live nastup', img: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=600&q=80' },
-  { title: 'Rock koncert', img: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80' },
-  { title: 'Pop večer', img: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=600&q=80' },
-];
-
-const festivals = [
-  { title: 'Open air', img: 'https://images.unsplash.com/photo-1459749411177-04de6a6f8c9b?auto=format&fit=crop&w=600&q=80' },
-  { title: 'Muzički festival', img: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=600&q=80' },
-  { title: 'Ljetni festival', img: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=600&q=80' },
-];
-
-function Card({ title, img, city }: { title: string; img: string; city?: string }) {
+function EmptyState({ title }: { title: string }) {
   return (
-    <Link href="/search" className="group block">
-      <div className="aspect-[4/5] relative rounded-xl overflow-hidden bg-zinc-100">
-        <img src={img} alt={title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-        <div className="absolute bottom-3 left-3 text-white">
-          <p className="font-semibold text-sm">{title}</p>
-          {city && <p className="text-xs text-white/70">{city}</p>}
-        </div>
-      </div>
-    </Link>
+    <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-10 text-center">
+      <p className="text-zinc-500">{title}</p>
+      <Link href="/search" className="inline-block mt-4 text-[#e11d48] text-sm font-medium hover:underline">Pogledaj sve događaje</Link>
+    </div>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="py-16 border-b border-zinc-100">
-      <div className="max-w-7xl mx-auto px-6">
-        <h2 className="text-2xl sm:text-3xl font-bold mb-8">{title}</h2>
+    <section className="py-14 md:py-16 border-b border-zinc-100">
+      <div className="max-w-7xl mx-auto px-5 sm:px-6">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 md:mb-8">{title}</h2>
         {children}
       </div>
     </section>
@@ -68,36 +43,28 @@ export default function Home() {
       <HeroBanner />
 
       <Section title="Istaknuti događaji">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {featured.map(e => <Card key={e.title} {...e} />)}
-        </div>
+        <EmptyState title="Događaji će biti prikazani čim budu dostupni u sistemu." />
       </Section>
 
       <Section title="Najpopularniji koncerti">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {concerts.map(e => <Card key={e.title} {...e} />)}
-        </div>
+        <EmptyState title="Popularni koncerti će se pojaviti ovdje." />
       </Section>
 
       <Section title="Festivali">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {festivals.map(e => <Card key={e.title} {...e} />)}
-        </div>
+        <EmptyState title="Festivali će biti prikazani čim budu objavljeni." />
       </Section>
 
       <Section title="Događaji ovog vikenda">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {featured.slice(0, 3).map(e => <Card key={e.title} {...e} />)}
-        </div>
+        <EmptyState title="Vikend događaji će biti dostupni uskoro." />
       </Section>
 
       <Section title="Događaji po gradovima">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           {cities.map(c => (
             <Link key={c.name} href={`/search?city=${c.name}`} className="relative aspect-[3/4] rounded-xl overflow-hidden group">
               <img src={c.img} alt={c.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-              <span className="absolute bottom-4 left-4 text-white font-semibold text-lg">{c.name}</span>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+              <span className="absolute bottom-3 left-3 text-white font-semibold text-base md:text-lg">{c.name}</span>
             </Link>
           ))}
         </div>
@@ -106,18 +73,19 @@ export default function Home() {
       <Section title="Kategorije">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {categories.map(c => (
-            <Link key={c.name} href={c.href} className="bg-zinc-100 hover:bg-zinc-200 rounded-lg py-6 text-center font-medium transition">
-              {c.name}
+            <Link key={c.name} href={c.href} className="bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-xl py-5 md:py-6 text-center transition group">
+              <span className="text-2xl">{c.icon}</span>
+              <p className="mt-2 text-sm font-medium text-zinc-700 group-hover:text-zinc-900">{c.name}</p>
             </Link>
           ))}
         </div>
       </Section>
 
-      <section className="py-20 bg-zinc-950 text-white">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold">Organiziraš događaje?</h2>
-          <p className="mt-4 text-zinc-400 text-lg">Kreiraj događaj, prodaj ulaznice i upravljaj prodajom na jednom mjestu.</p>
-          <Link href="/organizer" className="inline-block mt-8 bg-[#e11d48] hover:bg-[#be123c] px-8 py-3.5 rounded-lg font-semibold transition">Postani organizator</Link>
+      <section className="py-16 md:py-20 bg-zinc-950 text-white">
+        <div className="max-w-2xl mx-auto px-5 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold">Organiziraš događaje?</h2>
+          <p className="mt-3 md:mt-4 text-zinc-400 text-base md:text-lg">Kreiraj događaj, prodaj ulaznice i upravljaj prodajom na jednom mjestu.</p>
+          <Link href="/organizer" className="inline-block mt-6 md:mt-8 bg-[#e11d48] hover:bg-[#be123c] px-8 py-3.5 rounded-lg font-semibold transition">Postani organizator</Link>
         </div>
       </section>
     </>

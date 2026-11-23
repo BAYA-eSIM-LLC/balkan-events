@@ -59,6 +59,7 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://test_user:test_password@localhost:5432/balkan_events_test
           PYTHONPATH: .
           SECRET_KEY: test-secret-key-for-ci-only
+          INTERNAL_API_SECRET: ci-internal-secret
         run: pytest tests/ -v --tb=short --junitxml=test-results.xml
 
       - name: Upload test results

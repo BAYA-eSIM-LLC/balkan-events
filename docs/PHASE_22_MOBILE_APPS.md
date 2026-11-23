@@ -314,3 +314,46 @@ No Stripe, no in-app payment, no store submission.
 - PDF ticket open in-app
 - Event name/date on ticket card (API returns id, code, qr_data, is_used)
 - Live screenshots
+
+---
+
+## Phase 22.6 – Organizer Event Management & Guest Check-in
+
+**Commit:** pending  
+**Date:** 2026-11-23
+
+### Event management
+- `app/organizer/events.tsx` — list own events via `GET /organizer/events`
+- `app/organizer/event-create.tsx` — create via `POST /organizer/events`
+- `app/organizer/event-edit.tsx` — load and patch via `GET/PATCH /organizer/events/{id}`
+- Fields: title, short description, venue, start datetime
+- Backend validates organization membership and event permissions
+
+### Guest lists
+- `app/organizer/guests.tsx` rewritten
+- Load lists: `GET /guest-lists/event/{event_id}`
+- Load/search guests: `GET /guest-lists/{list_id}/guests?q=`
+- Add guest: `POST /guest-lists/{list_id}/guests`
+- Check-in: `POST /guest-lists/guests/{guest_id}/check-in`
+- Checked-in guests shown distinctly
+- No local check-in logic; backend is authority
+
+### Security
+- All actions require existing user JWT
+- Backend enforces org membership and event-level caps
+- Finance data not shown
+- No parallel validation
+
+### Tests
+- TypeScript `tsc --noEmit`: passed
+- Backend guest and event tests already cover create, isolation and check-in
+- Physical device: not tested
+
+### Not finished
+- Image upload (no upload endpoint on create)
+- CSV import UI
+- QR guest check-in (uses ticket scanner)
+- Live screenshots
+
+### Constraints
+Only `super-admin-dashboard`. No main merge, no deploy, no production, no Stripe, no store submission.

@@ -24,7 +24,8 @@ export default function Login() {
   function finish(token: string) {
     localStorage.setItem('token', token);
     const role = roleFromToken(token);
-    if (role === 'ADMIN' || role === 'SUPERADMIN') {
+    const r = (role || '').toUpperCase();
+    if (r === 'ADMIN' || r === 'SUPERADMIN') {
       window.location.href = '/admin';
       return;
     }

@@ -17,3 +17,5 @@ from app.models.performer import Performer, EventPerformer, EventSchedule
 from app.models.org_extended import OrgDocument, OrgNotification
 from app.models.support import SupportTicket, AdminNote
 from app.models.email_log import EmailLog
+from app.models.platform_settings import PlatformSettings
+from app.models.scanner import EntryPoint, ScannerDevice, ScanLog

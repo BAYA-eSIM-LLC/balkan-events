@@ -1,20 +1,39 @@
 'use client';
-export default function AdminOrganizations() {
+import { useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/admin-api';
+
+export default function AdminOrgs() {
+  const [orgs, setOrgs] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    adminFetch('/admin/organizations/pending')
+      .then(d => setOrgs(Array.isArray(d) ? d : d.items || []))
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-2">Organizations</h1>
-      <p className="text-zinc-400 text-sm mb-6">Upravljanje organizations</p>
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-        <p className="text-amber-300 text-sm font-medium mb-2">Status modula</p>
-        <p className="text-zinc-300 text-sm">
-          UI je spreman. Backend endpointi postoje u kodu (admin_system / admin_catalog / events_engine).
-          Aktivacija zahtijeva deploy punog API-ja. Nema lažnih podataka.
-        </p>
-        <div className="mt-4 text-xs text-zinc-500 space-y-1">
-          <p>• Zaštićeno SUPERADMIN / ADMIN ulogom</p>
-          <p>• Audit log za promjene</p>
-          <p>• Povezivanje s webom i budućim mobilnim appovima</p>
-        </div>
+      <h1 className="text-2xl font-bold mb-1">Organizatori</h1>
+      <p className="text-zinc-400 text-sm mb-6">Pending verifikacije</p>
+      {loading && <p className="text-zinc-400">Učitavanje...</p>}
+      {error && <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 rounded-xl p-4 text-sm">{error}</div>}
+      {!loading && !error && orgs.length === 0 && <p className="text-zinc-400 text-sm">Nema organizacija na čekanju.</p>}
+      <div className="space-y-3">
+        {orgs.map(o => (
+          <div key={o.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex justify-between items-center">
+            <div>
+              <p className="font-medium">{o.name}</p>
+              <p className="text-xs text-zinc-400">{o.verification_status || 'PENDING'}</p>
+            </div>
+            <div className="flex gap-2">
+              <button className="text-xs bg-green-600 px-3 py-1.5 rounded-lg">Odobri</button>
+              <button className="text-xs bg-red-600/80 px-3 py-1.5 rounded-lg">Odbij</button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

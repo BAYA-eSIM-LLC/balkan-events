@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/admin-api';
 
 export default function AdminDashboard() {
   const [data, setData] = useState<any>(null);
@@ -7,45 +8,33 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (!token) {
-      setError('Nisi prijavljen. Admin funkcije zahtijevaju SUPERADMIN/ADMIN ulogu.');
-      setLoading(false);
-      return;
-    }
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/admin/dashboard`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => {
-        if (!r.ok) throw new Error(r.status === 404 ? 'Admin API nije dostupan na produkciji' : `Greška ${r.status}`);
-        return r.json();
-      })
+    adminFetch('/admin/dashboard')
       .then(setData)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
 
   const cards = [
-    { label: 'Korisnici', value: data?.users ?? '—', note: 'Stvarni broj iz baze' },
-    { label: 'Organizacije', value: data?.organizations ?? '—', note: 'Verificirani + pending' },
+    { label: 'Korisnici', value: data?.users ?? '—', note: 'Stvarni broj' },
+    { label: 'Organizacije', value: data?.organizations ?? '—', note: 'Sve' },
     { label: 'Događaji', value: data?.events ?? '—', note: 'Svi statusi' },
-    { label: 'Narudžbe', value: data?.orders ?? '—', note: 'Plaćene + pending' },
+    { label: 'Narudžbe', value: data?.orders ?? '—', note: 'Ukupno' },
   ];
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold">Super Admin Dashboard</h1>
         <p className="text-zinc-400 text-sm mt-1">BALKAN EVENTS · BAYA eSIM LLC</p>
       </div>
 
-      {loading && <div className="text-zinc-400">Učitavanje...</div>}
+      {loading && <p className="text-zinc-400">Učitavanje stvarnih podataka...</p>}
 
       {error && (
-        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 rounded-xl p-5 mb-6">
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 rounded-xl p-4 mb-6 text-sm">
           <p className="font-medium">API status</p>
-          <p className="text-sm mt-1">{error}</p>
-          <p className="text-xs mt-2 text-zinc-400">Ovo je očekivano dok se puni API ne deploya. UI je spreman za povezivanje.</p>
+          <p className="mt-1">{error}</p>
+          <p className="text-xs text-zinc-500 mt-2">Endpointi postoje u kodu. Aktivacija zahtijeva deploy punog API-ja.</p>
         </div>
       )}
 
@@ -59,25 +48,14 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-          <h3 className="font-semibold mb-3">Brzi pristup</h3>
-          <div className="space-y-2 text-sm">
-            <a href="/admin/events" className="block text-purple-300 hover:text-white">→ Moderacija događaja</a>
-            <a href="/admin/organizations" className="block text-purple-300 hover:text-white">→ Odobrenje organizatora</a>
-            <a href="/admin/cms" className="block text-purple-300 hover:text-white">→ CMS – Hero & Homepage</a>
-            <a href="/admin/support" className="block text-purple-300 hover:text-white">→ Support tiketi</a>
-          </div>
-        </div>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-          <h3 className="font-semibold mb-3">Status modula</h3>
-          <ul className="text-sm space-y-1 text-zinc-400">
-            <li>✓ Dashboard UI</li>
-            <li>✓ Navigacija svih modula</li>
-            <li>✓ RBAC spreman (SUPERADMIN)</li>
-            <li>⏳ Puni API deploy potreban za stvarne podatke</li>
-            <li>⏳ CMS backend (hero, bannere) – nova migracija</li>
-          </ul>
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+        <h3 className="font-semibold mb-2">Brzi linkovi</h3>
+        <div className="flex flex-wrap gap-3 text-sm">
+          <a href="/admin/events" className="text-purple-300 hover:text-white">Moderacija događaja</a>
+          <a href="/admin/organizations" className="text-purple-300 hover:text-white">Organizatori</a>
+          <a href="/admin/users" className="text-purple-300 hover:text-white">Korisnici</a>
+          <a href="/admin/support" className="text-purple-300 hover:text-white">Podrška</a>
+          <a href="/admin/cms" className="text-purple-300 hover:text-white">CMS</a>
         </div>
       </div>
     </div>

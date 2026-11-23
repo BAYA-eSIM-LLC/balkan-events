@@ -10,7 +10,7 @@ from app.deps import get_current_user, require_role, get_org_member
 from app.models.user import User, UserRole
 from app.models.organization import Organization, OrganizationMember, OrgRole
 from app.models.event import Event, EventStatus
-from app.models.ticket import TicketType
+from app.models.ticket import TicketType, Ticket
 from app.models.org_extended import OrgDocument, OrgNotification
 from app.models.audit import AuditLog
 from app.models.user_extended import UserFavorite
@@ -308,3 +308,69 @@ async def suspend_org(org_id: int, user: User = Depends(get_current_user), db: A
     await audit(db, user.id, "org_suspended", "Organization", org_id)
     await db.commit()
     return {"verification_status": org.verification_status}
+
+from fastapi.responses import StreamingResponse
+import csv, io
+
+@router.get("/events/{event_id}/attendees")
+async def list_attendees(
+    event_id: int,
+    page: int = 1,
+    page_size: int = 20,
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    # Ownership check
+    member = await get_org_member_for_event(event_id, user, db)
+    if not member:
+        raise HTTPException(403, "Not authorized for this event")
+    # Query tickets for this event via ticket types
+    q = select(Ticket).join(TicketType).where(TicketType.event_id == event_id)
+    if status:
+        q = q.where(Ticket.is_used == (status == "used"))
+    result = await db.execute(q.offset((page-1)*page_size).limit(page_size))
+    tickets = result.scalars().all()
+    items = []
+    for t in tickets:
+        items.append({
+            "ticket_id": t.id,
+            "code": t.code[:8] + "...",  # partial for privacy
+            "is_used": t.is_used,
+            "used_at": t.used_at.isoformat() if t.used_at else None,
+            "status": "used" if t.is_used else "valid"
+        })
+    return {"items": items, "page": page, "page_size": page_size, "total": len(items)}
+
+@router.get("/events/{event_id}/attendees/export")
+async def export_attendees(
+    event_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    member = await get_org_member_for_event(event_id, user, db)
+    if not member or member.role not in ("owner", "admin", "event_manager", "sales_manager"):
+        raise HTTPException(403, "Insufficient role for export")
+    result = await db.execute(select(Ticket).join(TicketType).where(TicketType.event_id == event_id))
+    tickets = result.scalars().all()
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["ticket_id", "code_partial", "is_used", "used_at"])
+    for t in tickets:
+        w.writerow([t.id, t.code[:8]+"...", t.is_used, t.used_at])
+    await audit(db, user.id, "attendees_export", "Event", event_id)
+    await db.commit()
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="text/csv", headers={"Content-Disposition": f"attachment; filename=attendees_{event_id}.csv"})
+
+async def get_org_member_for_event(event_id: int, user: User, db: AsyncSession):
+    from app.models.event import Event
+    event = await db.get(Event, event_id)
+    if not event:
+        return None
+    result = await db.execute(select(OrganizationMember).where(
+        OrganizationMember.organization_id == event.organization_id,
+        OrganizationMember.user_id == user.id
+    ))
+    return result.scalar_one_or_none()

@@ -11,6 +11,7 @@ from app.models.user import User, UserRole
 from app.models.organization import OrganizationMember
 from app.models.scanner import ScanLog
 from app.deps import get_current_user, require_role
+from app.services.permissions import check_event_cap
 from app.routers.admin_system import log_audit, ADMIN_ONLY, paginate
 
 router = APIRouter(prefix="/scanner", tags=["scanner"])

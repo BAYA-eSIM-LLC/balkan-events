@@ -23,6 +23,10 @@ async def seed_event(session: AsyncSession, base: int, qty: int = 1):
     ]
     for s in stmts:
         await session.execute(text(s))
+    await session.execute(text(
+        "SELECT setval(pg_get_serial_sequence('users','id'), "
+        "GREATEST((SELECT last_value FROM users_id_seq), (SELECT COALESCE(MAX(id),1) FROM users)))"
+    ))
     await session.commit()
 
 async def get_token(client: AsyncClient, email: str) -> str:

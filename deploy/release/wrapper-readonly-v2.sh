@@ -11,7 +11,11 @@ case "$cmd" in
   docker-ps-all) docker ps -a --format '{{.Names}} {{.Image}} {{.ID}} {{.Status}}' ;;
   docker-volumes) docker volume ls --format '{{.Name}}' ;;
   docker-mounts)
-    docker inspect balkan-api --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{println}}{{end}}' ;;
+    if ! docker inspect balkan-events-prod-api >/dev/null 2>&1; then
+      echo "no container balkan-events-prod-api"
+      exit 1
+    fi
+    docker inspect balkan-events-prod-api --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{println}}{{end}}' ;;
   host-pg)
     if command -v systemctl >/dev/null 2>&1; then
       systemctl is-active postgresql || true

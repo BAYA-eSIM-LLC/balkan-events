@@ -210,37 +210,7 @@ async def list_orders(
         } for o in orders]
     }
 
-# Simple platform settings stored in memory for this phase (no secrets).
-# In a full implementation this would be a PlatformSettings table.
-_platform_settings = {
-    "platform_name": "BALKAN EVENTS",
-    "contact_email": "support@balkanevents.org",
-    "default_currency": "EUR",
-    "default_language": "bs",
-}
-
-class SettingsUpdate(BaseModel):
-    platform_name: Optional[str] = None
-    contact_email: Optional[str] = None
-    default_currency: Optional[str] = None
-    default_language: Optional[str] = None
-
-@router.get("/settings")
-async def get_settings(user: User = Depends(require_admin_role(*ADMIN_ONLY))):
-    return _platform_settings
-
-@router.patch("/settings")
-async def update_settings(data: SettingsUpdate, user: User = Depends(require_admin_role(*ADMIN_ONLY)), db: AsyncSession = Depends(get_db)):
-    global _platform_settings
-    changes = {}
-    for field in ("platform_name", "contact_email", "default_currency", "default_language"):
-        val = getattr(data, field)
-        if val is not None:
-            changes[field] = val
-            _platform_settings[field] = val
-    if changes:
-        await log_audit(db, user.id, "platform.settings_updated", "platform", None, changes)
-    return _platform_settings
+# Platform settings removed from here. Use app.routers.admin_settings (PostgreSQL PlatformSettings).
 
 # --- Support Tickets (admin) ---
 @router.get("/support/tickets")
@@ -415,10 +385,3 @@ async def my_tickets(
         "page_size": page_size,
         "items": [{"id": t.id, "subject": t.subject, "status": t.status, "created_at": t.created_at.isoformat() if t.created_at else None} for t in tickets]
     }
-
-@public_support.get("/tickets/{ticket_id}")
-async def get_my_ticket(ticket_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    t = await db.get(SupportTicket, ticket_id)
-    if not t or t.user_id != user.id:
-        raise HTTPException(404, "Ticket not found")
-    return {"id": t.id, "subject": t.subject, "body": t.body, "status": t.status, "created_at": t.created_at.isoformat() if t.created_at else None}

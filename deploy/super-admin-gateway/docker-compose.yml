@@ -1,0 +1,25 @@
+# Super Admin gateway stack. DO NOT START until approved.
+# This host is a reverse proxy. It does not run a second database.
+name: balkan-admin-gateway
+
+services:
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - certs:/etc/letsencrypt:ro
+    networks:
+      - admin_net
+    # profiles keeps this from starting with a plain `up`
+    profiles: ["admin"]
+
+volumes:
+  certs:
+
+networks:
+  admin_net:
+    driver: bridge

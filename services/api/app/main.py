@@ -8,6 +8,7 @@ from app.routers.admin_catalog import venues as admin_venues, performers as admi
 from app.routers.organizer import router as organizer_router, admin_org as admin_org_router
 from app.routers.admin_system import router as admin_system_router, public_support
 from app.routers.admin_orders_tickets import router as admin_orders_tickets_router
+from app.routers.admin_settings import router as admin_settings_router
 from app.routers.cms import router as cms_router, public_router as cms_public_router
 from app.routers.scanner import router as scanner_router
 from app.routers.orders import router as orders_router
@@ -38,6 +39,7 @@ app.include_router(events.router)
 app.include_router(admin.router)
 app.include_router(admin_system_router)
 app.include_router(admin_orders_tickets_router)
+app.include_router(admin_settings_router)
 app.include_router(public_support)
 app.include_router(cms_router)
 app.include_router(cms_public_router)

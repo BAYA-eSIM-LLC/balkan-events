@@ -3,24 +3,27 @@ import { useEffect, useState } from 'react';
 import { adminFetch } from '@/lib/admin-api';
 
 export default function OrganizerOrders() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const path = 'orders' === 'events' ? '/organizer/events' :
-                 'orders' === 'team' ? '/organizer/members' :
-                 'orders' === 'profile' ? '/organizer/organizations' :
-                 'orders' === 'reports' ? '/organizer/reports/events' : null;
-    if (path) adminFetch(path).then(setData).catch(e => setError(e.message));
-    else setError('Modul spreman – čeka povezivanje s endpointom');
+    adminFetch('/payments/organizer').then(setData).catch(e => setError(e.message));
   }, []);
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-1">Orders</h1>
-      <p className="text-zinc-400 text-sm mb-4">Organizatorski modul – samo vlastiti podaci</p>
+      <h1 className="text-2xl font-bold mb-1">Moje transakcije</h1>
+      <p className="text-zinc-400 text-sm mb-4">Samo vlastiti događaji. Obračun ≠ stvarna isplata.</p>
       {error && <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 rounded-xl p-4 text-sm">{error}</div>}
-      {data && <pre className="text-xs text-zinc-400 bg-white/5 rounded-xl p-4 overflow-auto">{JSON.stringify(data, null, 2).slice(0, 800)}</pre>}
+      <div className="space-y-3">
+        {data.map(e => (
+          <div key={e.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
+            <p className="font-medium">{e.type}</p>
+            <p className="text-sm text-zinc-400">{e.amount} EUR – {e.description}</p>
+          </div>
+        ))}
+        {data.length === 0 && !error && <p className="text-zinc-400 text-sm">Nema stavki.</p>}
+      </div>
     </div>
   );
 }

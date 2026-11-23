@@ -51,7 +51,7 @@ async def create_order(data: CreateOrderIn, user: User = Depends(get_current_use
     total = 0
     order = Order(
         user_id=user.id,
-        status=OrderStatus.RESERVED,
+        status=OrderStatus.RESERVED.value,
         total_amount=0,
         currency="EUR",
         reference=f"BE-{uuid.uuid4().hex[:10].upper()}",
@@ -101,16 +101,21 @@ async def confirm_order(
     """Confirm payment. Only internal process or verified callback. No customer self-confirm."""
     if not INTERNAL_API_SECRET or x_internal_confirm != INTERNAL_API_SECRET:
         raise HTTPException(403, "Confirmation requires verified payment source")
-    order = await db.get(Order, order_id)
+    # Lock the order first to serialize with expire
+    result = await db.execute(select(Order).where(Order.id == order_id).with_for_update())
+    order = result.scalar_one_or_none()
     if not order:
         raise HTTPException(404)
-    if order.status != OrderStatus.RESERVED:
+    if order.status != OrderStatus.RESERVED.value:
         raise HTTPException(400, "Order not in reserved state")
     # Issue tickets
     items = await db.execute(select(OrderItem).where(OrderItem.order_id == order.id))
     for oi in items.scalars():
         inv = await db.execute(select(TicketInventory).where(TicketInventory.ticket_type_id == oi.ticket_type_id).with_for_update())
         inventory = inv.scalar_one()
+        if inventory.reserved < oi.quantity:
+            await db.rollback()
+            raise HTTPException(409, "Inventory reservation already released")
         inventory.reserved -= oi.quantity
         inventory.sold += oi.quantity
         for _ in range(oi.quantity):
@@ -123,7 +128,7 @@ async def confirm_order(
                 is_used=False,
             )
             db.add(ticket)
-    order.status = OrderStatus.PAID
+    order.status = OrderStatus.PAID.value
     await db.commit()
     await log_audit(db, user.id, "order.confirmed", "Order", order.id)
     return {"status": "PAID", "reference": order.reference}
@@ -133,15 +138,16 @@ async def cancel_order(order_id: int, user: User = Depends(get_current_user), db
     order = await db.get(Order, order_id)
     if not order or order.user_id != user.id:
         raise HTTPException(404)
-    if order.status not in (OrderStatus.RESERVED, OrderStatus.PENDING):
+    if order.status not in (OrderStatus.RESERVED.value, OrderStatus.PENDING.value):
         raise HTTPException(400)
     items = await db.execute(select(OrderItem).where(OrderItem.order_id == order.id))
     for oi in items.scalars():
         inv = await db.execute(select(TicketInventory).where(TicketInventory.ticket_type_id == oi.ticket_type_id).with_for_update())
         inventory = inv.scalar_one()
-        inventory.reserved -= oi.quantity
-        inventory.available += oi.quantity
-    order.status = OrderStatus.CANCELLED
+        if inventory.reserved >= oi.quantity:
+            inventory.reserved -= oi.quantity
+            inventory.available += oi.quantity
+    order.status = OrderStatus.CANCELLED.value
     await db.commit()
     await log_audit(db, user.id, "order.cancelled", "Order", order.id)
     return {"status": "CANCELLED"}
@@ -153,11 +159,14 @@ async def expire_reservations(x_internal_job: Optional[str] = Header(None), db: 
         raise HTTPException(403, "Internal job only")
     now = datetime.utcnow()
     result = await db.execute(
-        select(Order).where(Order.status == OrderStatus.RESERVED, Order.reserved_until < now).with_for_update(skip_locked=True)
+        select(Order).where(Order.status == OrderStatus.RESERVED.value, Order.reserved_until < now).with_for_update(skip_locked=True)
     )
     expired = result.scalars().all()
     released = 0
     for order in expired:
+        # Re-check status after lock
+        if order.status != OrderStatus.RESERVED.value:
+            continue
         items = await db.execute(select(OrderItem).where(OrderItem.order_id == order.id))
         for oi in items.scalars():
             inv = await db.execute(select(TicketInventory).where(TicketInventory.ticket_type_id == oi.ticket_type_id).with_for_update())
@@ -166,6 +175,6 @@ async def expire_reservations(x_internal_job: Optional[str] = Header(None), db: 
                 inventory.reserved -= oi.quantity
                 inventory.available += oi.quantity
                 released += oi.quantity
-        order.status = OrderStatus.EXPIRED
+        order.status = OrderStatus.EXPIRED.value
     await db.commit()
     return {"expired_orders": len(expired), "released_quantity": released}

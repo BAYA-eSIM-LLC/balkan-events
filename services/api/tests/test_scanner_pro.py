@@ -65,3 +65,34 @@ async def test_offline_sync_limitation(client: AsyncClient, db_session: AsyncSes
     assert r.status_code == 200
     assert "limitation" in r.json()
     assert "cannot guarantee" in r.json()["limitation"]
+
+
+@pytest.mark.asyncio
+async def test_device_token_validate_and_revoke(client: AsyncClient, db_session: AsyncSession):
+    u, org, event = await _owner(db_session, "sc211@test.com", 8101)
+    token = await _token(client, "sc211@test.com")
+    h = {"Authorization": f"Bearer {token}"}
+
+    r = await client.post("/scanner/devices", json={"name": "Gate", "organization_id": org.id}, headers=h)
+    assert r.status_code == 200
+    device_token = r.json()["token"]
+    device_id = r.json()["id"]
+
+    # Device token alone can call validate (ticket missing -> INVALID, not 401)
+    r = await client.post("/scanner/validate", json={"qr_data": "none", "event_id": 8101}, headers={"X-Device-Token": device_token})
+    assert r.status_code == 200
+    assert r.json()["status"] == "INVALID"
+
+    # Revoke
+    r = await client.post(f"/scanner/devices/{device_id}/revoke", headers=h)
+    assert r.status_code == 200
+
+    # Revoked token rejected
+    r = await client.post("/scanner/validate", json={"qr_data": "none", "event_id": 8101}, headers={"X-Device-Token": device_token})
+    assert r.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_invalid_device_token(client: AsyncClient, db_session: AsyncSession):
+    r = await client.post("/scanner/validate", json={"qr_data": "x", "event_id": 1}, headers={"X-Device-Token": "not-a-real-token"})
+    assert r.status_code == 401

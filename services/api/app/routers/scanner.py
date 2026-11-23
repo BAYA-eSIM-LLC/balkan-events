@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from pydantic import BaseModel
@@ -12,6 +12,20 @@ from app.models.organization import OrganizationMember
 from app.models.scanner import ScanLog
 from app.deps import get_current_user, require_role
 from app.services.permissions import check_event_cap
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+_optional_bearer = HTTPBearer(auto_error=False)
+
+
+async def _optional_user(creds: Optional[HTTPAuthorizationCredentials] = Depends(_optional_bearer), db: AsyncSession = Depends(get_db)) -> Optional[User]:
+    if not creds:
+        return None
+    from app.security import decode_token
+    payload = decode_token(creds.credentials)
+    if not payload or "sub" not in payload:
+        return None
+    user = await db.get(User, int(payload["sub"]))
+    return user if user and user.is_active else None
 from app.routers.admin_system import log_audit, ADMIN_ONLY, paginate
 
 router = APIRouter(prefix="/scanner", tags=["scanner"])
@@ -33,30 +47,64 @@ async def _write_log(db: AsyncSession, ticket_id: Optional[int], event_id: Optio
     db.add(log)
     await db.commit()
 
+async def _resolve_scanner(request_user: Optional[User], device_token: Optional[str], db: AsyncSession):
+    """Accept either a user session or a device token. Device token must be active."""
+    if device_token:
+        th = _hash(device_token)
+        tok = (await db.execute(select(ScannerDeviceToken).where(ScannerDeviceToken.token_hash == th))).scalar_one_or_none()
+        if not tok or tok.revoked_at:
+            raise HTTPException(401, "Invalid or revoked device token")
+        dev = await db.get(ScannerDevice, tok.device_id)
+        if not dev or not dev.is_active:
+            raise HTTPException(401, "Device inactive")
+        tok.last_used_at = datetime.utcnow()
+        await db.commit()
+        return None, dev
+    if request_user:
+        return request_user, None
+    raise HTTPException(401, "Authentication required")
+
+
 @router.post("/validate")
-async def validate_scan(data: ScanRequest, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    await check_event_cap(db, data.event_id, user, "scan")
+async def validate_scan(
+    data: ScanRequest,
+    user: Optional[User] = Depends(_optional_user),
+    device_token: Optional[str] = Header(None, alias="X-Device-Token"),
+    db: AsyncSession = Depends(get_db),
+):
+    scanner_user, device = await _resolve_scanner(user, device_token, db)
+    if scanner_user:
+        await check_event_cap(db, data.event_id, scanner_user, "scan")
+    elif device:
+        # Device must belong to the event's organization
+        event = await db.get(Event, data.event_id)
+        if not event or event.organization_id != device.organization_id:
+            raise HTTPException(403, "Device not authorized for this event")
+        if device.entry_point_id and data.entry_point_id and device.entry_point_id != data.entry_point_id:
+            raise HTTPException(403, "Device not assigned to this entry point")
+    actor_id = scanner_user.id if scanner_user else 0
     result = await db.execute(select(Ticket).where(Ticket.qr_data == data.qr_data).with_for_update())
     ticket = result.scalar_one_or_none()
     if not ticket:
-        await _write_log(db, None, data.event_id, data.entry_point_id, user.id, "INVALID", "not_found")
+        await _write_log(db, None, data.event_id, data.entry_point_id, actor_id, "INVALID", "not_found")
         return {"status": "INVALID", "reason": "not_found"}
 
     tt = await db.get(TicketType, ticket.ticket_type_id)
     if not tt or tt.event_id != data.event_id:
-        await _write_log(db, ticket.id, data.event_id, data.entry_point_id, user.id, "WRONG_EVENT")
+        await _write_log(db, ticket.id, data.event_id, data.entry_point_id, actor_id, "WRONG_EVENT")
         return {"status": "WRONG_EVENT"}
 
     if ticket.is_used:
-        await _write_log(db, ticket.id, data.event_id, data.entry_point_id, user.id, "ALREADY_USED")
+        await _write_log(db, ticket.id, data.event_id, data.entry_point_id, actor_id, "ALREADY_USED")
         return {"status": "ALREADY_USED", "used_at": ticket.used_at.isoformat() if ticket.used_at else None}
 
     ticket.is_used = True
     ticket.used_at = datetime.utcnow()
-    ticket.used_by = str(user.id)
+    ticket.used_by = str(actor_id)
     await db.commit()
-    await _write_log(db, ticket.id, data.event_id, data.entry_point_id, user.id, "VALID")
-    await log_audit(db, user.id, "scanner.validate", "Ticket", ticket.id, {"event_id": data.event_id})
+    await _write_log(db, ticket.id, data.event_id, data.entry_point_id, actor_id, "VALID")
+    if scanner_user:
+        await log_audit(db, scanner_user.id, "scanner.validate", "Ticket", ticket.id, {"event_id": data.event_id})
     return {"status": "VALID", "ticket_id": ticket.id}
 
 @router.get("/logs")

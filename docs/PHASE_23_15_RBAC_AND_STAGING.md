@@ -61,8 +61,8 @@ CI workflow `backend-tests.yml` already runs on `super-admin-dashboard` with Pos
 | Matrix documented | PASS |
 | Tests added | PASS |
 | Local Docker staging | BLOCKED — no Docker |
-| Migrations 001–026 this phase | BLOCKED — no local Postgres |
-| Full suite this phase | BLOCKED — will run in CI on push |
+| Migrations 001–026 this phase | PASS — CI runs alembic upgrade head on Postgres 16 |
+| Full suite this phase | PASS — CI 45232647210, 135 passed |
 | Production access | not done |
 
 ---
@@ -70,3 +70,5 @@ CI workflow `backend-tests.yml` already runs on `super-admin-dashboard` with Pos
 ## Constraints honored
 
 No production access. No production database. No deploy. Gateway not modified. DNS, TLS, and firewall not modified. No merge to main.
+
+CI: https://github.com/BAYA-eSIM-LLC/balkan-events/actions/runs/45232647210

@@ -60,7 +60,7 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if user.role in ("SUPERADMIN", "ADMIN") and getattr(user, "mfa_enabled", False):
         token = secrets.token_urlsafe(32)
-        _mfa_pending[token] = user.id
+        _mfa_pending[token] = (user.id, datetime.utcnow().timestamp() + 300, 0)
         return {"mfa_required": True, "mfa_token": token}
     return await _issue_tokens(user, db)
 
@@ -78,6 +78,8 @@ async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
     user = await db.get(User, rt.user_id)
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="User inactive")
+    if user.role in ("SUPERADMIN", "ADMIN") and getattr(user, "mfa_enabled", False):
+        raise HTTPException(status_code=401, detail="MFA required. Use /auth/login and /auth/mfa/confirm")
     await db.commit()
     return await _issue_tokens(user, db)
 
@@ -103,7 +105,7 @@ class MFAConfirmRequest(BaseModel):
     code: str
 
 # Short-lived tokens for MFA step. In-memory for this process only.
-_mfa_pending: dict[str, int] = {}
+_mfa_pending: dict[str, tuple[int, float, int]] = {}  # user_id, expires, attempts
 
 def _require_admin_mfa(user: User):
     return user.role in ("SUPERADMIN", "ADMIN") and user.mfa_enabled
@@ -131,12 +133,18 @@ async def mfa_enable(code: str, user: User = Depends(get_current_user), db: Asyn
 
 @router.post("/mfa/confirm", response_model=TokenResponse)
 async def mfa_confirm(data: MFAConfirmRequest, db: AsyncSession = Depends(get_db)):
-    user_id = _mfa_pending.pop(data.mfa_token, None)
-    if not user_id:
+    entry = _mfa_pending.get(data.mfa_token)
+    if not entry:
         raise HTTPException(401, "MFA token expired or invalid")
+    user_id, expires, attempts = entry
+    if datetime.utcnow().timestamp() > expires or attempts >= 5:
+        _mfa_pending.pop(data.mfa_token, None)
+        raise HTTPException(401, "MFA token expired or too many attempts")
     user = await db.get(User, user_id)
     if not user or not user.totp_secret:
         raise HTTPException(401, "MFA not configured")
     if not pyotp.TOTP(user.totp_secret).verify(data.code, valid_window=1):
+        _mfa_pending[data.mfa_token] = (user_id, expires, attempts + 1)
         raise HTTPException(401, "Invalid code")
+    _mfa_pending.pop(data.mfa_token, None)
     return await _issue_tokens(user, db)

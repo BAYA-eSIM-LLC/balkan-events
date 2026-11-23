@@ -6,7 +6,8 @@
 
 If the user, group, wrapper, sudoers file or home directory already exist, the install stops.  
 Existing content is never overwritten, modified or deleted.  
-On failure, a trap removes only the resources this run created.
+Flags are set before the creating command, so a partial create is still rolled back.  
+Rollback removes only resources this run marked. Pre-checks guarantee those paths did not exist before this run.
 
 ---
 
@@ -37,7 +38,7 @@ if [ -e /home/balkan-audit ]; then
   exit 1
 fi
 
-# Track only what this run creates.
+# Track only what this run may create. Set before the creating command.
 WRAPPER_CREATED=0
 SUDOERS_CREATED=0
 GROUP_CREATED=0
@@ -61,6 +62,7 @@ rollback() {
   echo "INSTALL FAILED (exit $rc). Starting controlled rollback of this run only."
   local leftover=0
 
+  # Reverse order. Only touch a resource if this run set its flag.
   if [ "$SSHDIR_CREATED" -eq 1 ]; then
     if [ -d /home/balkan-audit/.ssh ]; then
       rm -rf /home/balkan-audit/.ssh || { echo "ROLLBACK FAIL: .ssh dir remains"; leftover=1; }
@@ -103,7 +105,8 @@ rollback() {
 
 trap rollback EXIT
 
-# 1. Wrapper (root-owned)
+# 1. Wrapper. Flag first so a partial write is still cleaned.
+WRAPPER_CREATED=1
 install -o root -g root -m 755 /dev/stdin /usr/local/sbin/audit-readonly.sh << 'EOS'
 #!/bin/bash
 set -euo pipefail
@@ -143,9 +146,8 @@ case "$cmd" in
   *) echo "Denied"; exit 1 ;;
 esac
 EOS
-WRAPPER_CREATED=1
 
-# 2. Temporary sudoers, validate, then install
+# 2. Temporary sudoers, validate, then install. Flag before install.
 tmp=$(mktemp)
 cat > "$tmp" << 'EOS'
 Defaults:balkan-audit env_reset
@@ -153,20 +155,20 @@ Defaults:balkan-audit !env_keep
 balkan-audit ALL=(root) NOPASSWD: /usr/local/sbin/audit-readonly.sh
 EOS
 visudo -cf "$tmp"
+SUDOERS_CREATED=1
 install -o root -g root -m 440 "$tmp" /etc/sudoers.d/balkan-audit
 cleanup_tmp
-SUDOERS_CREATED=1
 
-# 3. Group and user (only after files are ready)
-groupadd balkan-audit
+# 3. Group and user. Flags before the creating commands.
 GROUP_CREATED=1
-useradd -m -g balkan-audit -s /bin/bash balkan-audit
+groupadd balkan-audit
 USER_CREATED=1
+useradd -m -g balkan-audit -s /bin/bash balkan-audit
 passwd -l balkan-audit
 
-# 4. Single restricted key
-install -d -o balkan-audit -g balkan-audit -m 700 /home/balkan-audit/.ssh
+# 4. Single restricted key. Flag before mkdir.
 SSHDIR_CREATED=1
+install -d -o balkan-audit -g balkan-audit -m 700 /home/balkan-audit/.ssh
 printf '%s\n' 'command="sudo -n /usr/local/sbin/audit-readonly.sh \"$SSH_ORIGINAL_COMMAND\"",restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDE5VVU3z967V7OVifNM9XF3k3Kf0t2RbqHercTyIoGM balkan-events-deploy-20261122' > /home/balkan-audit/.ssh/authorized_keys
 chown balkan-audit:balkan-audit /home/balkan-audit/.ssh/authorized_keys
 chmod 600 /home/balkan-audit/.ssh/authorized_keys
@@ -176,9 +178,9 @@ trap - EXIT
 echo "INSTALL_OK"
 ```
 
-Pre-checks stop if the wrapper, sudoers file or home directory already exist.  
-`cleanup_tmp` runs from the trap, so `$tmp` is removed even if `visudo -cf` fails.  
-Rollback removes only items this run marked with flags. It never touches pre-existing content.
+Flag is set immediately before the command that can create the resource.  
+If that command writes a partial file or creates the account and then fails, the trap still removes it.  
+Pre-checks mean those paths did not exist at the start, so rollback cannot delete a pre-existing resource.
 
 ---
 
@@ -236,23 +238,18 @@ echo "Expected: Permission denied"
 
 ---
 
-## After-install verification (you run)
+## Local failure simulation
 
-```bash
-id -gn balkan-audit
-passwd -S balkan-audit
-id balkan-audit
-wc -l /home/balkan-audit/.ssh/authorized_keys
-grep -c 'restrict' /home/balkan-audit/.ssh/authorized_keys
-grep -c '^command=' /home/balkan-audit/.ssh/authorized_keys
-```
+Simulated on a temp tree, not on production. Each case creates a partial resource, then forces failure before the next step. Rollback removes only that run's resources.
 
-Expected:
-- primary group `balkan-audit`
-- password status `L`
-- not in sudo, docker, adm, wheel
-- exactly one line in authorized_keys
-- that line contains `command=` and `restrict`
+| Failure point | Partial resource left before rollback | After rollback |
+|---|---|---|
+| after wrapper write | wrapper file present | removed |
+| after sudoers install | wrapper + sudoers present | both removed |
+| after groupadd | wrapper + sudoers + group | all removed |
+| after useradd | wrapper + sudoers + group + user | all removed |
+| after .ssh mkdir | wrapper + sudoers + group + user + .ssh | all removed |
+| pre-existing wrapper | not created by this run | not touched, install stops |
 
 ---
 

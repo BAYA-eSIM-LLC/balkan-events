@@ -60,6 +60,10 @@ jobs:
           PYTHONPATH: .
           SECRET_KEY: test-secret-key-for-ci-only
           INTERNAL_API_SECRET: ci-internal-secret
+          STRIPE_SECRET_KEY: sk_test_ci_dummy_key_never_real
+          STRIPE_WEBHOOK_SECRET: whsec_ci_dummy_secret_never_real
+          STRIPE_PUBLISHABLE_KEY: pk_test_ci_dummy_never_real
+          PLATFORM_FEE_PERCENT: "5.0"
         run: pytest tests/ -v --tb=short --junitxml=test-results.xml
 
       - name: Upload test results

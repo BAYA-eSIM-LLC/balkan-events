@@ -1,7 +1,11 @@
 #!/bin/bash
-# Root-owned wrapper. Only the fixed allowlist runs. No user input in SQL.
+# Root-owned wrapper. Exactly one allowlisted name. No user input in SQL.
 set -euo pipefail
-cmd="${1:-}"
+if [ "$#" -ne 1 ]; then
+  echo "Denied"
+  exit 1
+fi
+cmd="$1"
 case "$cmd" in
   hostname)
     hostname

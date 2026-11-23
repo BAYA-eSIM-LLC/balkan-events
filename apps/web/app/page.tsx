@@ -1,5 +1,6 @@
 import HeroBanner from '@/components/HeroBanner';
 import Link from 'next/link';
+import { fetchEvents } from '@/lib/api';
 
 const categories = [
   { name: 'Koncerti', href: '/search?category=koncerti', icon: '🎤' },
@@ -11,19 +12,6 @@ const categories = [
   { name: 'Stand-up', href: '/search?category=standup', icon: '🎤' },
   { name: 'Konferencije', href: '/search?category=konferencije', icon: '👥' },
   { name: 'Sve kategorije', href: '/categories', icon: '▦' },
-];
-
-const featured = [
-  { title: 'Gibonni – Live', date: 'Sub, 12. jul 2025.', city: 'Sarajevo, Zetra', img: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=800&q=80', featured: true },
-  { title: 'Festival EXIT', date: 'Čet, 10. jul – Ned, 13. jul 2025.', city: 'Novi Sad, Petrovaradinska tvrđava', img: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=800&q=80' },
-  { title: 'FK Sarajevo – FK Željezničar', date: 'Ned, 20. jul 2025.', city: 'Sarajevo, Stadion Asim Ferhatović', img: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80' },
-];
-
-const upcoming = [
-  { title: 'Balkan Music Night', date: 'Pet, 18. jul 2025.', city: 'Zagreb, Arena Zagreb', img: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=500&q=80' },
-  { title: 'Hamlet – predstava', date: 'Uto, 22. jul 2025.', city: 'Beograd, Narodno pozorište', img: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=500&q=80' },
-  { title: 'Summer Beats Festival', date: 'Sub, 26. jul 2025.', city: 'Split, Park Mladeži', img: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=500&q=80' },
-  { title: 'Regionalna liga – Finale', date: 'Ned, 27. jul 2025.', city: 'Ljubljana, Stožice', img: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=500&q=80' },
 ];
 
 function AppStoreBadge() {
@@ -50,22 +38,25 @@ function GooglePlayBadge() {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  // Real published events only. Empty array if API unavailable or no data.
+  const events = await fetchEvents('/events');
+  const featured = events.filter(e => e.is_featured).slice(0, 3);
+  const upcoming = events.slice(0, 8);
+
   return (
     <>
       <HeroBanner />
 
-      {/* Trust bar */}
       <section className="bg-[#0a0a1a] border-t border-white/5 py-3">
         <div className="max-w-7xl mx-auto px-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-400">
           <span className="flex items-center gap-1.5"><span className="text-green-400">✓</span> Sigurna kupovina</span>
           <span className="flex items-center gap-1.5"><span className="text-green-400">✓</span> Digitalne QR ulaznice</span>
-          <span className="flex items-center gap-1.5"><span className="text-green-400">✓</span> Kartice · Apple Pay · Google Pay</span>
+          <span className="flex items-center gap-1.5"><span className="text-green-400">✓</span> Rezervacija bez stvarnog plaćanja (dev)</span>
           <span className="flex items-center gap-1.5"><span className="text-green-400">✓</span> Podrška 24/7</span>
         </div>
       </section>
 
-      {/* Categories */}
       <section className="bg-[#0a0a1a] py-6">
         <div className="max-w-7xl mx-auto px-5">
           <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
@@ -79,65 +70,65 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured */}
-      <section className="py-14 bg-white">
-        <div className="max-w-7xl mx-auto px-5">
-          <div className="flex items-end justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">Istaknuti događaji</h2>
-              <p className="text-sm text-zinc-500 mt-1">Najbolji događaji u regiji</p>
+      {featured.length > 0 && (
+        <section className="py-14 bg-white">
+          <div className="max-w-7xl mx-auto px-5">
+            <div className="flex items-end justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight">Istaknuti događaji</h2>
+                <p className="text-sm text-zinc-500 mt-1">Stvarni objavljeni događaji</p>
+              </div>
+              <Link href="/search" className="text-sm text-purple-600 font-medium hover:underline">Pogledaj sve →</Link>
             </div>
-            <Link href="/search" className="text-sm text-purple-600 font-medium hover:underline">Pogledaj sve →</Link>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {featured.map(e => (
+                <Link key={e.id} href={`/events/${e.slug}`} className="group relative rounded-2xl overflow-hidden bg-zinc-900 aspect-[16/10] shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                  {e.image_url && <img src={e.image_url} alt={e.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <p className="text-xs text-white/70">{new Date(e.start_at).toLocaleDateString('bs-BA')}</p>
+                    <p className="font-semibold text-base mt-0.5 leading-tight">{e.title}</p>
+                    <p className="text-xs text-white/60 mt-1">{e.city}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {featured.map(e => (
-              <Link key={e.title} href="/search" className="group relative rounded-2xl overflow-hidden bg-zinc-900 aspect-[16/10] shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-                <img src={e.img} alt={e.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-                {e.featured && <span className="absolute top-3 left-3 bg-yellow-400 text-black text-[10px] font-bold px-2.5 py-1 rounded-full">FEATURED</span>}
-                <div className="absolute bottom-4 left-4 right-4 text-white">
-                  <p className="text-xs text-white/70">{e.date}</p>
-                  <p className="font-semibold text-base mt-0.5 leading-tight">{e.title}</p>
-                  <p className="text-xs text-white/60 mt-1">{e.city}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* Upcoming */}
       <section className="py-14 bg-zinc-50">
         <div className="max-w-7xl mx-auto px-5">
           <div className="flex items-end justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold tracking-tight">Nadolazeći događaji</h2>
-              <p className="text-sm text-zinc-500 mt-1">Što dolazi uskoro</p>
+              <p className="text-sm text-zinc-500 mt-1">{upcoming.length === 0 ? 'Nema objavljenih događaja' : 'Iz baze'}</p>
             </div>
-            <div className="hidden sm:flex gap-2 text-xs">
-              {['Svi', 'Koncerti', 'Festivali', 'Sport', 'Teatar', 'Kultura'].map(f => (
-                <Link key={f} href="/search" className="px-3.5 py-1.5 rounded-full bg-white border border-zinc-200 hover:border-purple-400 hover:text-purple-600 transition">{f}</Link>
+            <Link href="/search" className="text-sm text-purple-600 font-medium hover:underline">Svi događaji →</Link>
+          </div>
+          {upcoming.length === 0 ? (
+            <div className="bg-white border border-zinc-200 rounded-2xl p-8 text-center text-zinc-500 text-sm">
+              Trenutno nema objavljenih događaja. CMS i organizatori mogu dodati sadržaj.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {upcoming.map(e => (
+                <Link key={e.id} href={`/events/${e.slug}`} className="group bg-white rounded-2xl overflow-hidden border border-zinc-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div className="aspect-[4/3] relative overflow-hidden bg-zinc-100">
+                    {e.image_url && <img src={e.image_url} alt={e.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />}
+                  </div>
+                  <div className="p-3.5">
+                    <p className="text-xs text-zinc-500">{new Date(e.start_at).toLocaleDateString('bs-BA')}</p>
+                    <p className="font-semibold text-sm mt-1 line-clamp-1">{e.title}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">{e.city}</p>
+                  </div>
+                </Link>
               ))}
             </div>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {upcoming.map(e => (
-              <Link key={e.title} href="/search" className="group bg-white rounded-2xl overflow-hidden border border-zinc-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div className="aspect-[4/3] relative overflow-hidden">
-                  <img src={e.img} alt={e.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                </div>
-                <div className="p-3.5">
-                  <p className="text-xs text-zinc-500">{e.date}</p>
-                  <p className="font-semibold text-sm mt-1 line-clamp-1">{e.title}</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">{e.city}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          )}
         </div>
       </section>
 
-      {/* Organizer CTA */}
       <section className="py-16 bg-gradient-to-br from-indigo-950 via-purple-950 to-indigo-900 text-white">
         <div className="max-w-5xl mx-auto px-5 flex flex-col md:flex-row items-center gap-10">
           <div className="flex-1">
@@ -145,23 +136,13 @@ export default function Home() {
             <p className="mt-4 text-white/75 text-lg">Objavi svoj događaj, prodaj ulaznice i dođi do hiljada posjetilaca širom Balkana.</p>
             <Link href="/organizer" className="inline-block mt-6 bg-white text-purple-900 hover:bg-zinc-100 px-7 py-3 rounded-xl font-semibold text-sm shadow-lg">Postani organizator →</Link>
           </div>
-          <div className="w-full md:w-96">
-            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=700&q=80" alt="Dashboard" className="rounded-2xl border border-white/10 shadow-2xl" />
-          </div>
         </div>
       </section>
 
-      {/* App section */}
       <section className="py-16 bg-white">
         <div className="max-w-4xl mx-auto px-5 text-center">
           <h2 className="text-3xl font-bold">Balkan Events aplikacija</h2>
-          <p className="mt-3 text-zinc-500 text-lg">Svi događaji u tvom džepu. Pretraži, kupi ulaznice i prati omiljene izvođače.</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-zinc-600">
-            <span className="flex items-center gap-2"><span className="text-green-500">✓</span> Brza i sigurna kupovina</span>
-            <span className="flex items-center gap-2"><span className="text-green-500">✓</span> Digitalne ulaznice (QR)</span>
-            <span className="flex items-center gap-2"><span className="text-green-500">✓</span> Personalizovane preporuke</span>
-            <span className="flex items-center gap-2"><span className="text-green-500">✓</span> Obavijesti o omiljenim događajima</span>
-          </div>
+          <p className="mt-3 text-zinc-500 text-lg">Svi događaji u tvom džepu.</p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <AppStoreBadge />
             <GooglePlayBadge />

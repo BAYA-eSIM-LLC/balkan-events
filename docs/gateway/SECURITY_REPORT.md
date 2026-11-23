@@ -1,13 +1,8 @@
-# Security report
+# Security
 
-**Status:** No changes applied. Access was denied.
-
-Planned after access, in order:
-
-1. Confirm SSH works with key.
-2. Install fail2ban.
-3. Keep SSH port 22 and key auth unchanged.
-4. Only then enable UFW: 22, 80, 443, 51820/udp.
-5. Verify SSH still works before closing the session.
-
-Firewall will not be enabled until SSH is confirmed.
+- fail2ban sshd jail active
+- UFW deny incoming, allow 22/80/443/51820
+- SSH verified after firewall
+- WireGuard keys mode 600
+- No production secrets installed
+- Production server 2.29.195.181 not contacted

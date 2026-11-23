@@ -1,29 +1,13 @@
-# WireGuard configuration (prepared, not applied)
+# WireGuard
 
-**Status:** Not installed. Tunnel to production not activated.
+**Status:** Interface up. No peer. Tunnel to production not activated.
 
-## Gateway (2.29.199.6) – after access
+- Interface: wg0
+- Address: 10.10.0.2/24
+- Listen: 51820/udp
+- Public key: GZYpjMV/HrodW/61/T2SnQpAYjI2UQu3GI2eYEZGOVY=
+- Private key: on server only, not in git
+- Enabled on boot
+- Peer: none
 
-```
-apt-get install -y wireguard
-wg genkey | tee /etc/wireguard/privatekey | wg pubkey > /etc/wireguard/publickey
-chmod 600 /etc/wireguard/privatekey
-```
-
-`/etc/wireguard/wg0.conf`:
-
-```
-[Interface]
-PrivateKey = <from privatekey file, never commit>
-Address = 10.10.0.2/24
-ListenPort = 51820
-
-[Peer]
-# Existing server — do not activate until approved
-PublicKey = <existing server public key>
-AllowedIPs = 10.10.0.1/32
-Endpoint = <existing public IP>:51820
-PersistentKeepalive = 25
-```
-
-Do not start `wg-quick@wg0` toward production until a separate approval.
+Do not add the production peer until a separate approval.

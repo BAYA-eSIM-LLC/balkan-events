@@ -1,32 +1,29 @@
 # Gateway VPS – Server Setup Report
 
 **Date:** 2026-11-23  
-**Target:** 2.29.199.6 (ubuntu-4gb-hel1-5)  
-**Status:** Access blocked. No changes made.
+**Host:** 2.29.199.6 (ubuntu-4gb-hel1-5)  
+**Status:** Configured. Production server not touched.
 
-## Access test
+## System
+- Ubuntu 24.04.5 LTS
+- 4 GB RAM, 75 GB disk (2 GB used)
+- Packages updated
 
-```
-ssh -i ~/.ssh/id_ed25519_balkan root@2.29.199.6
-→ Permission denied (publickey,password)
-```
+## Installed
+- WireGuard tools
+- fail2ban (sshd jail active)
+- Docker Engine 29.10.0
+- Docker Compose v5.8.0
 
-Available public key (not authorized on this host):
+## SSH
+- Port 22 unchanged
+- Key auth works after UFW
+- PasswordAuthentication left as default (not changed)
 
-```
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDE5VVU3z967V7OVifNM9XF3k3Kf0t2RbqHercTyIoGM balkan-events-deploy-20261122
-SHA256:AJWuP5Bb20kDce0HROSuzketxQU23XvjnzAO7TFdir4
-```
+## Firewall
+- UFW active
+- Allow: 22/tcp, 80/tcp, 443/tcp, 51820/udp
+- SSH verified after enable
 
-## What was not done
-
-- No package updates
-- No SSH config changes
-- No firewall
-- No WireGuard
-- No Docker
-- No connection to 2.29.195.181
-
-## To unblock
-
-Add the public key above to `/root/.ssh/authorized_keys` on 2.29.199.6 via the Hetzner console, or confirm which key was installed at order time.
+## Directories
+- /opt/balkan-gateway/{nginx,wireguard,monitoring}

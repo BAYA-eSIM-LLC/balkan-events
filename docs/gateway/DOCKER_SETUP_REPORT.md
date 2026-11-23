@@ -1,13 +1,7 @@
-# Docker setup
+# Docker
 
-**Status:** Not installed. Access denied.
-
-Planned:
-
-```
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-docker run --rm hello-world
-mkdir -p /opt/balkan-gateway
-```
-
-No application containers. No production secrets.
+- Engine 29.10.0
+- Compose v5.8.0
+- hello-world container ran successfully
+- No application containers running
+- Directories under /opt/balkan-gateway ready

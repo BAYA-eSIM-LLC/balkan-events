@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { useLocalSearchParams, router } from 'expo-router';
 import { api } from '../../src/services/api';
 import { colors, spacing } from '../../src/theme';
 
@@ -30,6 +30,11 @@ export default function EventDetail() {
       <Text style={styles.meta}>{event.start_at}</Text>
       {event.venue_name ? <Text style={styles.meta}>{event.venue_name}</Text> : null}
       {event.short_description ? <Text style={styles.body}>{event.short_description}</Text> : null}
+      {seatMap?.sectors ? (
+        <Pressable style={{ marginTop: 12, backgroundColor: '#E11D48', padding: 12, borderRadius: 12, alignItems: 'center' }} onPress={() => router.push(`/event/seats?eventId=${event.id}`)}>
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Select seats</Text>
+        </Pressable>
+      ) : null}
       {seatMap?.sectors ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Seat map</Text>

@@ -280,3 +280,37 @@ No Stripe, no in-app payment, no store submission.
 - Sound feedback
 - Device token entry UI (header still user JWT)
 - Live screenshots
+
+---
+
+## Phase 22.5 – Customer Tickets & Seat Selection
+
+**Commit:** pending  
+**Date:** 2026-11-23
+
+### Tickets
+- Visual QR from real `qr_data` via `react-native-qrcode-svg`
+- Full-screen QR modal
+- Status from backend (`is_used`)
+- Seat id when present
+- Refresh from `/payments/my-tickets`
+
+### Seat selection
+- `app/event/seats.tsx`
+- Loads `/seat-maps/event/{id}`
+- Colors: FREE green, RESERVED yellow, SOLD red
+- Multi-select free seats
+- Reserves via `POST /seat-maps/reserve`
+- Shows price sum and expiry message
+- Reloads on conflict
+- No in-app payment; finish on web checkout
+
+### Tests
+- TypeScript `tsc --noEmit`: passed
+- Backend seat concurrency tests already cover double reserve and expiry
+- Physical device: not tested
+
+### Not finished
+- PDF ticket open in-app
+- Event name/date on ticket card (API returns id, code, qr_data, is_used)
+- Live screenshots

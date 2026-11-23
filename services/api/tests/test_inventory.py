@@ -20,10 +20,6 @@ async def seed_basic(session: AsyncSession, org_id: int, user_id: int, event_id:
     ]
     for s in stmts:
         await session.execute(text(s))
-    await session.execute(text(
-        "SELECT setval(pg_get_serial_sequence('users','id'), "
-        "GREATEST((SELECT last_value FROM users_id_seq), (SELECT COALESCE(MAX(id),1) FROM users)))"
-    ))
     await session.commit()
 
 @pytest.mark.asyncio

@@ -2,28 +2,30 @@
 import uuid
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import update
-from app.models.user import User
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.security import hash_password
 
 pytestmark = pytest.mark.asyncio
+_seq = 88000
 
-def _email():
-    return f"rbac-{uuid.uuid4().hex[:8]}@example.com"
+def _next():
+    global _seq
+    _seq += 1
+    return _seq
 
-async def _user(client, db_session, role="user"):
-    email = _email()
-    r = await client.post("/auth/register", json={
-        "email": email, "password": "securepass123", "full_name": "RBAC",
-    })
-    assert r.status_code == 200, r.text
-    if role != "user":
-        await db_session.execute(update(User).where(User.email == email).values(role=role))
-        await db_session.commit()
-        login = await client.post("/auth/login", json={"email": email, "password": "securepass123"})
-        token = login.json()["access_token"]
-    else:
-        token = r.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+async def _user(client: AsyncClient, db: AsyncSession, role: str):
+    uid = _next()
+    email = f"rbac-{uid}@example.com"
+    pw = hash_password("securepass123")
+    await db.execute(text(
+        "INSERT INTO users (id, email, password_hash, full_name, role, is_active) "
+        "VALUES (:id, :email, :pw, 'RBAC', :role, true)"
+    ), {"id": uid, "email": email, "pw": pw, "role": role})
+    await db.commit()
+    login = await client.post("/auth/login", json={"email": email, "password": "securepass123"})
+    assert login.status_code == 200, login.text
+    return {"Authorization": f"Bearer {login.json()['access_token']}"}
 
 async def test_user_cannot_mutate_catalog(client: AsyncClient, db_session):
     h = await _user(client, db_session, "user")

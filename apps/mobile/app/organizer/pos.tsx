@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { router } from 'expo-router';
 import { View, Text, TextInput, Pressable, StyleSheet, FlatList } from 'react-native';
 import { api } from '../../src/services/api';
 import { colors, spacing } from '../../src/theme';
@@ -21,6 +22,7 @@ export default function POS() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>POS</Text>
+      <Pressable style={styles.button} onPress={() => router.push('/organizer/pos-sale')}><Text style={styles.buttonText}>Open cash sale</Text></Pressable>
       <Text style={styles.note}>Cash sales only. No card payments.</Text>
       <TextInput style={styles.input} placeholder="Organization ID" placeholderTextColor={colors.muted} value={orgId} onChangeText={setOrgId} />
       <Pressable style={styles.button} onPress={load}><Text style={styles.buttonText}>Load sales points</Text></Pressable>

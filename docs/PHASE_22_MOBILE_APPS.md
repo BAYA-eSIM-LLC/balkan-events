@@ -357,3 +357,49 @@ No Stripe, no in-app payment, no store submission.
 
 ### Constraints
 Only `super-admin-dashboard`. No main merge, no deploy, no production, no Stripe, no store submission.
+
+---
+
+## Phase 22.7 – Mobile POS PRO
+
+**Commit:** pending  
+**Date:** 2026-11-23
+
+### Screen
+- `app/organizer/pos-sale.tsx`
+- Load sales points for organization
+- Open register with opening balance
+- Load ticket types for event
+- Select type and quantity
+- Cash received and change calculation (local display only)
+- Confirm sale via `POST /pos/sale` with idempotency key
+- Show real tickets and QR from `BE:{code}:{order_id}`
+- Close register with variance from backend
+
+### APIs
+- `GET /pos/sales-points`
+- `POST /pos/registers/open`
+- `POST /pos/registers/{id}/close`
+- `GET /organizer/events/{id}/ticket-types`
+- `POST /pos/sale`
+
+### Security
+- User JWT from SecureStore
+- Backend enforces SalesPointStaff and event-level can_pos
+- Sale rejected if register not open
+- Idempotency key prevents double submit
+- No card payments
+
+### Tests
+- TypeScript `tsc --noEmit`: passed
+- Backend POS tests already cover open/close, cash sale, concurrency and isolation
+- Physical device: not tested
+
+### Not finished
+- Seat selection inside POS (ticket type path used)
+- Void sale UI
+- Previous sales list
+- Live screenshots
+
+### Constraints
+Only `super-admin-dashboard`. No main merge, no deploy, no production, no Stripe, no store submission.

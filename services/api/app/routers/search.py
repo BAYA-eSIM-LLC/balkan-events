@@ -136,13 +136,21 @@ async def popular_events(limit: int = Query(10, le=50), db: AsyncSession = Depen
 
 
 @router.get("/discover")
-async def discover(db: AsyncSession = Depends(get_db)):
-    """Discovery sections from real published events. Empty sections stay empty."""
+async def discover(
+    page: int = Query(1, ge=1),
+    limit: int = Query(12, le=50),
+    db: AsyncSession = Depends(get_db),
+):
+    """Discovery sections from real published events. Empty sections stay empty.
+    Upcoming section is paginated for infinite scroll.
+    """
     now = datetime.utcnow()
     published = Event.status == EventStatus.PUBLISHED.value
     upcoming = and_(published, Event.start_at >= now)
 
-    upcoming_q = await db.execute(select(Event).where(upcoming).order_by(Event.start_at).limit(12))
+    upcoming_q = await db.execute(
+        select(Event).where(upcoming).order_by(Event.start_at).offset((page - 1) * limit).limit(limit)
+    )
     featured_q = await db.execute(select(Event).where(and_(upcoming, Event.is_featured == True)).order_by(Event.start_at).limit(8))
     weekend_start = now + timedelta(days=(5 - now.weekday()) % 7)
     weekend_q = await db.execute(
@@ -153,9 +161,13 @@ async def discover(db: AsyncSession = Depends(get_db)):
     cities = await db.execute(
         select(Event.city, func.count(Event.id)).where(upcoming, Event.city.isnot(None)).group_by(Event.city).order_by(func.count(Event.id).desc()).limit(10)
     )
+    upcoming_items = [event_to_dict(e) for e in upcoming_q.scalars()]
     return {
         "popular": [event_to_dict(e) for e in featured_q.scalars()],
-        "upcoming": [event_to_dict(e) for e in upcoming_q.scalars()],
+        "upcoming": upcoming_items,
+        "page": page,
+        "limit": limit,
+        "has_more": len(upcoming_items) == limit,
         "this_weekend": [event_to_dict(e) for e in weekend_q.scalars()],
         "recently_added": [event_to_dict(e) for e in recent_q.scalars()],
         "top_cities": [{"city": c, "count": n} for c, n in cities.all()],

@@ -42,3 +42,19 @@ async def test_search_city_country(client: AsyncClient, db_session: AsyncSession
     assert r.status_code == 200
     results = r.json()["results"]
     assert all(e["status"] == "PUBLISHED" for e in results)
+
+
+@pytest.mark.asyncio
+async def test_discover_pagination_no_duplicates(client: AsyncClient, db_session: AsyncSession):
+    r1 = await client.get("/events/discover?page=1&limit=2")
+    assert r1.status_code == 200
+    d1 = r1.json()
+    assert "upcoming" in d1
+    assert "has_more" in d1
+    assert "page" in d1
+    if d1["has_more"]:
+        r2 = await client.get("/events/discover?page=2&limit=2")
+        assert r2.status_code == 200
+        ids1 = {e["id"] for e in d1["upcoming"]}
+        ids2 = {e["id"] for e in r2.json()["upcoming"]}
+        assert ids1.isdisjoint(ids2)

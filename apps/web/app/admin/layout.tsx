@@ -30,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <span className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 8a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 100 4v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 100-4V8z"/><path d="M15 8v8"/></svg>
           </span>
-          <span className="font-bold text-sm">SUPER ADMIN</span>
+          <span className="font-bold text-sm">SUPER ADMIN</span><span className="ml-auto text-[10px] font-bold bg-amber-400 text-black px-1.5 py-0.5 rounded">TEST</span>
         </div>
         <nav className="p-3 space-y-0.5 overflow-y-auto h-[calc(100vh-80px)]">
           {nav.map(item => (

@@ -3,7 +3,7 @@ from app.models.organization import Organization, OrganizationMember, OrgRole
 from app.models.event import Event, EventCategory, EventStatus
 from app.models.ticket import TicketType, Ticket
 from app.models.order import Order, OrderItem
-from app.models.payment import Payment, Refund
+from app.models.payment import Payment, Refund, StripeEvent
 from app.models.audit import AuditLog
 from app.models.inventory import TicketInventory
 from app.models.reservation import Reservation

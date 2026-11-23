@@ -1,4 +1,4 @@
-# Phase 23.18 – Final install with pre-checks and controlled rollback
+# Phase 23.18 – Final install with pre-checks and race-safe rollback
 
 **Date:** 2026-11-23  
 **Status:** Prepared. Not run on production.  
@@ -6,8 +6,9 @@
 
 If the user, group, wrapper, sudoers file or home directory already exist, the install stops.  
 Existing content is never overwritten, modified or deleted.  
-Flags are set before the creating command, so a partial create is still rolled back.  
-Rollback removes only resources this run marked. Pre-checks guarantee those paths did not exist before this run.
+A flag is set only after the creating command succeeds.  
+Rollback deletes only flagged resources.  
+If a resource appears between the pre-check and the create (another process), the create fails, the flag stays 0, and rollback does not delete it. Manual check is required.
 
 ---
 
@@ -38,7 +39,7 @@ if [ -e /home/balkan-audit ]; then
   exit 1
 fi
 
-# Track only what this run may create. Set before the creating command.
+# Flags mark only resources this run confirmed it created.
 WRAPPER_CREATED=0
 SUDOERS_CREATED=0
 GROUP_CREATED=0
@@ -46,10 +47,14 @@ USER_CREATED=0
 SSHDIR_CREATED=0
 SUCCESS=0
 tmp=""
+wrap_tmp=""
 
 cleanup_tmp() {
   if [ -n "${tmp:-}" ] && [ -f "$tmp" ]; then
     rm -f "$tmp" || echo "WARN: could not remove temp sudoers $tmp"
+  fi
+  if [ -n "${wrap_tmp:-}" ] && [ -f "$wrap_tmp" ]; then
+    rm -f "$wrap_tmp" || echo "WARN: could not remove temp wrapper $wrap_tmp"
   fi
 }
 
@@ -62,7 +67,7 @@ rollback() {
   echo "INSTALL FAILED (exit $rc). Starting controlled rollback of this run only."
   local leftover=0
 
-  # Reverse order. Only touch a resource if this run set its flag.
+  # Only delete what this run confirmed it created.
   if [ "$SSHDIR_CREATED" -eq 1 ]; then
     if [ -d /home/balkan-audit/.ssh ]; then
       rm -rf /home/balkan-audit/.ssh || { echo "ROLLBACK FAIL: .ssh dir remains"; leftover=1; }
@@ -93,8 +98,30 @@ rollback() {
     fi
   fi
 
+  # Race or unexpected appearance: do not delete. Report it.
+  if [ "$WRAPPER_CREATED" -eq 0 ] && [ -e /usr/local/sbin/audit-readonly.sh ]; then
+    echo "RACE/UNEXPECTED: /usr/local/sbin/audit-readonly.sh exists but was not created by this run. Not deleted. Manual check required."
+    leftover=1
+  fi
+  if [ "$SUDOERS_CREATED" -eq 0 ] && [ -e /etc/sudoers.d/balkan-audit ]; then
+    echo "RACE/UNEXPECTED: /etc/sudoers.d/balkan-audit exists but was not created by this run. Not deleted. Manual check required."
+    leftover=1
+  fi
+  if [ "$GROUP_CREATED" -eq 0 ] && getent group balkan-audit >/dev/null; then
+    echo "RACE/UNEXPECTED: group balkan-audit exists but was not created by this run. Not deleted. Manual check required."
+    leftover=1
+  fi
+  if [ "$USER_CREATED" -eq 0 ] && getent passwd balkan-audit >/dev/null; then
+    echo "RACE/UNEXPECTED: user balkan-audit exists but was not created by this run. Not deleted. Manual check required."
+    leftover=1
+  fi
+  if [ "$SSHDIR_CREATED" -eq 0 ] && [ -e /home/balkan-audit ]; then
+    echo "RACE/UNEXPECTED: /home/balkan-audit exists but was not created by this run. Not deleted. Manual check required."
+    leftover=1
+  fi
+
   if [ "$leftover" -eq 1 ]; then
-    echo "ROLLBACK INCOMPLETE. Manual verification required for any item marked ROLLBACK FAIL above."
+    echo "ROLLBACK INCOMPLETE or RACE DETECTED. Manual verification required."
     echo "Do not assume the account is clean."
     exit 1
   fi
@@ -105,9 +132,9 @@ rollback() {
 
 trap rollback EXIT
 
-# 1. Wrapper. Flag first so a partial write is still cleaned.
-WRAPPER_CREATED=1
-install -o root -g root -m 755 /dev/stdin /usr/local/sbin/audit-readonly.sh << 'EOS'
+# 1. Wrapper written to a unique temp, then installed. Flag only after success.
+wrap_tmp=$(mktemp)
+cat > "$wrap_tmp" << 'EOS'
 #!/bin/bash
 set -euo pipefail
 if [ "$#" -ne 1 ]; then
@@ -146,8 +173,12 @@ case "$cmd" in
   *) echo "Denied"; exit 1 ;;
 esac
 EOS
+install -o root -g root -m 755 "$wrap_tmp" /usr/local/sbin/audit-readonly.sh
+WRAPPER_CREATED=1
+rm -f "$wrap_tmp"
+wrap_tmp=""
 
-# 2. Temporary sudoers, validate, then install. Flag before install.
+# 2. Temporary sudoers, validate, then install. Flag only after success.
 tmp=$(mktemp)
 cat > "$tmp" << 'EOS'
 Defaults:balkan-audit env_reset
@@ -155,20 +186,20 @@ Defaults:balkan-audit !env_keep
 balkan-audit ALL=(root) NOPASSWD: /usr/local/sbin/audit-readonly.sh
 EOS
 visudo -cf "$tmp"
-SUDOERS_CREATED=1
 install -o root -g root -m 440 "$tmp" /etc/sudoers.d/balkan-audit
+SUDOERS_CREATED=1
 cleanup_tmp
 
-# 3. Group and user. Flags before the creating commands.
-GROUP_CREATED=1
+# 3. Group and user. Flag only after the command succeeds.
 groupadd balkan-audit
-USER_CREATED=1
+GROUP_CREATED=1
 useradd -m -g balkan-audit -s /bin/bash balkan-audit
+USER_CREATED=1
 passwd -l balkan-audit
 
-# 4. Single restricted key. Flag before mkdir.
-SSHDIR_CREATED=1
+# 4. Single restricted key. Flag only after the directory is created.
 install -d -o balkan-audit -g balkan-audit -m 700 /home/balkan-audit/.ssh
+SSHDIR_CREATED=1
 printf '%s\n' 'command="sudo -n /usr/local/sbin/audit-readonly.sh \"$SSH_ORIGINAL_COMMAND\"",restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDE5VVU3z967V7OVifNM9XF3k3Kf0t2RbqHercTyIoGM balkan-events-deploy-20261122' > /home/balkan-audit/.ssh/authorized_keys
 chown balkan-audit:balkan-audit /home/balkan-audit/.ssh/authorized_keys
 chmod 600 /home/balkan-audit/.ssh/authorized_keys
@@ -178,9 +209,7 @@ trap - EXIT
 echo "INSTALL_OK"
 ```
 
-Flag is set immediately before the command that can create the resource.  
-If that command writes a partial file or creates the account and then fails, the trap still removes it.  
-Pre-checks mean those paths did not exist at the start, so rollback cannot delete a pre-existing resource.
+If another process creates the same user, group or file after the pre-check, our create fails, the flag stays 0, and rollback does not delete that resource. It reports `RACE/UNEXPECTED` and requires a manual check.
 
 ---
 
@@ -238,18 +267,21 @@ echo "Expected: Permission denied"
 
 ---
 
-## Local failure simulation
+## Local tests (not on production)
 
-Simulated on a temp tree, not on production. Each case creates a partial resource, then forces failure before the next step. Rollback removes only that run's resources.
-
-| Failure point | Partial resource left before rollback | After rollback |
-|---|---|---|
-| after wrapper write | wrapper file present | removed |
-| after sudoers install | wrapper + sudoers present | both removed |
-| after groupadd | wrapper + sudoers + group | all removed |
-| after useradd | wrapper + sudoers + group + user | all removed |
-| after .ssh mkdir | wrapper + sudoers + group + user + .ssh | all removed |
-| pre-existing wrapper | not created by this run | not touched, install stops |
+| Case | Result |
+|---|---|
+| fail after wrapper success | wrapper removed |
+| fail after sudoers success | wrapper + sudoers removed |
+| fail after groupadd success | group removed |
+| fail after useradd success | user removed |
+| fail after .ssh success | .ssh removed |
+| pre-existing wrapper | install stops, file untouched |
+| pre-existing sudoers | install stops, file untouched |
+| pre-existing home | install stops, dir untouched |
+| pre-existing user | install stops, user untouched |
+| pre-existing group | install stops, group untouched |
+| race: file appears after pre-check, before our create | create fails, flag stays 0, file not deleted, RACE reported |
 
 ---
 

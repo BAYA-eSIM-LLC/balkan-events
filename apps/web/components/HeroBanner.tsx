@@ -5,11 +5,11 @@ export default function HeroBanner() {
   return (
     <section className="relative min-h-[70vh] md:min-h-[80vh] flex items-end md:items-center text-white overflow-hidden">
       <img 
-        src="https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=2000&q=80" 
+        src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=2400&q=90" 
         alt="Koncert" 
         className="absolute inset-0 w-full h-full object-cover object-center" 
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b1f] via-[#0b0b1f]/50 to-transparent md:bg-gradient-to-r md:from-[#0b0b1f]/90 md:via-[#0b0b1f]/40 md:to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b1f] via-[#0b0b1f]/40 to-transparent md:bg-gradient-to-r md:from-[#0b0b1f]/85 md:via-[#0b0b1f]/30 md:to-transparent" />
 
       <div className="relative max-w-7xl mx-auto px-5 sm:px-6 py-16 md:py-24 w-full">
         <div className="max-w-lg">

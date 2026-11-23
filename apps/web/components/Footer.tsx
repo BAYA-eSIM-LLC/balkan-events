@@ -24,7 +24,12 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-5 py-12 grid grid-cols-2 md:grid-cols-5 gap-8">
         <div className="col-span-2 md:col-span-1">
           <Link href="/" className="flex items-center gap-2.5 text-white">
-            <span className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-sm font-black">BE</span>
+            <span className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 100 4v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 100-4V8z" />
+                <path strokeLinecap="round" d="M15 8v8" />
+              </svg>
+            </span>
             <span className="flex flex-col leading-none">
               <span className="text-[11px] font-bold">BALKAN</span>
               <span className="text-[10px] font-semibold text-zinc-300">EVENTS</span>

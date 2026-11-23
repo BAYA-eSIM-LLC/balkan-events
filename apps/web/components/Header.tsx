@@ -6,10 +6,15 @@ export default function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0b0b1f] text-white border-b border-white/5">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0b0b1f]/95 backdrop-blur text-white border-b border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <span className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-sm font-black text-white">BE</span>
+          <span className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 100 4v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 100-4V8z" />
+              <path strokeLinecap="round" d="M15 8v8" />
+            </svg>
+          </span>
           <span className="flex flex-col leading-none">
             <span className="text-[11px] font-bold tracking-wide">BALKAN</span>
             <span className="text-[10px] font-semibold text-zinc-300">EVENTS</span>

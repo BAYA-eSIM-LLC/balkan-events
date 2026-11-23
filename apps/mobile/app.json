@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "BALKAN EVENTS",
+    "slug": "balkan-events",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "balkanevents",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "backgroundColor": "#0B0B0F"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.balkanevents.app"
+    },
+    "android": {
+      "package": "org.balkanevents.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0B0F"
+      }
+    },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiUrl": "https://dev.balkanevents.example"
+    }
+  }
+}

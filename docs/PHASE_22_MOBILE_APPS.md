@@ -116,3 +116,64 @@ apps/mobile/
 Only `super-admin-dashboard`. No main merge, no deploy, no production, no Stripe.
 
 Waiting for approval before **Phase 22.1**.
+
+---
+
+## Phase 22.1 – Foundation & Authentication
+
+**Commit:** pending  
+**Date:** 2026-11-23
+
+### Versions
+- Expo SDK 52
+- React Native 0.76.3
+- Expo Router 4
+- TypeScript 5.6
+- expo-secure-store 14
+
+### Structure
+```
+apps/mobile/
+  app/                 Expo Router screens
+    (auth)/            login, register, forgot
+    (tabs)/            home, profile, settings
+    organizer/         organizer shell
+  src/
+    components/ features/ services/ hooks/ store/ theme/ types/ utils/
+```
+
+### Auth
+- `POST /auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`
+- `POST /profile/forgot-password`
+- Tokens in SecureStore only
+- Single-flight refresh
+- 401 clears session and returns to login path
+
+### API client
+- Base URL from `expo.extra.apiUrl` or `EXPO_PUBLIC_API_URL`
+- Not localhost-only
+- Timeout 15s, 401 refresh, 403/500 mapped to detail
+
+### Account compatibility
+- Same `/auth/login` and `users` table as web
+- New mobile registration creates a row in `users`
+- No separate mobile account store
+
+### Tests
+- TypeScript `tsc --noEmit`: passed
+- iOS/Android simulator: not run in this environment
+- Physical device: not available
+
+### Build prep
+- iOS bundle: `org.balkanevents.app`
+- Android package: `org.balkanevents.app`
+- App name: BALKAN EVENTS
+- Splash background `#0B0B0F`
+- Not submitted to stores
+
+### Not finished
+- Customer screens (22.2)
+- Organizer tools (22.3)
+- Scanner (22.4)
+- Push (22.5)
+- Live screenshots

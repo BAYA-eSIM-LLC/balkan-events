@@ -1,0 +1,6 @@
+commit=e4a599e0ea3657fef4dd3a08717274b61d4b490e
+branch=super-admin-dashboard
+image_id=sha256:d9b9d0a9c86098da32d2fbaa1718de64469a1172d3ad4757091e33edc94d0acc
+ci_run=45250257845
+built=2026-11-23
+note=Built on GitHub Actions. Not pushed to a registry. Rebuild on the deploy host from commit e4a599e if the runner image is gone.

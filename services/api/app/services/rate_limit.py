@@ -23,7 +23,7 @@ def limited(key: str, limit: int = 5, window: int = 300) -> bool:
             now = int(time.time())
             bucket = f"rl:{key}"
             pipe.zremrangebyscore(bucket, 0, now - window)
-            pipe.zadd(bucket, {str(now): now})
+            pipe.zadd(bucket, {f"{now}-{os.urandom(4).hex()}": now})
             pipe.zcard(bucket)
             pipe.expire(bucket, window)
             _, _, count, _ = pipe.execute()

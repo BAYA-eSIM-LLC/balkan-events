@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models.ticket import Ticket, TicketType
 from app.models.event import Event
 from app.models.user import User, UserRole
+from app.models.organization import OrganizationMember
 from app.models.scanner import ScanLog
 from app.deps import get_current_user, require_role
 from app.routers.admin_system import log_audit, ADMIN_ONLY, paginate
@@ -48,7 +49,6 @@ async def validate_scan(data: ScanRequest, user: User = Depends(get_current_user
         await _write_log(db, ticket.id, data.event_id, data.entry_point_id, user.id, "ALREADY_USED")
         return {"status": "ALREADY_USED", "used_at": ticket.used_at.isoformat() if ticket.used_at else None}
 
-    # Mark used under the same lock – concurrent scans cannot double-use
     ticket.is_used = True
     ticket.used_at = datetime.utcnow()
     ticket.used_by = str(user.id)
@@ -65,15 +65,21 @@ async def list_scan_logs(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Super Admin / Admin see all. Organizer sees only own events."""
+    """SUPERADMIN/ADMIN see all. Others see only events of organizations they belong to."""
     page, page_size = paginate(page, page_size)
     q = select(ScanLog)
+
     if user.role not in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
-        # Organizer isolation – only events they own (via organization membership simplified)
-        owned = select(Event.id).where(Event.organization_id == getattr(user, "organization_id", None))
-        q = q.where(ScanLog.event_id.in_(owned))
+        # Proper membership-based isolation
+        member_orgs = select(OrganizationMember.organization_id).where(
+            OrganizationMember.user_id == user.id
+        )
+        owned_events = select(Event.id).where(Event.organization_id.in_(member_orgs))
+        q = q.where(ScanLog.event_id.in_(owned_events))
+
     if event_id:
         q = q.where(ScanLog.event_id == event_id)
+
     total = await db.scalar(select(func.count()).select_from(q.subquery()))
     q = q.order_by(ScanLog.scanned_at.desc()).offset((page - 1) * page_size).limit(page_size)
     rows = (await db.execute(q)).scalars().all()

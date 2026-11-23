@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator, Modal } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { api } from '../../src/services/api';
+import { api, API_BASE } from '../../src/services/api';
+import { getAccess } from '../../src/services/tokenStore';
 import { colors, spacing } from '../../src/theme';
 
 export default function Tickets() {
@@ -40,6 +41,7 @@ export default function Tickets() {
               <Text style={styles.meta}>Code: {item.code}</Text>
               <Text style={styles.meta}>Status: {item.is_used ? 'Used' : 'Valid'}</Text>
               {item.seat_id ? <Text style={styles.meta}>Seat #{item.seat_id}</Text> : null}
+              <Text style={styles.meta}>Event details not returned by API</Text>
             </View>
           </Pressable>
         )}

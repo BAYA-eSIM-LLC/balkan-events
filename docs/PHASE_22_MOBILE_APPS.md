@@ -512,3 +512,40 @@ Only `super-admin-dashboard`. No main merge, no deploy, no production, no Stripe
 
 ### Constraints
 Only `super-admin-dashboard`. No main merge, no deploy, no production, no Stripe, no store submission.
+
+---
+
+## Phase 22.10 – Feature Completion
+
+**Commit:** pending  
+**Date:** 2026-11-23
+
+### Implemented
+- POS void sale UI — `POST /pos/sale/{order_id}/void`
+- Scanner offline queue — stores scans locally while offline, syncs via `POST /scanner/offline/sync`
+- Offline scans labeled as not confirmed
+- Vibration feedback on scan result
+- CSV import endpoint documented on guest screen
+- Ticket cards note that event name/date are not returned by `/payments/my-tickets`
+
+### APIs used
+- `POST /pos/sale/{order_id}/void`
+- `POST /scanner/offline/sync`
+- `GET /tickets/{id}/pdf` exists; in-app PDF render not added (no file-system share path)
+
+### Blocked / not implemented
+- Event name and date on ticket cards — `/payments/my-tickets` returns only id, code, qr_data, is_used
+- In-app PDF view and share — endpoint exists, but no file-system/share flow
+- POS previous sales list — no organizer list endpoint
+- Seat selection inside POS — sale accepts seat_ids, but no mobile seat picker wired to POS yet
+- Event image upload — no upload endpoint
+- CSV file picker — import endpoint exists, `expo-document-picker` not installed
+- Audio beep assets — vibration used instead
+
+### Tests
+- `tsc --noEmit`: passed
+- Backend void, offline sync and PDF tests already exist
+- Device/simulator: not run
+
+### Constraints
+Only `super-admin-dashboard`. No main merge, no deploy, no production, no Stripe, no store submission.

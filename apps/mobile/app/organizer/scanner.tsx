@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Vibration } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { api } from '../../src/services/api';
 import { colors, spacing } from '../../src/theme';
@@ -22,6 +22,11 @@ export default function MobileScanner() {
   const [counts, setCounts] = useState({ valid: 0, rejected: 0 });
   const [loading, setLoading] = useState(false);
   const last = useRef<{ code: string; at: number }>({ code: '', at: 0 });
+  const queue = useRef<any[]>([]);
+
+  const beep = (ok: boolean) => {
+    Vibration.vibrate(ok ? 80 : [0, 80, 60, 80]);
+  };
 
   useEffect(() => {
     if (!permission?.granted) requestPermission();
@@ -36,7 +41,8 @@ export default function MobileScanner() {
       return;
     }
     if (offline) {
-      setResult({ status: 'QUEUED', note: 'Offline. Not a confirmed entry. Double entry across devices cannot be prevented without a connection.' });
+      queue.current.push({ qr_data: code, event_id: Number(eventId), entry_point_id: entryPointId ? Number(entryPointId) : null, scanned_at: new Date().toISOString() });
+      setResult({ status: 'QUEUED', note: 'Queued locally. Not a confirmed entry. Sync when online. Double entry across devices cannot be prevented without a connection.' });
       return;
     }
     setLoading(true);
@@ -45,6 +51,7 @@ export default function MobileScanner() {
       if (entryPointId) body.entry_point_id = Number(entryPointId);
       const d = await api<any>('/scanner/validate', { method: 'POST', body: JSON.stringify(body) });
       setResult(d);
+      beep(d.status === 'VALID');
       setCounts(c => d.status === 'VALID' ? { ...c, valid: c.valid + 1 } : { ...c, rejected: c.rejected + 1 });
     } catch (e: any) {
       setResult({ status: 'INVALID', reason: e.detail || 'Network error' });
@@ -79,7 +86,18 @@ export default function MobileScanner() {
           </Pressable>
         )}
       </View>
-      <Text style={styles.counts}>Valid {counts.valid} · Rejected {counts.rejected}</Text>
+      <Text style={styles.counts}>Valid {counts.valid} · Rejected {counts.rejected} · Queued {queue.current.length}</Text>
+      <Pressable style={styles.button} onPress={async () => {
+        if (!queue.current.length) return;
+        try {
+          const d = await api<any>('/scanner/offline/sync', { method: 'POST', body: JSON.stringify(queue.current) });
+          queue.current = [];
+          setResult({ status: 'VALID', reason: `Synced. Server is authority.` });
+          beep(true);
+        } catch (e: any) {
+          setResult({ status: 'INVALID', reason: e.detail || 'Sync failed' });
+        }
+      }}><Text style={styles.buttonText}>Sync queued</Text></Pressable>
       <TextInput style={styles.manual} placeholder="Manual code" placeholderTextColor={colors.muted} value={manual} onChangeText={setManual} />
       <Pressable style={styles.button} onPress={() => validate(manual)} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Scan code</Text>}

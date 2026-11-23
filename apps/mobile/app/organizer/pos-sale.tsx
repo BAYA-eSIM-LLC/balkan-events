@@ -108,6 +108,20 @@ export default function POSSale() {
     }
   };
 
+  const voidSale = async (orderId: number) => {
+    setLoading(true);
+    setError('');
+    try {
+      await api(`/pos/sale/${orderId}/void`, { method: 'POST' });
+      setResult(null);
+      setError('Sale voided');
+    } catch (e: any) {
+      setError(e.detail || 'Void failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const selectedType = types.find(t => t.id === typeId);
   const total = selectedType ? Number(selectedType.price) * (Number(qty) || 1) : 0;
   const change = received ? Math.max(0, Number(received) - total) : 0;
@@ -156,6 +170,9 @@ export default function POSSale() {
           <Text style={styles.confirmTitle}>Sale confirmed</Text>
           <Text style={styles.meta}>Order #{result.order_id} · {result.reference}</Text>
           <Text style={styles.meta}>Total {result.total}</Text>
+          <Pressable style={styles.secondary} onPress={() => voidSale(result.order_id)}>
+            <Text style={styles.secondaryText}>Void sale</Text>
+          </Pressable>
           {(result.tickets || []).map((code: string) => (
             <Pressable key={code} style={styles.ticket} onPress={() => setShowQr(`BE:${code}:${result.order_id}`)}>
               <Text style={styles.ticketText}>Ticket {code.slice(0, 8)}…</Text>

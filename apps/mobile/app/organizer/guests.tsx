@@ -110,6 +110,8 @@ export default function Guests() {
             ListEmptyComponent={<Text style={styles.empty}>No guests.</Text>}
             style={{ maxHeight: 240 }}
           />
+          <Text style={styles.section}>CSV import</Text>
+          <Text style={styles.meta}>Endpoint POST /guest-lists/(list id)/guests/import accepts first_name,last_name,email. File picker requires expo-document-picker (not installed). Use single add below.</Text>
           <Text style={styles.section}>Add guest</Text>
           <TextInput style={styles.input} placeholder="First name" placeholderTextColor={colors.muted} value={firstName} onChangeText={setFirstName} />
           <TextInput style={styles.input} placeholder="Last name" placeholderTextColor={colors.muted} value={lastName} onChangeText={setLastName} />

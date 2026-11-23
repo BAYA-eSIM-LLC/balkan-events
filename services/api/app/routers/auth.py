@@ -10,6 +10,21 @@ from app.models.refresh_token import RefreshToken
 from app.security import hash_password, verify_password, create_access_token, create_refresh_token, hash_refresh_token
 import pyotp
 import secrets
+from app.services.mfa import encrypt_secret, decrypt_secret, hash_code, generate_recovery_codes, verify_totp
+from app.models.mfa import MFARecoveryCode, MFAPending
+
+
+_rate: dict[str, list[float]] = {}
+
+def _limited(key: str, limit: int = 5, window: int = 300) -> bool:
+    now = datetime.utcnow().timestamp()
+    hits = [t for t in _rate.get(key, []) if now - t < window]
+    if len(hits) >= limit:
+        _rate[key] = hits
+        return True
+    hits.append(now)
+    _rate[key] = hits
+    return False
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -54,13 +69,22 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login")
 async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
+    if _limited(f"login:{data.email}"):
+        raise HTTPException(429, "Too many attempts")
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if user.role in ("SUPERADMIN", "ADMIN") and getattr(user, "mfa_enabled", False):
         token = secrets.token_urlsafe(32)
-        _mfa_pending[token] = (user.id, datetime.utcnow().timestamp() + 300, 0)
+        pending = MFAPending(
+            token_hash=hash_code(token),
+            user_id=user.id,
+            expires_at=datetime.utcnow() + timedelta(minutes=5),
+            attempts=0,
+        )
+        db.add(pending)
+        await db.commit()
         return {"mfa_required": True, "mfa_token": token}
     return await _issue_tokens(user, db)
 
@@ -105,27 +129,29 @@ class MFAConfirmRequest(BaseModel):
     code: str
 
 # Short-lived tokens for MFA step. In-memory for this process only.
-_mfa_pending: dict[str, tuple[int, float, int]] = {}  # user_id, expires, attempts
 
 def _require_admin_mfa(user: User):
     return user.role in ("SUPERADMIN", "ADMIN") and user.mfa_enabled
 
-@router.post("/mfa/setup", response_model=MFASetupResponse)
+@router.post("/mfa/setup")
 async def mfa_setup(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     if user.role not in ("SUPERADMIN", "ADMIN"):
         raise HTTPException(403, "MFA setup is for admin roles")
     secret = pyotp.random_base32()
-    user.totp_secret = secret
+    user.totp_secret = encrypt_secret(secret)
     user.mfa_enabled = False
+    codes = generate_recovery_codes(10)
+    for c in codes:
+        db.add(MFARecoveryCode(user_id=user.id, code_hash=hash_code(c)))
     await db.commit()
     uri = pyotp.TOTP(secret).provisioning_uri(name=user.email, issuer_name="BALKAN EVENTS")
-    return MFASetupResponse(secret=secret, uri=uri)
+    return {"secret": secret, "uri": uri, "recovery_codes": codes}
 
 @router.post("/mfa/enable")
 async def mfa_enable(code: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     if not user.totp_secret:
         raise HTTPException(400, "Run setup first")
-    if not pyotp.TOTP(user.totp_secret).verify(code, valid_window=1):
+    if not verify_totp(user.totp_secret, code):
         raise HTTPException(401, "Invalid code")
     user.mfa_enabled = True
     await db.commit()
@@ -133,18 +159,52 @@ async def mfa_enable(code: str, user: User = Depends(get_current_user), db: Asyn
 
 @router.post("/mfa/confirm", response_model=TokenResponse)
 async def mfa_confirm(data: MFAConfirmRequest, db: AsyncSession = Depends(get_db)):
-    entry = _mfa_pending.get(data.mfa_token)
-    if not entry:
-        raise HTTPException(401, "MFA token expired or invalid")
-    user_id, expires, attempts = entry
-    if datetime.utcnow().timestamp() > expires or attempts >= 5:
-        _mfa_pending.pop(data.mfa_token, None)
+    if _limited(f"mfa:{data.mfa_token[:8]}"):
+        raise HTTPException(429, "Too many attempts")
+    token_hash = hash_code(data.mfa_token)
+    result = await db.execute(select(MFAPending).where(MFAPending.token_hash == token_hash).with_for_update())
+    pending = result.scalar_one_or_none()
+    if not pending or pending.expires_at < datetime.utcnow() or pending.attempts >= 5:
+        if pending:
+            await db.delete(pending)
+            await db.commit()
         raise HTTPException(401, "MFA token expired or too many attempts")
-    user = await db.get(User, user_id)
+    user = await db.get(User, pending.user_id)
     if not user or not user.totp_secret:
         raise HTTPException(401, "MFA not configured")
-    if not pyotp.TOTP(user.totp_secret).verify(data.code, valid_window=1):
-        _mfa_pending[data.mfa_token] = (user_id, expires, attempts + 1)
+    ok = verify_totp(user.totp_secret, data.code)
+    if not ok:
+        # Try recovery code
+        rc = await db.execute(
+            select(MFARecoveryCode).where(
+                MFARecoveryCode.user_id == user.id,
+                MFARecoveryCode.code_hash == hash_code(data.code),
+                MFARecoveryCode.used == False,
+            )
+        )
+        recovery = rc.scalar_one_or_none()
+        if recovery:
+            recovery.used = True
+            ok = True
+    if not ok:
+        pending.attempts += 1
+        await db.commit()
         raise HTTPException(401, "Invalid code")
-    _mfa_pending.pop(data.mfa_token, None)
+    await db.delete(pending)
+    await db.commit()
     return await _issue_tokens(user, db)
+
+@router.post("/mfa/recovery/regenerate")
+async def regenerate_recovery(code: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not user.mfa_enabled or not user.totp_secret:
+        raise HTTPException(400, "MFA not enabled")
+    if not verify_totp(user.totp_secret, code):
+        raise HTTPException(401, "Invalid code")
+    await db.execute(
+        MFARecoveryCode.__table__.delete().where(MFARecoveryCode.user_id == user.id)
+    )
+    codes = generate_recovery_codes(10)
+    for c in codes:
+        db.add(MFARecoveryCode(user_id=user.id, code_hash=hash_code(c)))
+    await db.commit()
+    return {"recovery_codes": codes}

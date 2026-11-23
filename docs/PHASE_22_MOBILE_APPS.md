@@ -177,3 +177,41 @@ apps/mobile/
 - Scanner (22.4)
 - Push (22.5)
 - Live screenshots
+
+---
+
+## Phase 22.2 – Customer Mobile App
+
+**Commit:** pending  
+**Date:** 2026-11-23
+
+### Screens
+- Home — discover sections from `/events/discover`
+- Discover — search with city, pagination, infinite scroll
+- Event detail — `/events/{slug}`, seat map sectors if present
+- My Tickets — `/payments/my-tickets` (same tickets as web)
+- My Orders — `/orders/me`
+- Preferences — `/me/preferences`
+- Profile, Settings (from 22.1)
+
+### API integrations
+- `/events/discover`, `/events/search`, `/events/{slug}`
+- `/seat-maps/event/{id}`
+- `/payments/my-tickets`
+- `/orders/me`
+- `/me/preferences`
+
+### Tests
+- TypeScript `tsc --noEmit`: passed
+- iOS/Android simulator: not run
+- Physical device: not available
+
+### Not finished
+- In-app seat selection UI (sectors listed; reservation stays on web)
+- Camera QR display of ticket (raw qr_data shown)
+- Organizer app (22.3)
+- Scanner (22.4)
+- Live screenshots
+
+### Constraints
+No Stripe, no in-app payment, no store submission.

@@ -12,6 +12,10 @@ class OrgRole(str, enum.Enum):
     FINANCE_VIEWER = "finance_viewer"
     SCANNER = "scanner"
     STAFF = "staff"
+    FINANCE_MANAGER = "finance_manager"
+    TICKET_MANAGER = "ticket_manager"
+    POS_SELLER = "pos_seller"
+    VIEWER = "viewer"
 
 class Organization(Base):
     __tablename__ = "organizations"

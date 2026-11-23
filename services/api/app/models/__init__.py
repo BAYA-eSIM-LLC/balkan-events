@@ -27,3 +27,5 @@ from app.models.pos import SalesPoint, SalesPointStaff, CashRegister, CashTransa
 from app.models.guest_list import GuestList, Guest
 
 from app.models.sponsor import Sponsor, SponsorPackage, SponsorPlacement
+
+from app.models.permissions import EventPermission, OrgInvitation

@@ -21,3 +21,5 @@ from app.models.platform_settings import PlatformSettings
 from app.models.scanner import EntryPoint, ScannerDevice, ScanLog
 
 from app.models.seat_map import SeatMap, Sector, SeatRow, Seat, SeatReservation
+
+from app.models.pos import SalesPoint, SalesPointStaff, CashRegister, CashTransaction

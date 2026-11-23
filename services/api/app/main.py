@@ -12,6 +12,7 @@ from app.routers.admin_settings import router as admin_settings_router
 from app.routers.cms import router as cms_router, public_router as cms_public_router
 from app.routers.scanner import router as scanner_router
 from app.routers.seat_maps import router as seat_maps_router, admin_router as admin_seat_maps_router
+from app.routers.pos import router as pos_router, admin_router as admin_pos_router
 from app.routers.orders import router as orders_router
 from app.routers.payments import router as payments_router
 
@@ -47,6 +48,8 @@ app.include_router(cms_public_router)
 app.include_router(scanner_router)
 app.include_router(seat_maps_router)
 app.include_router(admin_seat_maps_router)
+app.include_router(pos_router)
+app.include_router(admin_pos_router)
 app.include_router(orders_router)
 app.include_router(payments_router)
 app.include_router(profile.router)

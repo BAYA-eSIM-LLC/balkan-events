@@ -215,3 +215,34 @@ apps/mobile/
 
 ### Constraints
 No Stripe, no in-app payment, no store submission.
+
+---
+
+## Phase 22.3 – Organizer Mobile App
+
+**Commit:** pending  
+**Date:** 2026-11-23
+
+### Screens
+- Organizer dashboard — `/analytics/organizer/{id}` (403 if no sales/finance cap)
+- Events — organization detail events
+- Team — members list, invite as viewer
+- Guest lists — `/guest-lists/event/{id}`
+- POS — sales points, cash only
+- Scanners — attendance by event
+
+### Security
+- All data from backend. Finance hidden when API returns 403.
+- Org isolation enforced by existing endpoints.
+- No card payments.
+
+### Tests
+- TypeScript `tsc --noEmit`: passed
+- Simulator / device: not run
+
+### Not finished
+- Event create/edit forms
+- Guest add/check-in UI
+- POS sale flow
+- Camera scanner (22.4)
+- Live screenshots

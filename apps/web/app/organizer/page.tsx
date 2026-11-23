@@ -1,29 +1,26 @@
-import Link from 'next/link';
+'use client';
+import { useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/admin-api';
 
-export default function Organizer() {
+export default function OrganizerDashboard() {
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    adminFetch('/organizer/dashboard').then(setData).catch(e => setError(e.message));
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#f6f5fb]">
-      <section className="relative py-20 md:py-28 text-white">
-        <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1600&q=80" alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0d0b1f]/90 to-[#6d3df5]/60" />
-        <div className="relative max-w-3xl mx-auto px-5 text-center">
-          <h1 className="text-3xl md:text-5xl font-display font-extrabold">Organizatorska platforma</h1>
-          <p className="mt-4 text-lg text-white/75">Kreiraj događaje, upravljaj ulaznicama i dosegni publiku širom Balkana.</p>
-          <Link href="/register" className="inline-block mt-8 bg-white text-[#0d0b1f] font-semibold px-8 py-4 rounded-xl hover:bg-gray-100 transition">Započni</Link>
-        </div>
-      </section>
-      <section className="max-w-5xl mx-auto px-5 py-14 grid md:grid-cols-3 gap-5">
-        {[
-          { t: 'Kreiraj događaje', d: 'Brzo postavi naziv, datum, lokaciju i fotografiju.' },
-          { t: 'Upravljaj ulaznicama', d: 'Definiši tipove ulaznica i prati prodaju.' },
-          { t: 'Statistika', d: 'Pregledaj stvarne podatke o svojim događajima.' },
-        ].map(x => (
-          <div key={x.t} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition">
-            <h3 className="font-semibold text-lg text-[#0d0b1f]">{x.t}</h3>
-            <p className="mt-2 text-gray-500 text-sm">{x.d}</p>
-          </div>
-        ))}
-      </section>
+    <div>
+      <h1 className="text-2xl font-bold mb-1">Organizer Dashboard</h1>
+      <p className="text-zinc-400 text-sm mb-6">Pregled vlastite organizacije</p>
+      {error && <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 rounded-xl p-4 text-sm mb-4">{error}</div>}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5"><p className="text-xs text-zinc-400">Događaji</p><p className="text-2xl font-bold mt-1">{data?.events ?? '—'}</p></div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5"><p className="text-xs text-zinc-400">Ulaznice</p><p className="text-2xl font-bold mt-1">{data?.tickets_sold ?? '—'}</p></div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5"><p className="text-xs text-zinc-400">Narudžbe</p><p className="text-2xl font-bold mt-1">{data?.orders ?? '—'}</p></div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5"><p className="text-xs text-zinc-400">Prihod</p><p className="text-2xl font-bold mt-1">{data?.revenue ?? '—'}</p></div>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
@@ -254,3 +254,19 @@ async def public_homepage(db: AsyncSession = Depends(get_db)):
         "hero": [HeroSlideOut.from_orm(s) for s in slides.scalars()],
         "sections": [SectionOut.from_orm(s) for s in sections.scalars()],
     }
+
+@router.post("/hero/reorder")
+async def reorder_hero(ids: List[int], user: User = Depends(require_cms_admin), db: AsyncSession = Depends(get_db)):
+    for i, sid in enumerate(ids):
+        await db.execute(update(HeroSlide).where(HeroSlide.id == sid).values(sort_order=i))
+    await db.commit()
+    await log_audit(db, user.id, "cms.hero.reorder", "HeroSlide", None, {"order": ids})
+    return {"ok": True}
+
+@router.post("/sections/reorder")
+async def reorder_sections(ids: List[int], user: User = Depends(require_cms_admin), db: AsyncSession = Depends(get_db)):
+    for i, sid in enumerate(ids):
+        await db.execute(update(HomepageSection).where(HomepageSection.id == sid).values(sort_order=i))
+    await db.commit()
+    await log_audit(db, user.id, "cms.section.reorder", "HomepageSection", None, {"order": ids})
+    return {"ok": True}

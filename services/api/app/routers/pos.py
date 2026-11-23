@@ -241,11 +241,16 @@ async def pos_sale(data: POSSaleRequest, user: User = Depends(get_current_user),
             db.add(ticket)
             tickets_created.append(code)
     elif data.ticket_type_id:
+        tt = await db.get(TicketType, data.ticket_type_id)
+        if not tt:
+            raise HTTPException(404, "Ticket type not found")
+        # Resolve event from ticket type; do not trust client-supplied event id
+        if user.role not in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
+            await check_event_cap(db, tt.event_id, user, "pos")
         inv = await db.execute(select(TicketInventory).where(TicketInventory.ticket_type_id == data.ticket_type_id).with_for_update())
         inventory = inv.scalar_one_or_none()
         if not inventory or inventory.available < data.quantity:
             raise HTTPException(400, "Insufficient inventory")
-        tt = await db.get(TicketType, data.ticket_type_id)
         inventory.available -= data.quantity
         inventory.sold += data.quantity
         total = float(tt.price) * data.quantity

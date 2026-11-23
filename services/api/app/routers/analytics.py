@@ -145,6 +145,16 @@ async def organizer_overview(
         if member and not (has_cap(member.role, "view_sales") or has_cap(member.role, "view_finance")):
             raise HTTPException(403, "Missing sales or finance capability")
     event_ids = await _org_event_ids(db, organization_id)
+    # If user has event-level permissions, restrict to those events
+    if user.role not in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
+        from app.models.permissions import EventPermission
+        eps = (await db.execute(select(EventPermission).where(
+            EventPermission.user_id == user.id,
+            EventPermission.organization_id == organization_id,
+        ))).scalars().all()
+        if eps:
+            allowed = {ep.event_id for ep in eps if ep.can_view_sales or ep.can_view_finance}
+            event_ids = [eid for eid in event_ids if eid in allowed]
     if not event_ids:
         return {"revenue": 0, "orders": 0, "tickets": 0, "pos_revenue": 0, "web_revenue": 0}
 

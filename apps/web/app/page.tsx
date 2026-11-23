@@ -95,27 +95,29 @@ export default function Home() {
       </section>
 
       <section className="py-14 bg-gradient-to-r from-indigo-950 to-purple-950 text-white">
-        <div className="max-w-5xl mx-auto px-5 flex flex-col md:flex-row items-center gap-10">
+        <div className="max-w-5xl mx-auto px-5 flex flex-col md:flex-row items-center gap-8">
           <div className="flex-1">
             <h2 className="text-2xl md:text-3xl font-bold">Organizuješ događaj?</h2>
             <p className="mt-3 text-white/70">Objavi svoj događaj, prodaj ulaznice i dođi do hiljada posjetilaca širom regije.</p>
             <Link href="/organizer" className="inline-block mt-5 bg-purple-500 hover:bg-purple-600 px-6 py-2.5 rounded-lg font-semibold text-sm">Postani organizator →</Link>
           </div>
-          <div className="w-full md:w-80 aspect-video bg-white/5 rounded-xl border border-white/10 flex items-center justify-center text-zinc-500 text-sm">
-            Organizer Dashboard
+          <div className="w-full md:w-96">
+            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80" alt="Dashboard" className="rounded-xl border border-white/10" />
           </div>
         </div>
       </section>
 
       <section className="py-14 bg-white">
-        <div className="max-w-5xl mx-auto px-5 text-center">
+        <div className="max-w-4xl mx-auto px-5 text-center">
           <h2 className="text-2xl font-bold">Balkan Events aplikacija</h2>
           <p className="mt-3 text-zinc-500">Svi događaji u tvom džepu. Pretraži, kupi ulaznice i prati omiljene izvođače.</p>
-          <div className="mt-8 flex justify-center gap-4 opacity-50">
-            <div className="bg-black text-white px-5 py-2.5 rounded-lg text-xs">App Store</div>
-            <div className="bg-black text-white px-5 py-2.5 rounded-lg text-xs">Google Play</div>
+          <div className="mt-6 flex flex-wrap justify-center gap-6 text-sm text-zinc-600">
+            <span className="flex items-center gap-2"><span className="text-green-500">✓</span> Brza i sigurna kupovina</span>
+            <span className="flex items-center gap-2"><span className="text-green-500">✓</span> Digitalne ulaznice (QR)</span>
+            <span className="flex items-center gap-2"><span className="text-green-500">✓</span> Personalizovane preporuke</span>
+            <span className="flex items-center gap-2"><span className="text-green-500">✓</span> Obavijesti o omiljenim događajima</span>
           </div>
-          <p className="mt-4 text-xs text-zinc-400">Aplikacija je u razvoju. Dostupna uskoro.</p>
+          <p className="mt-6 text-xs text-zinc-400">Mobilna aplikacija je u razvoju. Dostupna uskoro.</p>
         </div>
       </section>
     </>

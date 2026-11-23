@@ -203,8 +203,14 @@ async def export_scans(event_id: int, user: User = Depends(get_current_user), db
     return StreamingResponse(buf, media_type="text/csv", headers={"Content-Disposition": f"attachment; filename=scans-{event_id}.csv"})
 
 
+class OfflineScan(BaseModel):
+    qr_data: str
+    event_id: int
+    entry_point_id: Optional[int] = None
+
+
 @router.post("/offline/sync")
-async def offline_sync(scans: list, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def offline_sync(scans: list[OfflineScan], user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Accept offline scans for later reconciliation.
     Limitation: without a central connection, concurrent double-entry across
     devices cannot be prevented. Offline validation is not a guaranteed check.
@@ -212,22 +218,22 @@ async def offline_sync(scans: list, user: User = Depends(get_current_user), db: 
     accepted = 0
     conflicts = 0
     for s in scans:
-        event_id = s.get("event_id")
-        qr = s.get("qr_data")
+        event_id = s.event_id
+        qr = s.qr_data
         if not event_id or not qr:
             continue
         await check_event_cap(db, event_id, user, "scan")
         existing = (await db.execute(select(Ticket).where(Ticket.qr_data == qr))).scalar_one_or_none()
         if not existing:
-            await _write_log(db, None, event_id, s.get("entry_point_id"), user.id, "INVALID", "offline_not_found")
+            await _write_log(db, None, event_id, s.entry_point_id, user.id, "INVALID", "offline_not_found")
             continue
         if existing.is_used:
-            await _write_log(db, existing.id, event_id, s.get("entry_point_id"), user.id, "ALREADY_USED", "offline_conflict")
+            await _write_log(db, existing.id, event_id, s.entry_point_id, user.id, "ALREADY_USED", "offline_conflict")
             conflicts += 1
             continue
         existing.is_used = True
         existing.used_at = datetime.utcnow()
-        await _write_log(db, existing.id, event_id, s.get("entry_point_id"), user.id, "VALID", "offline_sync")
+        await _write_log(db, existing.id, event_id, s.entry_point_id, user.id, "VALID", "offline_sync")
         accepted += 1
     return {
         "accepted": accepted,

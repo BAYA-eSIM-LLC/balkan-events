@@ -246,3 +246,37 @@ No Stripe, no in-app payment, no store submission.
 - POS sale flow
 - Camera scanner (22.4)
 - Live screenshots
+
+---
+
+## Phase 22.4 – Mobile QR Scanner PRO
+
+**Commit:** pending  
+**Date:** 2026-11-23
+
+### Screen
+- `app/organizer/scanner.tsx`
+- expo-camera `CameraView` with QR barcode scanning
+- Manual code entry
+- Event ID and entry point inputs
+- Results: VALID (green), ALREADY_USED (yellow), WRONG_EVENT / INVALID (red)
+- Dedupes same code within 2.5s
+- Offline toggle labels result as not confirmed and states double-entry risk
+- Counts valid and rejected
+- Uses existing `POST /scanner/validate` — no local ticket marking
+
+### Security
+- Backend remains the authority
+- User JWT from SecureStore
+- Event-level `scan` capability enforced by API
+- No sensitive user data shown
+
+### Tests
+- TypeScript `tsc --noEmit`: passed
+- Backend scanner tests already cover VALID / ALREADY_USED / WRONG_EVENT / INVALID and device auth
+- Camera on physical device: not tested in this environment
+
+### Not finished
+- Sound feedback
+- Device token entry UI (header still user JWT)
+- Live screenshots

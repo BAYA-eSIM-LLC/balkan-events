@@ -44,7 +44,7 @@ export default function OrganizerDashboard() {
       <Pressable style={styles.link} onPress={() => router.push('/organizer/team')}><Text style={styles.linkText}>Team</Text></Pressable>
       <Pressable style={styles.link} onPress={() => router.push('/organizer/guests')}><Text style={styles.linkText}>Guest lists</Text></Pressable>
       <Pressable style={styles.link} onPress={() => router.push('/organizer/pos')}><Text style={styles.linkText}>POS</Text></Pressable>
-      <Pressable style={styles.link} onPress={() => router.push('/organizer/scanners')}><Text style={styles.linkText}>Scanners</Text></Pressable>
+      <Pressable style={styles.link} onPress={() => router.push('/organizer/scanner')}><Text style={styles.linkText}>Scan tickets</Text></Pressable>
     </ScrollView>
   );
 }

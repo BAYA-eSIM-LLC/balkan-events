@@ -12,7 +12,8 @@ from app.models.event import Event, EventStatus
 from app.models.audit import AuditLog
 from app.models.support import SupportTicket, AdminNote
 from app.models.ledger import LedgerEntry
-from app.models.order import Order
+from app.models.order import Order, OrderItem
+from app.models.ticket import Ticket
 from app.security import hash_password, verify_password
 
 router = APIRouter(prefix="/admin", tags=["admin-system"])
@@ -65,24 +66,102 @@ async def list_users(
     page_size: int = Query(20, ge=1, le=100),
     role: str = None,
     active: bool = None,
+    q: str = None,
+    date_from: str = None,
+    date_to: str = None,
+    sort: str = Query("created_at"),
+    order: str = Query("desc"),
     user: User = Depends(require_admin_role(*ADMIN_ONLY)),
     db: AsyncSession = Depends(get_db)
 ):
     page, page_size = paginate(page, page_size)
-    q = select(User)
+    query = select(User)
     if role:
-        q = q.where(User.role == role)
+        query = query.where(User.role == role)
     if active is not None:
-        q = q.where(User.is_active == active)
-    total = await db.scalar(select(func.count()).select_from(q.subquery()))
-    q = q.offset((page - 1) * page_size).limit(page_size)
-    result = await db.execute(q)
-    users = result.scalars().all()
+        query = query.where(User.is_active == active)
+    if q:
+        term = f"%{q.strip()}%"
+        conditions = [User.email.ilike(term), User.full_name.ilike(term)]
+        if q.strip().isdigit():
+            conditions.append(User.id == int(q.strip()))
+        query = query.where(or_(*conditions))
+    if date_from:
+        try:
+            query = query.where(User.created_at >= datetime.fromisoformat(date_from))
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            query = query.where(User.created_at <= datetime.fromisoformat(date_to + "T23:59:59"))
+        except ValueError:
+            pass
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    sort_col = {"id": User.id, "email": User.email, "created_at": User.created_at, "role": User.role}.get(sort, User.created_at)
+    query = query.order_by(sort_col.asc() if order == "asc" else sort_col.desc())
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    users = (await db.execute(query)).scalars().all()
     return {
         "total": total or 0,
         "page": page,
         "page_size": page_size,
-        "items": [{"id": u.id, "email": u.email, "role": u.role, "is_active": u.is_active, "created_at": u.created_at.isoformat() if u.created_at else None} for u in users]
+        "items": [{
+            "id": u.id,
+            "email": u.email,
+            "full_name": u.full_name,
+            "role": u.role,
+            "is_active": u.is_active,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+            "updated_at": u.updated_at.isoformat() if u.updated_at else None,
+        } for u in users]
+    }
+
+
+@router.get("/users/{user_id}")
+async def get_user_detail(
+    user_id: int,
+    user: User = Depends(require_admin_role(*ADMIN_ONLY)),
+    db: AsyncSession = Depends(get_db)
+):
+    target = await db.get(User, user_id)
+    if not target:
+        raise HTTPException(404, "User not found")
+    orders = (await db.execute(select(Order).where(Order.user_id == user_id).order_by(Order.created_at.desc()).limit(20))).scalars().all()
+    tickets = (await db.execute(
+        select(Ticket, Order.id)
+        .join(OrderItem, Ticket.order_item_id == OrderItem.id)
+        .join(Order, OrderItem.order_id == Order.id)
+        .where(Order.user_id == user_id)
+        .order_by(Ticket.created_at.desc())
+        .limit(20)
+    )).all()
+    last_order = orders[0].created_at if orders else None
+    last_activity = max(filter(None, [target.updated_at, last_order]), default=None)
+    return {
+        "id": target.id,
+        "email": target.email,
+        "full_name": target.full_name,
+        "phone": target.phone,
+        "role": target.role,
+        "is_active": target.is_active,
+        "is_verified": target.is_verified,
+        "created_at": target.created_at.isoformat() if target.created_at else None,
+        "updated_at": target.updated_at.isoformat() if target.updated_at else None,
+        "last_activity": last_activity.isoformat() if last_activity else None,
+        "orders": [{
+            "id": o.id,
+            "reference": o.reference,
+            "status": o.status,
+            "total_amount": float(o.total_amount) if o.total_amount else 0,
+            "created_at": o.created_at.isoformat() if o.created_at else None,
+        } for o in orders],
+        "tickets": [{
+            "id": t.id,
+            "code": t.code,
+            "is_used": t.is_used,
+            "order_id": oid,
+            "created_at": t.created_at.isoformat() if t.created_at else None,
+        } for t, oid in tickets],
     }
 
 @router.patch("/users/{user_id}/role")

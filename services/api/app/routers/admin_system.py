@@ -385,3 +385,17 @@ async def my_tickets(
         "page_size": page_size,
         "items": [{"id": t.id, "subject": t.subject, "status": t.status, "created_at": t.created_at.isoformat() if t.created_at else None} for t in tickets]
     }
+
+@public_support.get("/tickets/{ticket_id}")
+async def get_own_ticket(ticket_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Return own support ticket. 404 if not owner or not found (prevents enumeration)."""
+    ticket = await db.get(SupportTicket, ticket_id)
+    if not ticket or ticket.user_id != user.id:
+        raise HTTPException(404, "Ticket not found")
+    return {
+        "id": ticket.id,
+        "subject": ticket.subject,
+        "body": ticket.body,
+        "status": ticket.status,
+        "created_at": ticket.created_at.isoformat() if ticket.created_at else None,
+    }

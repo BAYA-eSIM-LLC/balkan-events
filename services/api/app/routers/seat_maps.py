@@ -97,12 +97,18 @@ async def get_seat_map_for_event(event_id: int, db: AsyncSession = Depends(get_d
 
 
 async def _seat_map_payload(db: AsyncSession, sm: SeatMap):
+    sectors_result = await db.execute(select(Sector).where(Sector.seat_map_id == sm.id).order_by(Sector.sort_order))
+    sectors = sectors_result.scalars().all()
     sectors_out = []
-    for sector in sm.sectors:
+    for sector in sectors:
+        rows_result = await db.execute(select(SeatRow).where(SeatRow.sector_id == sector.id).order_by(SeatRow.sort_order))
+        rows = rows_result.scalars().all()
         rows_out = []
-        for row in sector.rows:
+        for row in rows:
+            seats_result = await db.execute(select(Seat).where(Seat.row_id == row.id))
+            seats = seats_result.scalars().all()
             seats_out = []
-            for seat in row.seats:
+            for seat in seats:
                 price = float(seat.price_override) if seat.price_override is not None else float(sector.base_price)
                 seats_out.append({
                     "id": seat.id,

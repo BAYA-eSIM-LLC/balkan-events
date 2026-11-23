@@ -1,0 +1,4 @@
+# Copy to /etc/nginx/admin-allowlist.conf and uncomment the include
+# in nginx.conf only after the private link test passes.
+allow 203.0.113.10;
+deny all;

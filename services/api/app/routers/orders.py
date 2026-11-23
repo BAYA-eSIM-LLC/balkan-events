@@ -40,8 +40,9 @@ async def create_order(data: CreateOrderIn, user: User = Depends(get_current_use
     # Idempotency
     if data.idempotency_key:
         existing = await db.execute(select(Order).where(Order.idempotency_key == data.idempotency_key))
-        if existing.scalar_one_or_none():
-            raise HTTPException(409, "Duplicate request")
+        found = existing.scalar_one_or_none()
+        if found:
+            return found
     total = 0
     order = Order(
         user_id=user.id,
@@ -85,10 +86,17 @@ async def my_orders(user: User = Depends(get_current_user), db: AsyncSession = D
     return result.scalars().all()
 
 @router.post("/{order_id}/confirm")
-async def confirm_order(order_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    """Mark as PAID and issue tickets. No Stripe in this phase."""
+async def confirm_order(
+    order_id: int,
+    x_internal_confirm: Optional[str] = Header(None),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Confirm payment. Only internal process or verified callback. No customer self-confirm."""
+    if x_internal_confirm != "dev-internal-key":
+        raise HTTPException(403, "Confirmation requires verified payment source")
     order = await db.get(Order, order_id)
-    if not order or order.user_id != user.id:
+    if not order:
         raise HTTPException(404)
     if order.status != OrderStatus.RESERVED:
         raise HTTPException(400, "Order not in reserved state")
@@ -131,3 +139,27 @@ async def cancel_order(order_id: int, user: User = Depends(get_current_user), db
     await db.commit()
     await log_audit(db, user.id, "order.cancelled", "Order", order.id)
     return {"status": "CANCELLED"}
+
+@router.post("/internal/expire-reservations")
+async def expire_reservations(x_internal_job: Optional[str] = Header(None), db: AsyncSession = Depends(get_db)):
+    """Release expired reservations. Call from scheduler. Protected by internal header."""
+    if x_internal_job != "dev-internal-key":
+        raise HTTPException(403, "Internal job only")
+    now = datetime.utcnow()
+    result = await db.execute(
+        select(Order).where(Order.status == OrderStatus.RESERVED, Order.reserved_until < now).with_for_update(skip_locked=True)
+    )
+    expired = result.scalars().all()
+    released = 0
+    for order in expired:
+        items = await db.execute(select(OrderItem).where(OrderItem.order_id == order.id))
+        for oi in items.scalars():
+            inv = await db.execute(select(TicketInventory).where(TicketInventory.ticket_type_id == oi.ticket_type_id).with_for_update())
+            inventory = inv.scalar_one_or_none()
+            if inventory and inventory.reserved >= oi.quantity:
+                inventory.reserved -= oi.quantity
+                inventory.available += oi.quantity
+                released += oi.quantity
+        order.status = OrderStatus.EXPIRED
+    await db.commit()
+    return {"expired_orders": len(expired), "released_quantity": released}

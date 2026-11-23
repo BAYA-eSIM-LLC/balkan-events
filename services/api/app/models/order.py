@@ -9,6 +9,8 @@ class OrderStatus(str, enum.Enum):
     PAID = "paid"
     CANCELLED = "cancelled"
     REFUNDED = "refunded"
+    EXPIRED = "expired"
+    RESERVED = "reserved"
 
 class Order(Base):
     __tablename__ = "orders"

@@ -40,6 +40,7 @@ def event_to_dict(e: Event) -> dict:
 async def advanced_search(
     q: Optional[str] = None,
     country_id: Optional[int] = None,
+    country: Optional[str] = None,
     city_id: Optional[int] = None,
     city: Optional[str] = None,
     category_id: Optional[int] = None,
@@ -67,6 +68,8 @@ async def advanced_search(
         ))
     if country_id:
         query = query.where(Event.country_id == country_id)
+    if country:
+        query = query.where(func.lower(Event.country).contains(normalize(country)))
     if city_id:
         query = query.where(Event.city_id == city_id)
     if city:
@@ -130,3 +133,52 @@ async def popular_events(limit: int = Query(10, le=50), db: AsyncSession = Depen
         .limit(limit)
     )
     return {"results": [event_to_dict(e) for e in result.scalars().all()], "ranking": "featured > favorites > start_at"}
+
+
+@router.get("/discover")
+async def discover(db: AsyncSession = Depends(get_db)):
+    """Discovery sections from real published events. Empty sections stay empty."""
+    now = datetime.utcnow()
+    published = Event.status == EventStatus.PUBLISHED.value
+    upcoming = and_(published, Event.start_at >= now)
+
+    upcoming_q = await db.execute(select(Event).where(upcoming).order_by(Event.start_at).limit(12))
+    featured_q = await db.execute(select(Event).where(and_(upcoming, Event.is_featured == True)).order_by(Event.start_at).limit(8))
+    weekend_start = now + timedelta(days=(5 - now.weekday()) % 7)
+    weekend_q = await db.execute(
+        select(Event).where(and_(upcoming, Event.start_at >= weekend_start.replace(hour=0, minute=0, second=0), Event.start_at < weekend_start.replace(hour=0, minute=0, second=0) + timedelta(days=2))).limit(8)
+    )
+    recent_q = await db.execute(select(Event).where(published).order_by(Event.created_at.desc()).limit(8))
+
+    cities = await db.execute(
+        select(Event.city, func.count(Event.id)).where(upcoming, Event.city.isnot(None)).group_by(Event.city).order_by(func.count(Event.id).desc()).limit(10)
+    )
+    return {
+        "popular": [event_to_dict(e) for e in featured_q.scalars()],
+        "upcoming": [event_to_dict(e) for e in upcoming_q.scalars()],
+        "this_weekend": [event_to_dict(e) for e in weekend_q.scalars()],
+        "recently_added": [event_to_dict(e) for e in recent_q.scalars()],
+        "top_cities": [{"city": c, "count": n} for c, n in cities.all()],
+        "note": "Only published events. Empty when no data.",
+    }
+
+
+@router.get("/autocomplete")
+async def autocomplete(q: str = Query(..., min_length=2), db: AsyncSession = Depends(get_db)):
+    nq = normalize(q)
+    result = await db.execute(
+        select(Event.title, Event.slug, Event.city)
+        .where(Event.status == EventStatus.PUBLISHED.value, func.lower(Event.title).contains(nq))
+        .order_by(Event.start_at)
+        .limit(8)
+    )
+    return [{"title": r[0], "slug": r[1], "city": r[2]} for r in result.all()]
+
+
+@router.get("/sitemap.xml")
+async def sitemap(db: AsyncSession = Depends(get_db)):
+    from fastapi.responses import Response
+    result = await db.execute(select(Event.slug).where(Event.status == EventStatus.PUBLISHED.value))
+    urls = "".join(f"<url><loc>/events/{s}</loc></url>" for (s,) in result.all())
+    xml = f'<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
+    return Response(content=xml, media_type="application/xml")

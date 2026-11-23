@@ -17,6 +17,7 @@ from app.routers.analytics import router as analytics_router, admin_router as ad
 from app.routers.tickets_pdf import router as tickets_pdf_router, guest_router, admin_router as admin_guest_router
 from app.routers.sponsors import router as sponsors_router, admin_router as admin_sponsors_router, public_router as public_sponsors_router
 from app.routers.permissions import router as permissions_router, admin_router as admin_org_perm_router
+from app.routers.preferences import router as preferences_router
 from app.routers.orders import router as orders_router
 from app.routers.payments import router as payments_router
 
@@ -64,6 +65,7 @@ app.include_router(admin_sponsors_router)
 app.include_router(public_sponsors_router)
 app.include_router(permissions_router)
 app.include_router(admin_org_perm_router)
+app.include_router(preferences_router)
 app.include_router(orders_router)
 app.include_router(payments_router)
 app.include_router(profile.router)

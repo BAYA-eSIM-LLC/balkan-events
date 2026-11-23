@@ -1,45 +1,58 @@
-import { EventCard, EmptyState } from '@/components/ui';
-import { fetchEvents } from '@/lib/api';
+'use client';
 
-export const metadata = { title: 'Pretraga događaja · BALKAN EVENTS' };
+import { useState } from 'react';
 
-export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; city?: string; date_preset?: string }> }) {
-  const params = await searchParams;
-  const qs = new URLSearchParams();
-  if (params.q) qs.set('q', params.q);
-  if (params.city) qs.set('city', params.city);
-  if (params.date_preset) qs.set('date_preset', params.date_preset);
-  const events = await fetchEvents(`/events/search?${qs.toString()}`);
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+export default function SearchPage() {
+  const [q, setQ] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('');
+  const [results, setResults] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+
+  const search = async () => {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (city) params.set('city', city);
+    if (country) params.set('country', country);
+    const r = await fetch(`${API}/events/search?${params}`);
+    const d = await r.json();
+    setResults(d.results || []);
+  };
+
+  const onType = async (v: string) => {
+    setQ(v);
+    if (v.length >= 2) {
+      const r = await fetch(`${API}/events/autocomplete?q=${encodeURIComponent(v)}`);
+      setSuggestions(await r.json());
+    } else setSuggestions([]);
+  };
 
   return (
-    <div className="bg-[#f6f5fb] min-h-screen pt-20 pb-8">
-      <div className="max-w-6xl mx-auto px-5">
-        <h1 className="text-3xl md:text-4xl font-display font-extrabold text-[#0d0b1f]">Pronađi događaj</h1>
-        <p className="text-gray-500 mt-1">Pretraži po nazivu, gradu ili datumu.</p>
-
-        <form className="mt-6 flex flex-wrap gap-3 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-          <input name="q" defaultValue={params.q} placeholder="Naziv, izvođač..." className="flex-1 min-w-[180px] border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#6d3df5]" />
-          <input name="city" defaultValue={params.city} placeholder="Grad" className="border border-gray-200 rounded-xl px-4 py-3 text-sm w-36" />
-          <select name="date_preset" defaultValue={params.date_preset || ''} className="border border-gray-200 rounded-xl px-4 py-3 text-sm">
-            <option value="">Bilo kada</option>
-            <option value="today">Danas</option>
-            <option value="tomorrow">Sutra</option>
-            <option value="weekend">Ovaj vikend</option>
-            <option value="next7">Narednih 7 dana</option>
-            <option value="next30">Narednih 30 dana</option>
-          </select>
-          <button type="submit" className="bg-[#6d3df5] hover:bg-[#7c50ff] text-white px-6 py-3 rounded-xl font-medium transition">Traži</button>
-        </form>
-
-        {events.length === 0 ? (
-          <div className="mt-10">
-            <EmptyState title="Nema rezultata" description="Pokušaj drugačije kriterije ili istraži kategorije." />
-          </div>
-        ) : (
-          <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {events.map(e => <EventCard key={e.id} event={e} />)}
-          </div>
+    <div className="p-4 md:p-8 max-w-3xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Search events</h1>
+      <div className="space-y-2 mb-4">
+        <input className="border p-2 w-full" placeholder="Event, artist..." value={q} onChange={e => onType(e.target.value)} />
+        {suggestions.length > 0 && (
+          <ul className="border rounded text-sm">
+            {suggestions.map((s: any) => <li key={s.slug} className="p-2 hover:bg-gray-50">{s.title} — {s.city}</li>)}
+          </ul>
         )}
+        <div className="flex gap-2">
+          <input className="border p-2 flex-1" placeholder="City" value={city} onChange={e => setCity(e.target.value)} />
+          <input className="border p-2 flex-1" placeholder="Country" value={country} onChange={e => setCountry(e.target.value)} />
+        </div>
+        <button onClick={search} className="bg-black text-white px-4 py-2 rounded">Search</button>
+      </div>
+      <div className="space-y-2">
+        {results.map(e => (
+          <a key={e.id} href={`/events/${e.slug}`} className="block border rounded p-3">
+            <div className="font-medium">{e.title}</div>
+            <div className="text-xs text-gray-500">{e.city}, {e.country}</div>
+          </a>
+        ))}
+        {results.length === 0 && <p className="text-sm text-gray-500">No results. Try another city or remove filters.</p>}
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ from app.routers.admin_system import router as admin_system_router, public_suppo
 from app.routers.cms import router as cms_router, public_router as cms_public_router
 from app.routers.scanner import router as scanner_router
 from app.routers.orders import router as orders_router
+from app.routers.payments import router as payments_router
 
 app = FastAPI(title="Balkan Events API", version="0.1.0")
 
@@ -40,6 +41,7 @@ app.include_router(cms_router)
 app.include_router(cms_public_router)
 app.include_router(scanner_router)
 app.include_router(orders_router)
+app.include_router(payments_router)
 app.include_router(profile.router)
 app.include_router(locations_router)
 app.include_router(categories_router)

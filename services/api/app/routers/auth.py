@@ -11,20 +11,10 @@ from app.security import hash_password, verify_password, create_access_token, cr
 import pyotp
 import secrets
 from app.services.mfa import encrypt_secret, decrypt_secret, hash_code, generate_recovery_codes, verify_totp
+from app.services.rate_limit import limited as _limited
 from app.models.mfa import MFARecoveryCode, MFAPending
 
 
-_rate: dict[str, list[float]] = {}
-
-def _limited(key: str, limit: int = 5, window: int = 300) -> bool:
-    now = datetime.utcnow().timestamp()
-    hits = [t for t in _rate.get(key, []) if now - t < window]
-    if len(hits) >= limit:
-        _rate[key] = hits
-        return True
-    hits.append(now)
-    _rate[key] = hits
-    return False
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

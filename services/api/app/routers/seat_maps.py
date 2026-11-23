@@ -10,6 +10,7 @@ from app.models.event import Event
 from app.models.user import User, UserRole
 from app.models.organization import OrganizationMember
 from app.deps import get_current_user, require_role, get_org_member
+from app.services.permissions import check_event_cap
 from app.routers.admin_system import log_audit
 
 router = APIRouter(prefix="/seat-maps", tags=["seat-maps"])
@@ -68,6 +69,7 @@ async def _get_seat_map_for_org(db: AsyncSession, seat_map_id: int, user: User) 
 async def create_seat_map(data: SeatMapCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     if user.role not in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
         await get_org_member(data.organization_id, user, db)
+        await check_event_cap(db, data.event_id, user, "manage_events")
     event = await db.get(Event, data.event_id)
     if not event or event.organization_id != data.organization_id:
         raise HTTPException(400, "Event not found or does not belong to organization")
@@ -151,6 +153,8 @@ async def get_seat_map(seat_map_id: int, user: User = Depends(get_current_user),
 @router.post("/{seat_map_id}/sectors")
 async def add_sector(seat_map_id: int, data: SectorCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     sm = await _get_seat_map_for_org(db, seat_map_id, user)
+    if user.role not in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
+        await check_event_cap(db, sm.event_id, user, "manage_events")
     sector = Sector(
         seat_map_id=sm.id,
         name=data.name,
@@ -175,6 +179,8 @@ async def add_row(sector_id: int, data: RowCreate, user: User = Depends(get_curr
     if not sector:
         raise HTTPException(404, "Sector not found")
     sm = await _get_seat_map_for_org(db, sector.seat_map_id, user)
+    if user.role not in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
+        await check_event_cap(db, sm.event_id, user, "manage_events")
     row = SeatRow(sector_id=sector.id, label=data.label, sort_order=data.sort_order)
     db.add(row)
     await db.flush()

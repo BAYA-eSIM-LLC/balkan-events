@@ -14,6 +14,7 @@ from app.models.order import Order, OrderItem, OrderStatus
 from app.models.ticket import Ticket, TicketType
 from app.models.inventory import TicketInventory
 from app.deps import get_current_user, require_role, get_org_member
+from app.services.permissions import check_event_cap
 from app.routers.admin_system import log_audit
 import uuid, secrets
 
@@ -204,9 +205,12 @@ async def pos_sale(data: POSSaleRequest, user: User = Depends(get_current_user),
                 if active.scalar_one_or_none():
                     raise HTTPException(409, f"Seat {seat.id} is reserved")
             seat.status = "SOLD"
-        # Price from first seat's sector
+        # Price from first seat's sector and enforce event-level can_pos
         row = await db.get(SeatRow, seats[0].row_id)
         sector = await db.get(Sector, row.sector_id)
+        sm_tmp = await db.get(SeatMap, sector.seat_map_id)
+        if user.role not in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
+            await check_event_cap(db, sm_tmp.event_id, user, "pos")
         total = sum(float(s.price_override) if s.price_override is not None else float(sector.base_price) for s in seats)
         # Create order + tickets
         order = Order(

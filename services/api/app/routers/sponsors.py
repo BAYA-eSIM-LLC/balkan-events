@@ -9,6 +9,7 @@ from app.models.sponsor import Sponsor, SponsorPackage, SponsorPlacement
 from app.models.event import Event
 from app.models.user import User, UserRole
 from app.deps import get_current_user, require_role, get_org_member
+from app.services.permissions import check_event_cap
 from app.routers.admin_system import log_audit
 
 router = APIRouter(prefix="/sponsors", tags=["sponsors"])
@@ -139,6 +140,8 @@ async def create_placement(data: PlacementCreate, user: User = Depends(get_curre
     if not sponsor:
         raise HTTPException(404)
     await _check_sponsor_access(db, sponsor, user)
+    if data.event_id and user.role not in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
+        await check_event_cap(db, data.event_id, user, "manage_events")
     p = SponsorPlacement(**data.model_dump())
     db.add(p)
     await db.commit()

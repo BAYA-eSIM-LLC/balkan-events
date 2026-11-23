@@ -463,3 +463,52 @@ Customer, Organizer, Scanner and POS screens from phases 22.1–22.7.
 
 ### Constraints
 Only `super-admin-dashboard`. No main merge, no deploy, no production, no Stripe, no store submission.
+
+---
+
+## Phase 22.9 – API Connectivity & Device Testing
+
+**Commit:** pending  
+**Date:** 2026-11-23
+
+### API configuration
+- Placeholder `https://dev.balkanevents.example` removed as active default.
+- `EXPO_PUBLIC_API_URL` is now required.
+- `.env.example` documents local values:
+  - `http://localhost:8000` for simulator on same host
+  - `http://10.0.2.2:8000` for Android emulator
+  - `http://<dev-machine-ip>:8000` for a physical device on the same LAN
+- No production URL is used.
+- No server was provisioned.
+
+### Local backend status
+- `docker-compose.yml` exists and can start Postgres 16, Redis and the API on port 8000.
+- Docker is not available in this environment.
+- Backend was not started here.
+- To run locally: `docker compose up` then set `EXPO_PUBLIC_API_URL=http://localhost:8000`.
+
+### Auth changes
+- Failed refresh now clears SecureStore tokens.
+- Existing guards on tabs and organizer then redirect to welcome.
+
+### Test results
+| Module | Result |
+|---|---|
+| TypeScript `tsc --noEmit` | passed |
+| Login / register / refresh | not run — no backend |
+| Discover / search / tickets / orders | not run — no backend |
+| Seat reserve | not run — no backend |
+| Organizer events / guests | not run — no backend |
+| POS open / sale / close | not run — no backend |
+| Scanner camera / VALID / ALREADY_USED | not run — no device, no backend |
+| iOS simulator | not available |
+| Android emulator | not available |
+| Physical iPhone / Android | not available |
+
+### Blockers
+1. No running development API in this environment.
+2. No iOS simulator, Android emulator or physical device.
+3. CORS and HTTPS cannot be verified until a backend is reachable.
+
+### Constraints
+Only `super-admin-dashboard`. No main merge, no deploy, no production, no Stripe, no store submission.

@@ -2,7 +2,10 @@ import Constants from 'expo-constants';
 import { TokenResponse, ApiError } from '../types';
 import { getAccess, getRefresh, saveTokens, clearTokens } from './tokenStore';
 
-const BASE = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL || 'https://dev.balkanevents.example';
+const BASE = process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl || '';
+if (!BASE) {
+  console.warn('EXPO_PUBLIC_API_URL is not set. API calls will fail until it is configured.');
+}
 
 let refreshing: Promise<string | null> | null = null;
 
@@ -39,7 +42,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     if (r.status === 401 && !path.startsWith('/auth/')) {
       if (!refreshing) refreshing = refreshAccess().finally(() => { refreshing = null; });
       const next = await refreshing;
-      if (!next) throw { status: 401, detail: 'Session expired' } as ApiError;
+      if (!next) { await clearTokens(); throw { status: 401, detail: 'Session expired' } as ApiError; }
       headers.Authorization = `Bearer ${next}`;
       r = await fetch(`${BASE}${path}`, { ...init, headers, signal: controller.signal });
     }

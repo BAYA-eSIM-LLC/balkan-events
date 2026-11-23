@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from datetime import datetime
+from pydantic import BaseModel
+from typing import Optional
 from app.database import get_db
 from app.deps import get_current_user, require_role
 from app.models.user import User, UserRole, ADMIN_ROLES
@@ -10,6 +12,8 @@ from app.models.event import Event, EventStatus
 from app.models.audit import AuditLog
 from app.models.support import SupportTicket, AdminNote
 from app.models.ledger import LedgerEntry
+from app.models.order import Order
+from app.security import hash_password, verify_password
 
 router = APIRouter(prefix="/admin", tags=["admin-system"])
 public_support = APIRouter(prefix="/support", tags=["support"])
@@ -43,6 +47,7 @@ async def dashboard(user: User = Depends(require_admin_role(*ADMIN_ONLY)), db: A
     published = await db.scalar(select(func.count(Event.id)).where(Event.status == EventStatus.PUBLISHED.value))
     pending_orgs = await db.scalar(select(func.count(Organization.id)).where(Organization.verification_status == "SUBMITTED"))
     open_tickets = await db.scalar(select(func.count(SupportTicket.id)).where(SupportTicket.status == "OPEN"))
+    orders_count = await db.scalar(select(func.count(Order.id)))
     return {
         "users": users_count or 0,
         "organizations": orgs_count or 0,
@@ -50,6 +55,7 @@ async def dashboard(user: User = Depends(require_admin_role(*ADMIN_ONLY)), db: A
         "published_events": published or 0,
         "pending_verifications": pending_orgs or 0,
         "open_support_tickets": open_tickets or 0,
+        "orders": orders_count or 0,
         "note": "Real counts from database only. No estimated or fake financial data."
     }
 
@@ -106,6 +112,29 @@ async def set_user_active(user_id: int, active: bool, user: User = Depends(requi
     await log_audit(db, user.id, "user.active_changed", "user", user_id, {"active": active})
     return {"id": target.id, "is_active": target.is_active}
 
+class PasswordChangeIn(BaseModel):
+    current_password: Optional[str] = None
+    new_password: str
+
+@router.post("/users/me/password")
+async def change_own_password(data: PasswordChangeIn, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not data.current_password or not verify_password(data.current_password, user.password_hash):
+        raise HTTPException(400, "Current password incorrect")
+    user.password_hash = hash_password(data.new_password)
+    await db.commit()
+    await log_audit(db, user.id, "user.password_changed", "user", user.id, {"self": True})
+    return {"status": "ok"}
+
+@router.post("/users/{user_id}/password")
+async def admin_reset_password(user_id: int, data: PasswordChangeIn, user: User = Depends(require_admin_role(UserRole.SUPERADMIN)), db: AsyncSession = Depends(get_db)):
+    target = await db.get(User, user_id)
+    if not target:
+        raise HTTPException(404, "User not found")
+    target.password_hash = hash_password(data.new_password)
+    await db.commit()
+    await log_audit(db, user.id, "user.password_reset_by_admin", "user", user_id)
+    return {"status": "ok", "user_id": user_id}
+
 @router.get("/organizations/pending")
 async def pending_organizations(user: User = Depends(require_admin_role(*REVIEWER_ROLES)), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Organization).where(Organization.verification_status == "SUBMITTED"))
@@ -153,6 +182,65 @@ async def change_event_status(event_id: int, new_status: str, user: User = Depen
     await db.commit()
     await log_audit(db, user.id, "event.status_changed", "event", event_id, {"from": old, "to": new_status})
     return {"id": event.id, "status": event.status}
+
+@router.get("/orders")
+async def list_orders(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    user: User = Depends(require_admin_role(*ADMIN_ONLY)),
+    db: AsyncSession = Depends(get_db)
+):
+    page, page_size = paginate(page, page_size)
+    total = await db.scalar(select(func.count(Order.id)))
+    q = select(Order).order_by(Order.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(q)
+    orders = result.scalars().all()
+    return {
+        "total": total or 0,
+        "page": page,
+        "page_size": page_size,
+        "items": [{
+            "id": o.id,
+            "reference": o.reference,
+            "status": o.status,
+            "total_amount": float(o.total_amount) if o.total_amount else 0,
+            "currency": o.currency,
+            "user_id": o.user_id,
+            "created_at": o.created_at.isoformat() if o.created_at else None,
+        } for o in orders]
+    }
+
+# Simple platform settings stored in memory for this phase (no secrets).
+# In a full implementation this would be a PlatformSettings table.
+_platform_settings = {
+    "platform_name": "BALKAN EVENTS",
+    "contact_email": "support@balkanevents.org",
+    "default_currency": "EUR",
+    "default_language": "bs",
+}
+
+class SettingsUpdate(BaseModel):
+    platform_name: Optional[str] = None
+    contact_email: Optional[str] = None
+    default_currency: Optional[str] = None
+    default_language: Optional[str] = None
+
+@router.get("/settings")
+async def get_settings(user: User = Depends(require_admin_role(*ADMIN_ONLY))):
+    return _platform_settings
+
+@router.patch("/settings")
+async def update_settings(data: SettingsUpdate, user: User = Depends(require_admin_role(*ADMIN_ONLY)), db: AsyncSession = Depends(get_db)):
+    global _platform_settings
+    changes = {}
+    for field in ("platform_name", "contact_email", "default_currency", "default_language"):
+        val = getattr(data, field)
+        if val is not None:
+            changes[field] = val
+            _platform_settings[field] = val
+    if changes:
+        await log_audit(db, user.id, "platform.settings_updated", "platform", None, changes)
+    return _platform_settings
 
 # --- Support Tickets (admin) ---
 @router.get("/support/tickets")

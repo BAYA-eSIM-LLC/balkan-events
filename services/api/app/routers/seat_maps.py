@@ -263,20 +263,30 @@ async def release_reservation(reservation_id: int, user: User = Depends(get_curr
 
 
 @router.post("/internal/expire-seat-reservations")
-async def expire_seat_reservations(db: AsyncSession = Depends(get_db)):
-    """Release expired active seat reservations. Called by scheduler or admin."""
+async def expire_seat_reservations(
+    x_internal_job: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Release expired active seat reservations. Protected by internal header. Uses FOR UPDATE."""
+    from app.config import INTERNAL_API_SECRET
+    if not INTERNAL_API_SECRET or x_internal_job != INTERNAL_API_SECRET:
+        raise HTTPException(403, "Internal job only")
     now = datetime.utcnow()
     result = await db.execute(
         select(SeatReservation).where(
             SeatReservation.status == "ACTIVE",
             SeatReservation.expires_at <= now,
-        )
+        ).with_for_update(skip_locked=True)
     )
     expired = result.scalars().all()
     count = 0
     for res in expired:
+        if res.status != "ACTIVE":
+            continue
         seat = await db.get(Seat, res.seat_id)
         if seat and seat.status == "RESERVED":
+            locked = await db.execute(select(Seat).where(Seat.id == seat.id).with_for_update())
+            seat = locked.scalar_one()
             seat.status = "FREE"
         res.status = "EXPIRED"
         count += 1
@@ -308,3 +318,101 @@ async def admin_get_seat_map(seat_map_id: int, user: User = Depends(require_role
     if not sm:
         raise HTTPException(404, "Seat map not found")
     return await _seat_map_payload(db, sm)
+
+
+class CheckoutRequest(BaseModel):
+    seat_ids: List[int]
+    idempotency_key: Optional[str] = None
+
+
+@router.post("/checkout")
+async def seat_checkout(data: CheckoutRequest, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Create an Order from active seat reservations and link them.
+    Uses existing Order/OrderItem. Inventory is reserved against a seat-map ticket type.
+    """
+    from app.models.order import Order, OrderItem, OrderStatus
+    from app.models.ticket import TicketType
+    from app.models.inventory import TicketInventory
+    import uuid
+    from datetime import timedelta
+
+    now = datetime.utcnow()
+    # Lock seats
+    result = await db.execute(select(Seat).where(Seat.id.in_(data.seat_ids)).with_for_update())
+    seats = result.scalars().all()
+    if len(seats) != len(set(data.seat_ids)):
+        raise HTTPException(400, "One or more seats not found")
+
+    # Verify active reservations owned by user
+    res_result = await db.execute(
+        select(SeatReservation).where(
+            SeatReservation.seat_id.in_(data.seat_ids),
+            SeatReservation.user_id == user.id,
+            SeatReservation.status == "ACTIVE",
+            SeatReservation.expires_at > now,
+        )
+    )
+    reservations = res_result.scalars().all()
+    if len(reservations) != len(seats):
+        raise HTTPException(409, "Seats must be actively reserved by you and not expired")
+
+    # Determine event from first seat
+    first = seats[0]
+    row = await db.get(SeatRow, first.row_id)
+    sector = await db.get(Sector, row.sector_id)
+    sm = await db.get(SeatMap, sector.seat_map_id)
+    event = await db.get(Event, sm.event_id)
+
+    # Ensure a ticket type exists for this event (seat map)
+    tt_result = await db.execute(
+        select(TicketType).where(TicketType.event_id == event.id, TicketType.name == "Seat Map")
+    )
+    tt = tt_result.scalar_one_or_none()
+    if not tt:
+        tt = TicketType(
+            event_id=event.id,
+            name="Seat Map",
+            price=0,
+            currency="EUR",
+            quantity_total=100000,
+            quantity_sold=0,
+            quantity_reserved=0,
+            is_active=True,
+        )
+        db.add(tt)
+        await db.flush()
+        inv = TicketInventory(ticket_type_id=tt.id, available=100000, reserved=0, sold=0, version=1)
+        db.add(inv)
+        await db.flush()
+    else:
+        inv = await db.execute(select(TicketInventory).where(TicketInventory.ticket_type_id == tt.id).with_for_update())
+        inv = inv.scalar_one()
+
+    # Create order
+    total = sum(float(s.price_override) if s.price_override is not None else float(sector.base_price) for s in seats)
+    order = Order(
+        user_id=user.id,
+        status=OrderStatus.RESERVED.value,
+        total_amount=total,
+        currency="EUR",
+        reference=f"BE-{uuid.uuid4().hex[:10].upper()}",
+        reserved_until=now + timedelta(minutes=15),
+        idempotency_key=data.idempotency_key,
+    )
+    db.add(order)
+    await db.flush()
+
+    # One order item for all seats (quantity = number of seats)
+    oi = OrderItem(order_id=order.id, ticket_type_id=tt.id, quantity=len(seats), unit_price=total / len(seats) if seats else 0)
+    db.add(oi)
+    inv.available -= len(seats)
+    inv.reserved += len(seats)
+    inv.version += 1
+
+    # Link reservations
+    for res in reservations:
+        res.order_id = order.id
+
+    await db.commit()
+    await db.refresh(order)
+    return {"order_id": order.id, "reference": order.reference, "total": total, "seat_ids": data.seat_ids}

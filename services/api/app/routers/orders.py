@@ -10,6 +10,7 @@ from app.models.order import Order, OrderItem, OrderStatus
 from app.models.ticket import Ticket, TicketType
 from app.models.inventory import TicketInventory
 from app.models.reservation import Reservation
+from app.models.seat_map import Seat, SeatReservation
 from app.models.user import User
 from app.deps import get_current_user
 from app.config import INTERNAL_API_SECRET
@@ -110,7 +111,8 @@ async def confirm_order(
         raise HTTPException(400, "Order not in reserved state")
     # Issue tickets
     items = await db.execute(select(OrderItem).where(OrderItem.order_id == order.id))
-    for oi in items.scalars():
+    order_items = items.scalars().all()
+    for oi in order_items:
         inv = await db.execute(select(TicketInventory).where(TicketInventory.ticket_type_id == oi.ticket_type_id).with_for_update())
         inventory = inv.scalar_one()
         if inventory.reserved < oi.quantity:
@@ -128,6 +130,28 @@ async def confirm_order(
                 is_used=False,
             )
             db.add(ticket)
+    # Assign seats to tickets if this order has seat reservations
+    seat_res = await db.execute(
+        select(SeatReservation).where(
+            SeatReservation.order_id == order.id,
+            SeatReservation.status == "ACTIVE",
+        )
+    )
+    reservations = seat_res.scalars().all()
+    if reservations:
+        tickets_res = await db.execute(select(Ticket).where(Ticket.order_item_id.in_([oi.id for oi in order_items])))
+        tickets = tickets_res.scalars().all()
+        for res, ticket in zip(reservations, tickets):
+            seat = await db.get(Seat, res.seat_id)
+            if seat:
+                locked = await db.execute(select(Seat).where(Seat.id == seat.id).with_for_update())
+                seat = locked.scalar_one()
+                if seat.status == "SOLD":
+                    await db.rollback()
+                    raise HTTPException(409, f"Seat {seat.id} already sold")
+                seat.status = "SOLD"
+                ticket.seat_id = seat.id
+            res.status = "CONFIRMED"
     order.status = OrderStatus.PAID.value
     await db.commit()
     await log_audit(db, user.id, "order.confirmed", "Order", order.id)
@@ -147,6 +171,15 @@ async def cancel_order(order_id: int, user: User = Depends(get_current_user), db
         if inventory.reserved >= oi.quantity:
             inventory.reserved -= oi.quantity
             inventory.available += oi.quantity
+    # Release seats
+    seat_res = await db.execute(select(SeatReservation).where(SeatReservation.order_id == order.id, SeatReservation.status == "ACTIVE"))
+    for res in seat_res.scalars():
+        seat = await db.get(Seat, res.seat_id)
+        if seat and seat.status == "RESERVED":
+            locked = await db.execute(select(Seat).where(Seat.id == seat.id).with_for_update())
+            seat = locked.scalar_one()
+            seat.status = "FREE"
+        res.status = "RELEASED"
     order.status = OrderStatus.CANCELLED.value
     await db.commit()
     await log_audit(db, user.id, "order.cancelled", "Order", order.id)
@@ -176,5 +209,14 @@ async def expire_reservations(x_internal_job: Optional[str] = Header(None), db: 
                 inventory.available += oi.quantity
                 released += oi.quantity
         order.status = OrderStatus.EXPIRED.value
+        # Release seats
+        seat_res = await db.execute(select(SeatReservation).where(SeatReservation.order_id == order.id, SeatReservation.status == "ACTIVE"))
+        for res in seat_res.scalars():
+            seat = await db.get(Seat, res.seat_id)
+            if seat and seat.status == "RESERVED":
+                locked = await db.execute(select(Seat).where(Seat.id == seat.id).with_for_update())
+                seat = locked.scalar_one()
+                seat.status = "FREE"
+            res.status = "EXPIRED"
     await db.commit()
     return {"expired_orders": len(expired), "released_quantity": released}

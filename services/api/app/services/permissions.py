@@ -21,3 +21,53 @@ ROLE_CAPS = {
 
 def has_cap(role: str, cap: str) -> bool:
     return cap in ROLE_CAPS.get(role, set())
+
+
+async def check_event_cap(db, event_id: int, user, cap: str):
+    """Enforce capability for an event.
+    Superadmin/admin bypass. Org role grants unless an EventPermission row
+    exists and explicitly denies the matching flag.
+    """
+    from fastapi import HTTPException
+    from sqlalchemy import select
+    from app.models.event import Event
+    from app.models.organization import OrganizationMember
+    from app.models.permissions import EventPermission
+    from app.models.user import UserRole
+
+    if user.role in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
+        return True
+
+    event = await db.get(Event, event_id)
+    if not event:
+        raise HTTPException(404, "Event not found")
+
+    member = (await db.execute(select(OrganizationMember).where(
+        OrganizationMember.organization_id == event.organization_id,
+        OrganizationMember.user_id == user.id,
+    ))).scalar_one_or_none()
+    if not member:
+        raise HTTPException(403, "Not a member of this organization")
+
+    ep = (await db.execute(select(EventPermission).where(
+        EventPermission.event_id == event_id,
+        EventPermission.user_id == user.id,
+    ))).scalar_one_or_none()
+
+    flag = {
+        "manage_events": "can_manage",
+        "view_sales": "can_view_sales",
+        "view_finance": "can_view_finance",
+        "manage_tickets": "can_manage_tickets",
+        "scan": "can_scan",
+        "pos": "can_pos",
+    }.get(cap)
+
+    if ep and flag:
+        if getattr(ep, flag):
+            return True
+        raise HTTPException(403, f"Event-level deny for {cap}")
+
+    if has_cap(member.role, cap):
+        return True
+    raise HTTPException(403, f"Missing capability {cap} for event {event_id}")

@@ -139,6 +139,37 @@ async def accept_invite(token: str, user: User = Depends(get_current_user), db: 
     return {"status": "accepted", "organization_id": inv.organization_id}
 
 
+@router.post("/invitations/{invitation_id}/resend")
+async def resend_invite(invitation_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Revoke old token, issue new one, extend expiry."""
+    inv = await db.get(OrgInvitation, invitation_id)
+    if not inv:
+        raise HTTPException(404)
+    await _require_cap(db, inv.organization_id, user, "manage_team")
+    if inv.accepted_at:
+        raise HTTPException(400, "Already accepted")
+    inv.revoked_at = datetime.utcnow()
+    token = secrets.token_urlsafe(32)
+    new_inv = OrgInvitation(
+        organization_id=inv.organization_id,
+        email=inv.email,
+        role=inv.role,
+        token_hash=_hash(token),
+        invited_by=user.id,
+        expires_at=datetime.utcnow() + timedelta(days=7),
+    )
+    db.add(new_inv)
+    await db.flush()
+    await queue_email(
+        db, inv.email, "Invitation to Balkan Events (resent)",
+        f"New invitation token: {token}",
+        "org_invite", "invitation", new_inv.id, f"invite-resend:{new_inv.id}",
+    )
+    await db.commit()
+    await log_audit(db, user.id, "org.invite.resent", "Organization", inv.organization_id, {"email": inv.email})
+    return {"id": new_inv.id, "token": token, "expires_at": new_inv.expires_at.isoformat()}
+
+
 @router.post("/invitations/{invitation_id}/revoke")
 async def revoke_invite(invitation_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     inv = await db.get(OrgInvitation, invitation_id)

@@ -15,6 +15,7 @@ from app.models.guest_list import GuestList, Guest
 from app.models.user import User, UserRole
 from app.models.seat_map import Seat, SeatRow, Sector
 from app.deps import get_current_user, require_role, get_org_member
+from app.services.permissions import check_event_cap
 from app.routers.admin_system import log_audit
 from app.services.pdf_tickets import generate_ticket_pdf, generate_guest_list_pdf
 from app.services.email import queue_email
@@ -131,6 +132,7 @@ async def email_ticket(ticket_id: int, to_email: str, user: User = Depends(get_c
 
 @guest_router.post("")
 async def create_guest_list(data: GuestListCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await check_event_cap(db, data.event_id, user, "manage_tickets")
     event = await _org_for_event(db, data.event_id, user)
     gl = GuestList(event_id=event.id, organization_id=event.organization_id, name=data.name, created_by=user.id)
     db.add(gl)

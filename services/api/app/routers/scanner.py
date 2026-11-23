@@ -34,6 +34,7 @@ async def _write_log(db: AsyncSession, ticket_id: Optional[int], event_id: Optio
 
 @router.post("/validate")
 async def validate_scan(data: ScanRequest, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await check_event_cap(db, data.event_id, user, "scan")
     result = await db.execute(select(Ticket).where(Ticket.qr_data == data.qr_data).with_for_update())
     ticket = result.scalar_one_or_none()
     if not ticket:

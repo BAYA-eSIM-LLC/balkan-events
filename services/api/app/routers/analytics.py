@@ -13,6 +13,7 @@ from app.models.organization import Organization, OrganizationMember
 from app.models.pos import CashTransaction, SalesPoint
 from app.models.user import User, UserRole
 from app.deps import get_current_user, require_role, get_org_member
+from app.services.permissions import check_event_cap, has_cap
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 admin_router = APIRouter(prefix="/admin/analytics", tags=["admin-analytics"])
@@ -140,7 +141,9 @@ async def organizer_overview(
     db: AsyncSession = Depends(get_db),
 ):
     if user.role not in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
-        await get_org_member(organization_id, user, db)
+        member = await get_org_member(organization_id, user, db)
+        if member and not (has_cap(member.role, "view_sales") or has_cap(member.role, "view_finance")):
+            raise HTTPException(403, "Missing sales or finance capability")
     event_ids = await _org_event_ids(db, organization_id)
     if not event_ids:
         return {"revenue": 0, "orders": 0, "tickets": 0, "pos_revenue": 0, "web_revenue": 0}
@@ -185,7 +188,9 @@ async def organizer_export_csv(
     db: AsyncSession = Depends(get_db),
 ):
     if user.role not in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
-        await get_org_member(organization_id, user, db)
+        member = await get_org_member(organization_id, user, db)
+        if member and not (has_cap(member.role, "view_sales") or has_cap(member.role, "view_finance")):
+            raise HTTPException(403, "Missing sales or finance capability")
     data = await organizer_overview(organization_id, "this_year", None, None, user, db)
     buf = io.StringIO()
     w = csv.writer(buf)

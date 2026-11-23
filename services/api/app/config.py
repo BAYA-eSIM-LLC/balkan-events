@@ -13,3 +13,11 @@ class Settings(BaseSettings):
 settings = Settings()
 
 INTERNAL_API_SECRET = os.getenv("INTERNAL_API_SECRET", "")
+
+# Stripe TEST MODE only. Never commit real keys.
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+PLATFORM_FEE_PERCENT = float(os.getenv("PLATFORM_FEE_PERCENT", "5.0"))
+STRIPE_SUCCESS_URL = os.getenv("STRIPE_SUCCESS_URL", "http://localhost:3000/orders/success?session_id={CHECKOUT_SESSION_ID}")
+STRIPE_CANCEL_URL = os.getenv("STRIPE_CANCEL_URL", "http://localhost:3000/orders/cancel")

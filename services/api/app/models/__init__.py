@@ -19,3 +19,5 @@ from app.models.support import SupportTicket, AdminNote
 from app.models.email_log import EmailLog
 from app.models.platform_settings import PlatformSettings
 from app.models.scanner import EntryPoint, ScannerDevice, ScanLog
+
+from app.models.seat_map import SeatMap, Sector, SeatRow, Seat, SeatReservation

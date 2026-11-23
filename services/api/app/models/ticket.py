@@ -31,6 +31,7 @@ class Ticket(Base):
     id = Column(Integer, primary_key=True)
     ticket_type_id = Column(Integer, ForeignKey("ticket_types.id"), nullable=False)
     order_item_id = Column(Integer, ForeignKey("order_items.id"))
+    seat_id = Column(Integer, ForeignKey("seats.id"), nullable=True)
     code = Column(String(100), unique=True, nullable=False, index=True)
     qr_data = Column(Text)
     is_used = Column(Boolean, default=False)

@@ -1,0 +1,67 @@
+name: balkan-events-admin
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-balkan_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-balkan_events_admin}
+    volumes:
+      - admin_postgres:/var/lib/postgresql/data
+    networks:
+      - admin_net
+    # No published port. Not reachable from the internet.
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - admin_net
+
+  api:
+    build:
+      context: ../../services/api
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    env_file: .env.admin
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - admin_net
+
+  web:
+    build:
+      context: ../../apps/web
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-https://admin.example}
+    depends_on:
+      - api
+    networks:
+      - admin_net
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - certs:/etc/letsencrypt:ro
+    depends_on:
+      - api
+      - web
+    networks:
+      - admin_net
+
+volumes:
+  admin_postgres:
+  certs:
+
+networks:
+  admin_net:
+    driver: bridge

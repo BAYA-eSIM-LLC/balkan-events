@@ -15,10 +15,10 @@ INTERNAL = os.getenv("INTERNAL_API_SECRET", "ci-internal-secret")
 
 async def seed_event(session: AsyncSession, base: int, qty: int = 1):
     stmts = [
-        f"INSERT INTO organizations (id, name, slug) VALUES ({base}, 'Org{base}', 'org-{base}') ON CONFLICT DO NOTHING",
-        f"INSERT INTO users (id, email, password_hash, full_name, role) VALUES ({base}, 'u{base}@t.com', 'h', 'U{base}', 'user') ON CONFLICT DO NOTHING",
-        f"INSERT INTO events (id, organization_id, title, slug, start_at, is_published, status) VALUES ({base}, {base}, 'E{base}', 'e-{base}', NOW() + INTERVAL '1 day', true, 'PUBLISHED') ON CONFLICT DO NOTHING",
-        f"INSERT INTO ticket_types (id, event_id, name, price, quantity_total) VALUES ({base}, {base}, 'T', 10.00, {qty}) ON CONFLICT DO NOTHING",
+        f"INSERT INTO organizations (id, name, slug) VALUES ({base}, 'Org{base}', 'org-{base}') ",
+        f"INSERT INTO users (id, email, password_hash, full_name, role) VALUES ({base}, 'u{base}@t.com', 'h', 'U{base}', 'user') ",
+        f"INSERT INTO events (id, organization_id, title, slug, start_at, is_published, status) VALUES ({base}, {base}, 'E{base}', 'e-{base}', NOW() + INTERVAL '1 day', true, 'PUBLISHED') ",
+        f"INSERT INTO ticket_types (id, event_id, name, price, quantity_total) VALUES ({base}, {base}, 'T', 10.00, {qty}) ",
         f"INSERT INTO ticket_inventory (ticket_type_id, available, reserved, sold) VALUES ({base}, {qty}, 0, 0) ON CONFLICT (ticket_type_id) DO UPDATE SET available = {qty}, reserved = 0, sold = 0",
     ]
     for s in stmts:
@@ -148,6 +148,14 @@ async def test_double_qr_scan(client: AsyncClient, db_session: AsyncSession):
     # Get the ticket we just created
     tickets = (await db_session.execute(select(Ticket))).scalars().all()
     qr = tickets[-1].qr_data
+
+    # Grant scanner capability so event-level RBAC allows the scan
+    await db_session.execute(text(
+        "INSERT INTO organization_members (user_id, organization_id, role) "
+        "SELECT id, 9105, 'scanner' FROM users WHERE email = 'scan-9105@t.com' "
+        ""
+    ))
+    await db_session.commit()
 
     s1 = await client.post(
         "/scanner/validate",

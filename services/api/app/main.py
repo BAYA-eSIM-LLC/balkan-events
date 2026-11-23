@@ -15,6 +15,7 @@ from app.routers.seat_maps import router as seat_maps_router, admin_router as ad
 from app.routers.pos import router as pos_router, admin_router as admin_pos_router
 from app.routers.analytics import router as analytics_router, admin_router as admin_analytics_router
 from app.routers.tickets_pdf import router as tickets_pdf_router, guest_router, admin_router as admin_guest_router
+from app.routers.sponsors import router as sponsors_router, admin_router as admin_sponsors_router, public_router as public_sponsors_router
 from app.routers.orders import router as orders_router
 from app.routers.payments import router as payments_router
 
@@ -57,6 +58,9 @@ app.include_router(admin_analytics_router)
 app.include_router(tickets_pdf_router)
 app.include_router(guest_router)
 app.include_router(admin_guest_router)
+app.include_router(sponsors_router)
+app.include_router(admin_sponsors_router)
+app.include_router(public_sponsors_router)
 app.include_router(orders_router)
 app.include_router(payments_router)
 app.include_router(profile.router)

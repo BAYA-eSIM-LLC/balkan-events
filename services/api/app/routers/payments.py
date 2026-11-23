@@ -1,6 +1,6 @@
 """Stripe payment system (TEST MODE only).
 Checkout Sessions, verified webhooks, refunds, ledger entries, emails.
-Never trusts frontend redirect. All financial actions are idempotent.
+Never trusts frontend redirect or URL parameters. All financial actions are idempotent.
 """
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -84,9 +84,9 @@ async def create_checkout_session(
         raise HTTPException(503, "Stripe not configured (TEST MODE keys required)")
     order = await db.get(Order, order_id)
     if not order or order.user_id != user.id:
-        raise HTTPException(404)
+        raise HTTPException(404, "Order not found or not owned by you")
     if order.status != OrderStatus.RESERVED.value:
-        raise HTTPException(400, "Order is not in reserved state")
+        raise HTTPException(400, f"Order is not payable (status: {order.status})")
     existing = await db.execute(
         select(Payment).where(Payment.order_id == order.id, Payment.status == PaymentStatus.PENDING.value)
     )
@@ -106,14 +106,18 @@ async def create_checkout_session(
             "quantity": oi.quantity,
         })
 
+    # Dynamic success URL with order id (Stripe substitutes only {CHECKOUT_SESSION_ID})
+    success_url = f"{STRIPE_SUCCESS_URL}?session_id={{CHECKOUT_SESSION_ID}}&order={order.id}"
+
     session = stripe.checkout.Session.create(
         mode="payment",
         line_items=line_items,
-        success_url=STRIPE_SUCCESS_URL,
+        success_url=success_url,
         cancel_url=STRIPE_CANCEL_URL,
         client_reference_id=order.reference,
         metadata={"order_id": str(order.id), "reference": order.reference},
         payment_intent_data={"metadata": {"order_id": str(order.id)}},
+        expires_at=int(datetime.utcnow().timestamp()) + 1800,  # 30 min
     )
 
     payment = Payment(
@@ -190,6 +194,17 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             if payment:
                 payment.status = PaymentStatus.COMPLETED.value
                 payment.provider_id = session.get("payment_intent")
+                # Try to retrieve actual Stripe fee (only when known)
+                try:
+                    pi = stripe.PaymentIntent.retrieve(
+                        session.get("payment_intent"),
+                        expand=["latest_charge.balance_transaction"]
+                    )
+                    bt = getattr(pi.latest_charge, "balance_transaction", None)
+                    if bt and getattr(bt, "fee", None) is not None:
+                        payment.stripe_fee = bt.fee / 100.0
+                except Exception:
+                    pass  # fee unknown – leave null
                 platform = float(order.total_amount) * (PLATFORM_FEE_PERCENT / 100.0)
                 payment.platform_fee = platform
                 org_id = None

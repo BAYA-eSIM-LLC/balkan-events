@@ -8,11 +8,11 @@ export default function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#0b0b1f] text-white border-b border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <span className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-xs font-black">BE</span>
-          <span className="hidden sm:flex flex-col leading-tight text-xs font-bold">
-            <span>BALKAN</span>
-            <span>EVENTS</span>
+        <Link href="/" className="flex items-center gap-2.5 shrink-0">
+          <span className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-sm font-black text-white">BE</span>
+          <span className="flex flex-col leading-none">
+            <span className="text-[11px] font-bold tracking-wide">BALKAN</span>
+            <span className="text-[10px] font-semibold text-zinc-300">EVENTS</span>
           </span>
         </Link>
 
@@ -27,7 +27,7 @@ export default function Header() {
           <Link href="/search" className="p-2 text-zinc-400 hover:text-white">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
           </Link>
-          <span className="hidden sm:inline text-xs text-zinc-500 px-1">BS</span>
+          <span className="hidden sm:inline text-xs text-zinc-500">BS</span>
           <Link href="/login" className="hidden sm:inline text-sm text-zinc-300 hover:text-white px-2">Prijava</Link>
           <Link href="/register" className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium">Registracija</Link>
           <button onClick={() => setOpen(!open)} className="lg:hidden p-2 -mr-1">

@@ -100,6 +100,52 @@ async def admin_overview(
     }
 
 
+@admin_router.get("/daily")
+async def admin_daily(
+    period: str = Query("7d"),
+    user: User = Depends(require_role(*ADMIN_ROLES)),
+    db: AsyncSession = Depends(get_db),
+):
+    now = datetime.utcnow()
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    if period == "today":
+        start = today
+        days = 1
+    elif period == "30d":
+        start = today - timedelta(days=29)
+        days = 30
+    elif period == "all":
+        start = None
+        days = 0
+    else:
+        start = today - timedelta(days=6)
+        days = 7
+        period = "7d"
+
+    order_q = (
+        select(func.date(Order.created_at), func.count(Order.id), func.coalesce(func.sum(Order.total_amount), 0))
+        .where(Order.status == OrderStatus.PAID.value)
+    )
+    ticket_q = select(func.date(Ticket.created_at), func.count(Ticket.id))
+    if start:
+        order_q = order_q.where(Order.created_at >= start)
+        ticket_q = ticket_q.where(Ticket.created_at >= start)
+    order_rows = (await db.execute(order_q.group_by(func.date(Order.created_at)))).all()
+    ticket_rows = (await db.execute(ticket_q.group_by(func.date(Ticket.created_at)))).all()
+    revenue = {str(r[0]): float(r[2] or 0) for r in order_rows}
+    tickets = {str(r[0]): int(r[1] or 0) for r in ticket_rows}
+
+    if start:
+        series = []
+        for i in range(days):
+            day = (start + timedelta(days=i)).date().isoformat()
+            series.append({"date": day, "tickets": tickets.get(day, 0), "revenue": round(revenue.get(day, 0), 2)})
+    else:
+        keys = sorted(set(revenue) | set(tickets))
+        series = [{"date": k, "tickets": tickets.get(k, 0), "revenue": round(revenue.get(k, 0), 2)} for k in keys]
+    return {"period": period, "days": series, "note": "Real daily aggregates. Missing days are zero."}
+
+
 @admin_router.get("/by-event")
 async def admin_by_event(user: User = Depends(require_role(*ADMIN_ROLES)), db: AsyncSession = Depends(get_db)):
     result = await db.execute(

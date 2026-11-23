@@ -14,16 +14,15 @@ import os
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 async def seed(session: AsyncSession, base: int, qty: int = 1):
-    await session.execute(text(f"""
-        INSERT INTO organizations (id, name, slug) VALUES ({base}, 'Org{base}', 'org-{base}') ON CONFLICT DO NOTHING;
-        INSERT INTO users (id, email, password_hash, full_name) VALUES ({base}, 'u{base}@t.com', 'h', 'U{base}') ON CONFLICT DO NOTHING;
-        INSERT INTO events (id, organization_id, title, slug, start_at, is_published)
-            VALUES ({base}, {base}, 'E{base}', 'e-{base}', NOW() + INTERVAL '1 day', true) ON CONFLICT DO NOTHING;
-        INSERT INTO ticket_types (id, event_id, name, price, quantity_total)
-            VALUES ({base}, {base}, 'T', 10.00, {qty}) ON CONFLICT DO NOTHING;
-        INSERT INTO ticket_inventory (ticket_type_id, available, reserved, sold)
-            VALUES ({base}, {qty}, 0, 0) ON CONFLICT (ticket_type_id) DO UPDATE SET available = {qty}, reserved = 0, sold = 0;
-    """))
+    stmts = [
+        f"INSERT INTO organizations (id, name, slug) VALUES ({base}, 'Org{base}', 'org-{base}') ON CONFLICT DO NOTHING",
+        f"INSERT INTO users (id, email, password_hash, full_name) VALUES ({base}, 'u{base}@t.com', 'h', 'U{base}') ON CONFLICT DO NOTHING",
+        f"INSERT INTO events (id, organization_id, title, slug, start_at, is_published) VALUES ({base}, {base}, 'E{base}', 'e-{base}', NOW() + INTERVAL '1 day', true) ON CONFLICT DO NOTHING",
+        f"INSERT INTO ticket_types (id, event_id, name, price, quantity_total) VALUES ({base}, {base}, 'T', 10.00, {qty}) ON CONFLICT DO NOTHING",
+        f"INSERT INTO ticket_inventory (ticket_type_id, available, reserved, sold) VALUES ({base}, {qty}, 0, 0) ON CONFLICT (ticket_type_id) DO UPDATE SET available = {qty}, reserved = 0, sold = 0",
+    ]
+    for s in stmts:
+        await session.execute(text(s))
     await session.commit()
 
 @pytest.mark.asyncio

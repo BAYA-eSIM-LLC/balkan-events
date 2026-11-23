@@ -13,6 +13,9 @@ export default function Profile() {
     <View style={styles.container}>
       <Text style={styles.title}>Profile</Text>
       <Text style={styles.sub}>Same account as the web platform.</Text>
+      <Pressable style={styles.button} onPress={() => router.push('/organizer')}>
+        <Text style={styles.buttonText}>Organizer tools</Text>
+      </Pressable>
       <Pressable style={styles.button} onPress={logout}>
         <Text style={styles.buttonText}>Sign out</Text>
       </Pressable>

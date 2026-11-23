@@ -403,3 +403,63 @@ Only `super-admin-dashboard`. No main merge, no deploy, no production, no Stripe
 
 ### Constraints
 Only `super-admin-dashboard`. No main merge, no deploy, no production, no Stripe, no store submission.
+
+---
+
+## Phase 22.8 – Mobile Integration Audit
+
+**Commit:** pending  
+**Date:** 2026-11-23
+
+### Audit scope
+Customer, Organizer, Scanner and POS screens from phases 22.1–22.7.
+
+### Issues found and fixed
+1. No auth guard on customer tabs — added token check, redirect to welcome if missing.
+2. No auth guard on organizer stack — added organizer layout with the same check.
+3. No navigation from customer profile to organizer tools — added link.
+
+### Issues found, not fixed (documented)
+1. API base URL is a placeholder (`https://dev.balkanevents.example`). Must be set via `EXPO_PUBLIC_API_URL` or `app.json` extra for a real device.
+2. Scanner offline mode shows a warning but does not persist a queue for later sync.
+3. 401 after failed refresh throws; individual screens must handle redirect (not centralized).
+4. Ticket cards show id/code/status only. Event name and date are not returned by `/payments/my-tickets`.
+5. POS uses ticket-type path only. Seat selection inside POS is not implemented.
+6. No void sale UI, no previous sales list.
+7. No image upload, no CSV guest import UI, no sound on scan, no device-token UI, no push, no wallet passes.
+8. Seven customer tabs is crowded on small phones.
+9. Camera and physical device flows are untested in this environment.
+
+### API audit
+- Auth: `/auth/login`, `/auth/register`, `/auth/refresh`, `/auth/logout` — used
+- Discovery: `/events/discover`, `/events/search`, `/events/{slug}` — used
+- Tickets: `/payments/my-tickets` — used
+- Orders: `/orders/me` — used
+- Preferences: `/me/preferences` — used
+- Seat maps: `/seat-maps/event/{id}`, `/seat-maps/reserve` — used
+- Organizer events: `/organizer/events` CRUD — used
+- Guests: list, add, check-in — used
+- POS: sales points, register open/close, sale — used
+- Scanner: `/scanner/validate` — used
+- All require backend RBAC; mobile does not bypass it
+
+### Security
+- Tokens only in SecureStore
+- No tokens logged
+- Backend remains authority for scan, reserve, sale and guest check-in
+- Org and event isolation enforced by API
+- Idempotency key on POS sale
+
+### Tests
+- `tsc --noEmit`: passed
+- Backend suites already cover scanner, POS, seats, guests and permissions
+- iOS/Android simulator: not run
+- Physical device: not tested
+
+### Real status
+- Implemented: auth, discovery, tickets with QR, orders, preferences, seat reserve, organizer events, guests, scanner, POS cash sale
+- Tested: TypeScript compile and backend integration tests
+- Unverified: camera, offline sync, physical device, real API URL connectivity
+
+### Constraints
+Only `super-admin-dashboard`. No main merge, no deploy, no production, no Stripe, no store submission.

@@ -182,3 +182,42 @@ async def sitemap(db: AsyncSession = Depends(get_db)):
     urls = "".join(f"<url><loc>/events/{s}</loc></url>" for (s,) in result.all())
     xml = f'<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
     return Response(content=xml, media_type="application/xml")
+
+
+@router.get("/popular-searches")
+async def popular_searches(db: AsyncSession = Depends(get_db)):
+    """Aggregated query terms only. No user ids."""
+    from app.models.discovery import SearchHistory
+    result = await db.execute(
+        select(SearchHistory.query, func.count(SearchHistory.id))
+        .group_by(SearchHistory.query)
+        .order_by(func.count(SearchHistory.id).desc())
+        .limit(10)
+    )
+    return [{"query": q, "count": n} for q, n in result.all()]
+
+
+@router.get("/{slug}/jsonld")
+async def event_jsonld(slug: str, db: AsyncSession = Depends(get_db)):
+    """Schema.org Event JSON-LD from real event data."""
+    from fastapi.responses import JSONResponse
+    result = await db.execute(select(Event).where(Event.slug == slug, Event.status == EventStatus.PUBLISHED.value))
+    e = result.scalar_one_or_none()
+    if not e:
+        raise HTTPException(404, "Event not found")
+    data = {
+        "@context": "https://schema.org",
+        "@type": "Event",
+        "name": e.title,
+        "startDate": e.start_at.isoformat() if e.start_at else None,
+        "location": {
+            "@type": "Place",
+            "name": e.venue_name or e.city or "",
+            "address": e.venue_address or "",
+        },
+    }
+    if e.end_at:
+        data["endDate"] = e.end_at.isoformat()
+    if e.short_description:
+        data["description"] = e.short_description
+    return JSONResponse(data)

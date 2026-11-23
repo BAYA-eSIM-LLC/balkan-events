@@ -3,7 +3,7 @@ Uses existing Order/Ticket models. No QR data mutation.
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from typing import Optional
 from app.database import get_db
 from app.deps import require_role
@@ -11,6 +11,8 @@ from app.models.user import User, UserRole
 from app.models.order import Order, OrderItem
 from app.models.ticket import Ticket, TicketType
 from app.models.event import Event
+from app.models.organization import Organization
+
 from app.routers.admin_system import ADMIN_ONLY, log_audit, paginate
 
 router = APIRouter(prefix="/admin", tags=["admin-orders-tickets"])
@@ -59,30 +61,89 @@ async def order_detail(order_id: int, user: User = Depends(require_role(*ADMIN_O
 @router.get("/tickets")
 async def list_tickets(
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=100),
-    code: Optional[str] = None,
-    used: Optional[bool] = None,
+    page_size: int = Query(20, ge=1, le=100),
+    q: Optional[str] = None,
+    status: Optional[str] = None,
+    sort: str = Query("id"),
+    order: str = Query("desc"),
     user: User = Depends(require_role(*ADMIN_ONLY)),
     db: AsyncSession = Depends(get_db)
 ):
     page, page_size = paginate(page, page_size)
-    q = select(Ticket)
-    if code:
-        q = q.where(Ticket.code.ilike(f"%{code}%"))
-    if used is not None:
-        q = q.where(Ticket.is_used == used)
-    total = await db.scalar(select(func.count()).select_from(q.subquery()))
-    q = q.order_by(Ticket.id.desc()).offset((page - 1) * page_size).limit(page_size)
-    result = await db.execute(q)
+    query = select(Ticket)
+    if status == "used":
+        query = query.where(Ticket.is_used == True)
+    elif status == "valid":
+        query = query.where(Ticket.is_used == False)
+    if q:
+        term = f"%{q.strip()}%"
+        event_ids = [r[0] for r in (await db.execute(select(Event.id).where(Event.title.ilike(term)))).all()]
+        type_ids = [r[0] for r in (await db.execute(select(TicketType.id).where(TicketType.event_id.in_(event_ids)))).all()] if event_ids else []
+        order_ids = [r[0] for r in (await db.execute(select(Order.id).where(Order.reference.ilike(term)))).all()]
+        buyer_ids = [r[0] for r in (await db.execute(select(User.id).where(or_(User.email.ilike(term), User.full_name.ilike(term))))).all()]
+        if buyer_ids:
+            order_ids += [r[0] for r in (await db.execute(select(Order.id).where(Order.user_id.in_(buyer_ids)))).all()]
+        item_ids = [r[0] for r in (await db.execute(select(OrderItem.id).where(OrderItem.order_id.in_(order_ids)))).all()] if order_ids else []
+        conds = [Ticket.code.ilike(term)]
+        if type_ids:
+            conds.append(Ticket.ticket_type_id.in_(type_ids))
+        if item_ids:
+            conds.append(Ticket.order_item_id.in_(item_ids))
+        if q.strip().isdigit():
+            conds.append(Ticket.id == int(q.strip()))
+        query = query.where(or_(*conds))
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    col = {"id": Ticket.id, "created_at": Ticket.created_at, "code": Ticket.code}.get(sort, Ticket.id)
+    query = query.order_by(col.asc() if order == "asc" else col.desc())
+    tickets = (await db.execute(query.offset((page - 1) * page_size).limit(page_size))).scalars().all()
     rows = []
-    for t in result.scalars():
-        tt = await db.get(TicketType, t.ticket_type_id)
+    for tix in tickets:
+        tt = await db.get(TicketType, tix.ticket_type_id)
+        ev = await db.get(Event, tt.event_id) if tt else None
+        oi = await db.get(OrderItem, tix.order_item_id) if tix.order_item_id else None
+        order = await db.get(Order, oi.order_id) if oi else None
+        derived = "used" if tix.is_used else "valid"
+        if order and order.status in ("cancelled", "refunded"):
+            derived = order.status
+        if status in ("cancelled", "refunded") and derived != status:
+            continue
         rows.append({
-            "id": t.id,
-            "code": t.code,
-            "is_used": t.is_used,
-            "used_at": t.used_at.isoformat() if t.used_at else None,
+            "id": tix.id, "code": tix.code, "is_used": tix.is_used,
+            "used_at": tix.used_at.isoformat() if tix.used_at else None,
             "ticket_type": tt.name if tt else None,
-            "status": "used" if t.is_used else "valid",
+            "price": float(tt.price) if tt and tt.price else None,
+            "event": ev.title if ev else None,
+            "order_reference": order.reference if order else None,
+            "status": derived,
+            "created_at": tix.created_at.isoformat() if tix.created_at else None,
         })
-    return {"total": total or 0, "page": page, "page_size": page_size, "items": rows}
+    return {"total": total or 0, "page": page, "page_size": page_size, "items": rows, "note": "Ticket model has only is_used. cancelled/refunded come from the order."}
+
+
+@router.get("/tickets/{ticket_id}")
+async def ticket_detail(ticket_id: int, user: User = Depends(require_role(*ADMIN_ONLY)), db: AsyncSession = Depends(get_db)):
+    tix = await db.get(Ticket, ticket_id)
+    if not tix:
+        raise HTTPException(404, "Ticket not found")
+    tt = await db.get(TicketType, tix.ticket_type_id)
+    ev = await db.get(Event, tt.event_id) if tt else None
+    org = await db.get(Organization, ev.organization_id) if ev else None
+    oi = await db.get(OrderItem, tix.order_item_id) if tix.order_item_id else None
+    order = await db.get(Order, oi.order_id) if oi else None
+    buyer = await db.get(User, order.user_id) if order else None
+    derived = "used" if tix.is_used else "valid"
+    if order and order.status in ("cancelled", "refunded"):
+        derived = order.status
+    return {
+        "id": tix.id, "code": tix.code, "status": derived, "is_used": tix.is_used,
+        "used_at": tix.used_at.isoformat() if tix.used_at else None, "used_by": tix.used_by,
+        "created_at": tix.created_at.isoformat() if tix.created_at else None,
+        "qr_present": bool(tix.qr_data),
+        "ticket_type": tt.name if tt else None,
+        "price": float(tt.price) if tt and tt.price else None,
+        "event": {"id": ev.id, "title": ev.title, "city": ev.city, "start_at": ev.start_at.isoformat() if ev and ev.start_at else None} if ev else None,
+        "organizer": {"id": org.id, "name": org.name} if org else None,
+        "order": {"id": order.id, "reference": order.reference, "status": order.status, "created_at": order.created_at.isoformat() if order.created_at else None} if order else None,
+        "buyer": {"id": buyer.id, "email": buyer.email, "full_name": buyer.full_name} if buyer else None,
+        "note": "Full qr_data is not returned. No ticket void endpoint exists.",
+    }

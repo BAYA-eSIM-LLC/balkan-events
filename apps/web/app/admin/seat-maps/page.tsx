@@ -10,7 +10,7 @@ export default function AdminSeatMapsPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch(`${API}/admin/seat-maps`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    fetch(`${API}/admin/seat-maps`, { headers: (token ? { Authorization: `Bearer ${token}` } : {}) as HeadersInit })
       .then(r => r.json())
       .then(d => { setMaps(d.items || []); setLoading(false); })
       .catch(() => setLoading(false));

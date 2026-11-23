@@ -10,7 +10,7 @@ export default function AdminPOSPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const h = token ? { Authorization: `Bearer ${token}` } : {};
+    const h: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
     Promise.all([
       fetch(`${API}/admin/pos/sales-points`, { headers: h }).then(r => r.json()),
       fetch(`${API}/admin/pos/registers`, { headers: h }).then(r => r.json()),

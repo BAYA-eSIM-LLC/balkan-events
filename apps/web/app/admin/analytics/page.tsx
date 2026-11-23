@@ -11,7 +11,7 @@ export default function AdminAnalyticsPage() {
 
   const load = (p: string) => {
     const token = localStorage.getItem('token');
-    const h = token ? { Authorization: `Bearer ${token}` } : {};
+    const h: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
     fetch(`${API}/admin/analytics/overview?period=${p}`, { headers: h })
       .then(r => r.json())
       .then(setData);

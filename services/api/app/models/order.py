@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Numeric, Enum
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Numeric
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -16,7 +16,7 @@ class Order(Base):
     __tablename__ = "orders"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)
+    status = Column(String(50), default=OrderStatus.PENDING.value)
     total_amount = Column(Numeric(10, 2), nullable=False)
     currency = Column(String(3), default="EUR")
     reference = Column(String(50), unique=True)

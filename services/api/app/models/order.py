@@ -17,6 +17,8 @@ class Order(Base):
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)
     total_amount = Column(Numeric(10, 2), nullable=False)
     currency = Column(String(3), default="EUR")
+    reference = Column(String(50), unique=True)
+    idempotency_key = Column(String(100), unique=True)
     reserved_until = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
     user = relationship("User", back_populates="orders")

@@ -107,13 +107,17 @@ EOS
 visudo -cf "$tmp"
 install -o root -g root -m 440 "$tmp" /etc/sudoers.d/balkan-audit
 rm -f "$tmp"
-id balkan-audit >/dev/null 2>&1 || useradd -m -s /usr/sbin/nologin balkan-audit
-gpasswd -d balkan-audit docker 2>/dev/null || true
+id balkan-audit >/dev/null 2>&1 || useradd -m -s /bin/bash balkan-audit
+usermod -s /bin/bash balkan-audit
+passwd -l balkan-audit
+for g in sudo docker adm wheel; do gpasswd -d balkan-audit "$g" 2>/dev/null || true; done
 install -d -o balkan-audit -g balkan-audit -m 700 /home/balkan-audit/.ssh
 printf '%s\n' 'command="sudo -n /usr/local/sbin/audit-readonly.sh \"$SSH_ORIGINAL_COMMAND\"",restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDE5VVU3z967V7OVifNM9XF3k3Kf0t2RbqHercTyIoGM balkan-events-deploy-20261122' > /home/balkan-audit/.ssh/authorized_keys
 chown balkan-audit:balkan-audit /home/balkan-audit/.ssh/authorized_keys
 chmod 600 /home/balkan-audit/.ssh/authorized_keys
 ```
+
+Shell is `/bin/bash` so the forced command can run. Password is locked. The only key has `command=` and `restrict`.
 
 sudoers is written to a temp file, checked with `visudo -cf`, then installed.
 
@@ -135,3 +139,20 @@ sudoers is written to a temp file, checked with `visudo -cf`, then installed.
 ## Not done
 
 Nothing was run on production. No key. No user. No sudoers installed on the server.
+
+---
+
+## Account checks after install (you run)
+
+```bash
+getent passwd balkan-audit
+# shell must be /bin/bash
+passwd -S balkan-audit
+# must show L (locked)
+id balkan-audit
+# must not list sudo, docker, adm, wheel
+wc -l /home/balkan-audit/.ssh/authorized_keys
+# must be 1
+grep -c 'command=' /home/balkan-audit/.ssh/authorized_keys
+# must be 1
+```

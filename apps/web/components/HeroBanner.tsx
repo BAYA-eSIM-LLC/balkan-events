@@ -2,12 +2,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-const FALLBACK = [
+type Slide = { desktop: string; mobile: string; alt: string; title: string; subtitle?: string };
+const FALLBACK: Slide[] = [
   { desktop: '/hero/concert1.jpg', mobile: '/hero/concert-mobile.jpg', alt: 'Concert', title: 'Najveći događaji na Balkanu' },
 ];
 
 export default function HeroBanner() {
-  const [slides, setSlides] = useState(FALLBACK);
+  const [slides, setSlides] = useState<Slide[]>(FALLBACK);
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {

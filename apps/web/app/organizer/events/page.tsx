@@ -7,12 +7,7 @@ export default function OrganizerEvents() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const path = 'events' === 'events' ? '/organizer/events' :
-                 'events' === 'team' ? '/organizer/members' :
-                 'events' === 'profile' ? '/organizer/organizations' :
-                 'events' === 'reports' ? '/organizer/reports/events' : null;
-    if (path) adminFetch(path).then(setData).catch(e => setError(e.message));
-    else setError('Modul spreman – čeka povezivanje s endpointom');
+    adminFetch('/organizer/events').then(setData).catch(e => setError(e.message));
   }, []);
 
   return (

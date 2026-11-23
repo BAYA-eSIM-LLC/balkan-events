@@ -1,11 +1,11 @@
-# Phase 23.18 – Final install with controlled rollback
+# Phase 23.18 – Final install with pre-checks and controlled rollback
 
 **Date:** 2026-11-23  
 **Status:** Prepared. Not run on production.  
 **Server:** 2.29.195.181 (do not execute yet)
 
-If `balkan-audit` user or group already exists, the install stops immediately.  
-Existing accounts, groups, passwords and keys are never modified.  
+If the user, group, wrapper, sudoers file or home directory already exist, the install stops.  
+Existing content is never overwritten, modified or deleted.  
 On failure, a trap removes only the resources this run created.
 
 ---
@@ -15,13 +15,25 @@ On failure, a trap removes only the resources this run created.
 ```bash
 set -euo pipefail
 
-# Stop if the dedicated account already exists. Do not touch it.
+# Stop if any dedicated resource already exists. Do not touch it.
 if getent passwd balkan-audit >/dev/null; then
   echo "STOP: user balkan-audit already exists"
   exit 1
 fi
 if getent group balkan-audit >/dev/null; then
   echo "STOP: group balkan-audit already exists"
+  exit 1
+fi
+if [ -e /usr/local/sbin/audit-readonly.sh ]; then
+  echo "STOP: /usr/local/sbin/audit-readonly.sh already exists"
+  exit 1
+fi
+if [ -e /etc/sudoers.d/balkan-audit ]; then
+  echo "STOP: /etc/sudoers.d/balkan-audit already exists"
+  exit 1
+fi
+if [ -e /home/balkan-audit ]; then
+  echo "STOP: /home/balkan-audit already exists"
   exit 1
 fi
 
@@ -32,9 +44,17 @@ GROUP_CREATED=0
 USER_CREATED=0
 SSHDIR_CREATED=0
 SUCCESS=0
+tmp=""
+
+cleanup_tmp() {
+  if [ -n "${tmp:-}" ] && [ -f "$tmp" ]; then
+    rm -f "$tmp" || echo "WARN: could not remove temp sudoers $tmp"
+  fi
+}
 
 rollback() {
   local rc=$?
+  cleanup_tmp
   if [ "$SUCCESS" -eq 1 ]; then
     return 0
   fi
@@ -134,7 +154,7 @@ balkan-audit ALL=(root) NOPASSWD: /usr/local/sbin/audit-readonly.sh
 EOS
 visudo -cf "$tmp"
 install -o root -g root -m 440 "$tmp" /etc/sudoers.d/balkan-audit
-rm -f "$tmp"
+cleanup_tmp
 SUDOERS_CREATED=1
 
 # 3. Group and user (only after files are ready)
@@ -156,11 +176,9 @@ trap - EXIT
 echo "INSTALL_OK"
 ```
 
-Notes:
-- `trap rollback EXIT` runs only if `SUCCESS` is still 0.
-- Rollback removes only items this script created (tracked by flags).
-- It never touches other users, groups, or `/root/.ssh` or other `authorized_keys`.
-- If any rollback step fails, it prints `ROLLBACK FAIL` for that item and requires manual verification. It does not claim success.
+Pre-checks stop if the wrapper, sudoers file or home directory already exist.  
+`cleanup_tmp` runs from the trap, so `$tmp` is removed even if `visudo -cf` fails.  
+Rollback removes only items this run marked with flags. It never touches pre-existing content.
 
 ---
 
@@ -203,6 +221,10 @@ if [ -f /etc/sudoers.d/balkan-audit ]; then
   echo "STOP: sudoers still exists"
   exit 1
 fi
+if [ -d /home/balkan-audit ]; then
+  echo "STOP: home directory still exists"
+  exit 1
+fi
 
 echo "REMOVE_OK"
 echo "Confirm SSH denial:"
@@ -210,8 +232,7 @@ echo "ssh -i ~/.ssh/id_ed25519_balkan -o BatchMode=yes -o ConnectTimeout=8 balka
 echo "Expected: Permission denied"
 ```
 
-`REMOVE_OK` is printed only after all existence checks pass.  
-If any check fails, the script stops and does not claim the access is gone.
+`REMOVE_OK` is printed only after all existence checks pass.
 
 ---
 

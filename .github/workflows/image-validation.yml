@@ -1,0 +1,101 @@
+name: Image and rollback validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [super-admin-dashboard]
+    paths:
+      - '.github/workflows/image-validation.yml'
+      - 'services/api/**'
+      - 'docs/PHASE_23_17_IMAGE_AND_ROLLBACK_VALIDATION.md'
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: image_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build candidate
+        working-directory: services/api
+        run: |
+          docker build -f Dockerfile.prod -t balkan-api:candidate .
+          docker image inspect balkan-api:candidate --format '{{index .RepoDigests 0}} {{.Id}}' || true
+          docker image inspect balkan-api:candidate --format '{{.Id}}' | tee /tmp/candidate.id
+          echo "CANDIDATE_ID=$(cat /tmp/candidate.id)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check modules inside image
+        run: |
+          docker run --rm balkan-api:candidate python -c "import app.main; print('routers', len(app.main.app.routes))"
+
+      - name: Secret scan
+        run: |
+          docker run --rm balkan-api:candidate sh -c 'grep -R "sk_live\|BEGIN PRIVATE\|HCLOUD_TOKEN" /app && exit 1 || echo NO_LIVE_SECRETS'
+
+      - name: Migrate
+        run: |
+          docker run --rm --network host \
+            -e DATABASE_URL=postgresql+asyncpg://test:test@localhost:5432/image_test \
+            balkan-api:candidate alembic upgrade head
+
+      - name: Start candidate
+        run: |
+          docker run -d --name candidate --network host \
+            -e DATABASE_URL=postgresql+asyncpg://test:test@localhost:5432/image_test \
+            -e REDIS_URL=redis://localhost:6379/0 \
+            -e SECRET_KEY=ci-only-not-a-secret \
+            -e MFA_ENCRYPTION_KEY="$(python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" \
+            balkan-api:candidate
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8000/health && break; sleep 1; done
+
+      - name: RBAC smoke
+        run: |
+          set -e
+          curl -fsS http://127.0.0.1:8000/health
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/admin/dashboard)
+          test "$code" = "401" -o "$code" = "403"
+          reg=$(curl -s -X POST http://127.0.0.1:8000/auth/register -H 'content-type: application/json' -d '{"email":"user17@example.com","password":"securepass123","full_name":"U"}')
+          token=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["access_token"])' "$reg")
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" http://127.0.0.1:8000/admin/me)
+          test "$code" = "403"
+          echo RBAC_SMOKE_OK
+
+      - name: Build previous stub and rollback
+        run: |
+          mkdir -p /tmp/stub
+          printf 'from fastapi import FastAPI\napp=FastAPI()\n@app.get("/")\ndef r():\n return {"status":"ok"}\n@app.get("/health")\ndef h():\n return {"status":"healthy"}\n' > /tmp/stub/main.py
+          printf 'FROM python:3.12-slim\nWORKDIR /app\nRUN pip install fastapi uvicorn\nCOPY main.py .\nCMD ["uvicorn","main:app","--host","0.0.0.0","--port","8000"]\n' > /tmp/stub/Dockerfile
+          docker build -t balkan-api:previous /tmp/stub
+          docker rm -f candidate
+          docker run -d --name previous --network host balkan-api:previous
+          sleep 2
+          curl -fsS http://127.0.0.1:8000/health
+          echo ROLLBACK_HEALTH_OK
+          docker rm -f previous
+
+      - name: Write digests
+        run: |
+          {
+            echo "candidate $(docker image inspect balkan-api:candidate --format '{{.Id}}')"
+            echo "previous $(docker image inspect balkan-api:previous --format '{{.Id}}')"
+          } | tee image-digests.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image-digests
+          path: image-digests.txt

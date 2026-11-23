@@ -1,3 +1,4 @@
+import os
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -10,3 +11,5 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 settings = Settings()
+
+INTERNAL_API_SECRET = os.getenv("INTERNAL_API_SECRET", "")

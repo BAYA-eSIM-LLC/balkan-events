@@ -12,6 +12,7 @@ from app.models.inventory import TicketInventory
 from app.models.reservation import Reservation
 from app.models.user import User
 from app.deps import get_current_user
+from app.config import INTERNAL_API_SECRET
 from app.routers.admin_system import log_audit
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -39,9 +40,13 @@ class OrderOut(BaseModel):
 async def create_order(data: CreateOrderIn, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     # Idempotency
     if data.idempotency_key:
+        import hashlib, json
+        content_hash = hashlib.sha256(json.dumps([{"t": i.ticket_type_id, "q": i.quantity} for i in data.items], sort_keys=True).encode()).hexdigest()[:16]
         existing = await db.execute(select(Order).where(Order.idempotency_key == data.idempotency_key))
         found = existing.scalar_one_or_none()
         if found:
+            if getattr(found, "content_hash", None) and found.content_hash != content_hash:
+                raise HTTPException(409, "Idempotency key used with different content")
             return found
     total = 0
     order = Order(
@@ -52,6 +57,7 @@ async def create_order(data: CreateOrderIn, user: User = Depends(get_current_use
         reference=f"BE-{uuid.uuid4().hex[:10].upper()}",
         reserved_until=datetime.utcnow() + timedelta(minutes=15),
         idempotency_key=data.idempotency_key,
+        content_hash=content_hash if data.idempotency_key else None,
     )
     db.add(order)
     await db.flush()
@@ -93,7 +99,7 @@ async def confirm_order(
     db: AsyncSession = Depends(get_db)
 ):
     """Confirm payment. Only internal process or verified callback. No customer self-confirm."""
-    if x_internal_confirm != "dev-internal-key":
+    if not INTERNAL_API_SECRET or x_internal_confirm != INTERNAL_API_SECRET:
         raise HTTPException(403, "Confirmation requires verified payment source")
     order = await db.get(Order, order_id)
     if not order:
@@ -143,7 +149,7 @@ async def cancel_order(order_id: int, user: User = Depends(get_current_user), db
 @router.post("/internal/expire-reservations")
 async def expire_reservations(x_internal_job: Optional[str] = Header(None), db: AsyncSession = Depends(get_db)):
     """Release expired reservations. Call from scheduler. Protected by internal header."""
-    if x_internal_job != "dev-internal-key":
+    if not INTERNAL_API_SECRET or x_internal_job != INTERNAL_API_SECRET:
         raise HTTPException(403, "Internal job only")
     now = datetime.utcnow()
     result = await db.execute(

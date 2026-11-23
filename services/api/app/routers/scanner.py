@@ -82,7 +82,7 @@ async def validate_scan(
             raise HTTPException(403, "Device not authorized for this event")
         if device.entry_point_id and data.entry_point_id and device.entry_point_id != data.entry_point_id:
             raise HTTPException(403, "Device not assigned to this entry point")
-    actor_id = scanner_user.id if scanner_user else 0
+    actor_id = scanner_user.id if scanner_user else None
     result = await db.execute(select(Ticket).where(Ticket.qr_data == data.qr_data).with_for_update())
     ticket = result.scalar_one_or_none()
     if not ticket:

@@ -217,7 +217,7 @@ async def pos_sale(data: POSSaleRequest, user: User = Depends(get_current_user),
             reference=f"POS-{uuid.uuid4().hex[:10].upper()}",
         )
         db.add(order)
-        await await db.flush()
+        await db.flush()
         # Ensure ticket type
         sm = await db.get(SeatMap, sector.seat_map_id)
         tt_res = await db.execute(select(TicketType).where(TicketType.event_id == sm.event_id, TicketType.name == "Seat Map"))
@@ -225,12 +225,12 @@ async def pos_sale(data: POSSaleRequest, user: User = Depends(get_current_user),
         if not tt:
             tt = TicketType(event_id=sm.event_id, name="Seat Map", price=0, quantity_total=100000, is_active=True)
             db.add(tt)
-            await await db.flush()
+            await db.flush()
             db.add(TicketInventory(ticket_type_id=tt.id, available=100000, reserved=0, sold=0, version=1))
-            await await db.flush()
+            await db.flush()
         oi = OrderItem(order_id=order.id, ticket_type_id=tt.id, quantity=len(seats), unit_price=total / len(seats))
         db.add(oi)
-        await await db.flush()
+        await db.flush()
         for seat in seats:
             code = secrets.token_urlsafe(16)
             ticket = Ticket(ticket_type_id=tt.id, order_item_id=oi.id, code=code, qr_data=f"BE:{code}:{order.id}", is_used=False, seat_id=seat.id)
@@ -247,10 +247,10 @@ async def pos_sale(data: POSSaleRequest, user: User = Depends(get_current_user),
         total = float(tt.price) * data.quantity
         order = Order(user_id=user.id, status=OrderStatus.PAID.value, total_amount=total, currency="EUR", reference=f"POS-{uuid.uuid4().hex[:10].upper()}")
         db.add(order)
-        await await db.flush()
+        await db.flush()
         oi = OrderItem(order_id=order.id, ticket_type_id=tt.id, quantity=data.quantity, unit_price=tt.price)
         db.add(oi)
-        await await db.flush()
+        await db.flush()
         for _ in range(data.quantity):
             code = secrets.token_urlsafe(16)
             ticket = Ticket(ticket_type_id=tt.id, order_item_id=oi.id, code=code, qr_data=f"BE:{code}:{order.id}", is_used=False)

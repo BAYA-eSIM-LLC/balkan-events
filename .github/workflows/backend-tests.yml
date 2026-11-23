@@ -2,9 +2,9 @@ name: Backend Tests
 
 on:
   push:
-    branches: [develop]
+    branches: [develop, super-admin-dashboard]
   pull_request:
-    branches: [develop, main]
+    branches: [develop, main, super-admin-dashboard]
   workflow_dispatch:
 
 jobs:

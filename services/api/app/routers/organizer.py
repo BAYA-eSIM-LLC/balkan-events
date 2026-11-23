@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -11,6 +11,8 @@ from app.models.user import User, UserRole
 from app.models.organization import Organization, OrganizationMember, OrgRole
 from app.models.event import Event, EventStatus
 from app.models.ticket import TicketType, Ticket
+from app.models.order import Order, OrderItem, OrderStatus
+from app.models.ledger import LedgerEntry
 from app.models.org_extended import OrgDocument, OrgNotification
 from app.models.audit import AuditLog
 from app.models.user_extended import UserFavorite
@@ -265,12 +267,116 @@ async def report_finance(org_id: int = Query(...), user: User = Depends(get_curr
 
 # ---------- Admin verification ----------
 @admin_org.get("", dependencies=[Depends(require_role(*REVIEWER_ROLES))])
-async def admin_list_orgs(status: Optional[str] = None, db: AsyncSession = Depends(get_db)):
-    q = select(Organization)
-    if status:
-        q = q.where(Organization.verification_status == status)
-    result = await db.execute(q.order_by(Organization.created_at.desc()))
-    return [{"id": o.id, "name": o.name, "verification_status": o.verification_status} for o in result.scalars().all()]
+async def admin_list_orgs(
+    status: Optional[str] = None,
+    q: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    sort: str = Query("created_at"),
+    order: str = Query("desc"),
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(Organization)
+    if status == "pending":
+        query = query.where(Organization.verification_status.in_(["SUBMITTED", "PENDING_REVIEW"]))
+    elif status:
+        query = query.where(Organization.verification_status == status)
+    if q:
+        term = f"%{q.strip()}%"
+        conds = [Organization.name.ilike(term), Organization.email.ilike(term)]
+        if q.strip().isdigit():
+            conds.append(Organization.id == int(q.strip()))
+        query = query.where(or_(*conds))
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    col = {"id": Organization.id, "name": Organization.name, "created_at": Organization.created_at}.get(sort, Organization.created_at)
+    query = query.order_by(col.asc() if order == "asc" else col.desc())
+    orgs = (await db.execute(query.offset((page - 1) * page_size).limit(page_size))).scalars().all()
+    return {
+        "total": total or 0,
+        "page": page,
+        "page_size": page_size,
+        "items": [{
+            "id": o.id, "name": o.name, "slug": o.slug, "email": o.email,
+            "verification_status": o.verification_status, "is_active": o.is_active,
+            "contact_person": o.contact_person, "created_at": o.created_at.isoformat() if o.created_at else None,
+        } for o in orgs],
+    }
+
+
+@admin_org.get("/{org_id}", dependencies=[Depends(require_role(*REVIEWER_ROLES))])
+async def admin_org_full(org_id: int, db: AsyncSession = Depends(get_db)):
+    org = await db.get(Organization, org_id)
+    if not org:
+        raise HTTPException(404, "Organization not found")
+    members = (await db.execute(select(OrganizationMember).where(OrganizationMember.organization_id == org_id))).scalars().all()
+    events = (await db.execute(select(Event).where(Event.organization_id == org_id).order_by(Event.start_at.desc()))).scalars().all()
+    event_ids = [e.id for e in events]
+    orders, tickets_sold, revenue = [], 0, 0.0
+    if event_ids:
+        order_rows = (await db.execute(
+            select(Order).join(OrderItem, OrderItem.order_id == Order.id)
+            .join(TicketType, TicketType.id == OrderItem.ticket_type_id)
+            .where(TicketType.event_id.in_(event_ids))
+            .distinct()
+            .order_by(Order.created_at.desc())
+            .limit(20)
+        )).scalars().all()
+        orders = order_rows
+        paid = [o for o in order_rows if o.status == OrderStatus.PAID.value]
+        revenue = sum(float(o.total_amount or 0) for o in paid)
+        tickets_sold = await db.scalar(
+            select(func.count(Ticket.id)).join(TicketType, Ticket.ticket_type_id == TicketType.id)
+            .where(TicketType.event_id.in_(event_ids))
+        ) or 0
+    fee = await db.scalar(select(func.coalesce(func.sum(LedgerEntry.amount), 0)).where(
+        LedgerEntry.organization_id == org_id, LedgerEntry.entry_type == "platform_fee"
+    )) or 0
+    history = (await db.execute(
+        select(AuditLog).where(AuditLog.entity_id == org_id, AuditLog.entity_type.in_(["Organization", "organization"]))
+        .order_by(AuditLog.created_at.desc()).limit(20)
+    )).scalars().all()
+    return {
+        "id": org.id, "name": org.name, "slug": org.slug, "email": org.email, "phone": org.phone,
+        "legal_form": org.legal_form, "registration_number": org.registration_number, "vat_number": org.vat_number,
+        "address": org.address, "postal_code": org.postal_code, "website": org.website, "description": org.description,
+        "contact_person": org.contact_person, "org_type": org.org_type,
+        "verification_status": org.verification_status, "is_active": org.is_active, "is_verified": org.is_verified,
+        "rejection_reason": org.rejection_reason,
+        "created_at": org.created_at.isoformat() if org.created_at else None,
+        "verified_at": org.verified_at.isoformat() if org.verified_at else None,
+        "members": [{"user_id": m.user_id, "role": m.role} for m in members],
+        "events": [{"id": e.id, "title": e.title, "status": e.status, "start_at": e.start_at.isoformat() if e.start_at else None} for e in events],
+        "orders": [{"id": o.id, "reference": o.reference, "status": o.status, "total_amount": float(o.total_amount or 0), "created_at": o.created_at.isoformat() if o.created_at else None} for o in orders],
+        "tickets_sold": tickets_sold,
+        "revenue": round(revenue, 2),
+        "platform_fee": float(fee),
+        "net": round(revenue - float(fee), 2),
+        "history": [{"id": h.id, "action": h.action, "user_id": h.user_id, "details": h.details, "created_at": h.created_at.isoformat() if h.created_at else None} for h in history],
+    }
+
+
+@admin_org.post("/{org_id}/activate", dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.SUPERADMIN))])
+async def activate_org(org_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    org = await db.get(Organization, org_id)
+    if not org:
+        raise HTTPException(404, "Organization not found")
+    org.is_active = True
+    if org.verification_status == "SUSPENDED":
+        org.verification_status = "VERIFIED" if org.is_verified else "NOT_SUBMITTED"
+    await audit(db, user.id, "org_activated", "Organization", org_id)
+    await db.commit()
+    return {"id": org.id, "is_active": True, "verification_status": org.verification_status}
+
+
+@admin_org.post("/{org_id}/deactivate", dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.SUPERADMIN))])
+async def deactivate_org(org_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    org = await db.get(Organization, org_id)
+    if not org:
+        raise HTTPException(404, "Organization not found")
+    org.is_active = False
+    await audit(db, user.id, "org_deactivated", "Organization", org_id)
+    await db.commit()
+    return {"id": org.id, "is_active": False}
 
 @admin_org.post("/{org_id}/approve", dependencies=[Depends(require_role(*REVIEWER_ROLES))])
 async def approve_org(org_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):

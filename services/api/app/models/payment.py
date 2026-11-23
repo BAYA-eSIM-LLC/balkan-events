@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Numeric, Enum, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Numeric, Text, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -15,10 +15,13 @@ class Payment(Base):
     id = Column(Integer, primary_key=True)
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
     provider = Column(String(50))
-    provider_id = Column(String(255))
+    provider_id = Column(String(255))  # Stripe PaymentIntent id
+    stripe_session_id = Column(String(255), unique=True)
     amount = Column(Numeric(10, 2), nullable=False)
     currency = Column(String(3), default="EUR")
-    status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING)
+    status = Column(String(50), default=PaymentStatus.PENDING.value)
+    stripe_fee = Column(Numeric(10, 2))  # actual fee when known, never invented
+    platform_fee = Column(Numeric(10, 2))
     created_at = Column(DateTime, default=datetime.utcnow)
     order = relationship("Order", back_populates="payments")
     refunds = relationship("Refund", back_populates="payment")
@@ -30,5 +33,15 @@ class Refund(Base):
     amount = Column(Numeric(10, 2), nullable=False)
     reason = Column(Text)
     status = Column(String(50), default="pending")
+    stripe_refund_id = Column(String(255), unique=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     payment = relationship("Payment", back_populates="refunds")
+
+class StripeEvent(Base):
+    """Idempotency store for processed Stripe webhook events."""
+    __tablename__ = "stripe_events"
+    id = Column(Integer, primary_key=True)
+    event_id = Column(String(255), unique=True, nullable=False)
+    event_type = Column(String(100))
+    processed_at = Column(DateTime, default=datetime.utcnow)
+    success = Column(Boolean, default=True)

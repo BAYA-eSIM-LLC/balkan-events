@@ -40,6 +40,8 @@ class User(Base):
     email_verified_at = Column(DateTime)
     preferred_language = Column(String(10), default="bs")
     timezone = Column(String(50), default="Europe/Sarajevo")
+    totp_secret = Column(String(64), nullable=True)
+    mfa_enabled = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     memberships = relationship("OrganizationMember", back_populates="user")

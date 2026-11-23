@@ -29,3 +29,14 @@ class ScanLog(Base):
     result = Column(String(32))  # VALID, ALREADY_USED, WRONG_EVENT, INVALID, CANCELLED
     reason = Column(String(255))
     scanned_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ScannerDeviceToken(Base):
+    """Hashed device token. Revoke by setting revoked_at."""
+    __tablename__ = "scanner_device_tokens"
+    id = Column(Integer, primary_key=True)
+    device_id = Column(Integer, ForeignKey("scanner_devices.id"), nullable=False, index=True)
+    token_hash = Column(String(64), unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_used_at = Column(DateTime)
+    revoked_at = Column(DateTime)

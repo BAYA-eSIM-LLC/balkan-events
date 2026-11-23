@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, and_
+from sqlalchemy import select, or_, and_, func
 from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
 from typing import Optional, List
@@ -12,6 +12,9 @@ from app.models.organization import OrganizationMember
 from app.models.venue import Venue
 from app.models.performer import Performer, EventPerformer, EventSchedule
 from app.models.audit import AuditLog
+from app.models.ticket import TicketType, Ticket
+from app.models.order import Order, OrderItem, OrderStatus
+from app.models.event import EventCategory
 import re
 
 public = APIRouter(prefix="/events", tags=["events-public"])
@@ -235,12 +238,124 @@ async def submit_event(event_id: int, user: User = Depends(get_current_user), db
 
 # ---------- Admin ----------
 @admin.get("", dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.SUPERADMIN))])
-async def admin_list_events(status: Optional[str] = None, db: AsyncSession = Depends(get_db)):
-    q = select(Event)
+async def admin_list_events(
+    status: Optional[str] = None,
+    q: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    sort: str = Query("start_at"),
+    order: str = Query("desc"),
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(Event)
     if status:
-        q = q.where(Event.status == status)
-    result = await db.execute(q.order_by(Event.created_at.desc()))
-    return [{"id": e.id, "title": e.title, "status": e.status, "organization_id": e.organization_id} for e in result.scalars().all()]
+        query = query.where(Event.status == status)
+    if q:
+        term = f"%{q.strip()}%"
+        org_ids = [r[0] for r in (await db.execute(select(Organization.id).where(Organization.name.ilike(term)))).all()]
+        conds = [Event.title.ilike(term), Event.city.ilike(term)]
+        if org_ids:
+            conds.append(Event.organization_id.in_(org_ids))
+        if q.strip().isdigit():
+            conds.append(Event.id == int(q.strip()))
+        query = query.where(or_(*conds))
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    col = {"id": Event.id, "title": Event.title, "start_at": Event.start_at, "created_at": Event.created_at, "status": Event.status}.get(sort, Event.start_at)
+    query = query.order_by(col.asc() if order == "asc" else col.desc())
+    events = (await db.execute(query.offset((page - 1) * page_size).limit(page_size))).scalars().all()
+    org_map = {}
+    if events:
+        oids = list({e.organization_id for e in events})
+        orgs = (await db.execute(select(Organization).where(Organization.id.in_(oids)))).scalars().all()
+        org_map = {o.id: o.name for o in orgs}
+    return {
+        "total": total or 0, "page": page, "page_size": page_size,
+        "items": [{
+            "id": e.id, "title": e.title, "status": e.status, "city": e.city, "country": e.country,
+            "organization_id": e.organization_id, "organization_name": org_map.get(e.organization_id),
+            "start_at": e.start_at.isoformat() if e.start_at else None,
+            "image_url": e.image_url,
+        } for e in events],
+    }
+
+
+@admin.get("/{event_id}", dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.SUPERADMIN))])
+async def admin_event_detail(event_id: int, db: AsyncSession = Depends(get_db)):
+    e = await db.get(Event, event_id)
+    if not e:
+        raise HTTPException(404, "Event not found")
+    org = await db.get(Organization, e.organization_id)
+    cat = await db.get(EventCategory, e.category_id) if e.category_id else None
+    types = (await db.execute(select(TicketType).where(TicketType.event_id == event_id))).scalars().all()
+    capacity = sum(t.quantity_total or 0 for t in types)
+    sold = sum(t.quantity_sold or 0 for t in types)
+    available = sum(max(0, (t.quantity_total or 0) - (t.quantity_sold or 0) - (t.quantity_reserved or 0)) for t in types)
+    orders = (await db.execute(
+        select(Order).join(OrderItem, OrderItem.order_id == Order.id).join(TicketType, TicketType.id == OrderItem.ticket_type_id)
+        .where(TicketType.event_id == event_id).distinct().order_by(Order.created_at.desc()).limit(20)
+    )).scalars().all()
+    revenue = sum(float(o.total_amount or 0) for o in orders if o.status == OrderStatus.PAID.value)
+    history = (await db.execute(
+        select(AuditLog).where(AuditLog.entity_id == event_id, AuditLog.entity_type.in_(["Event", "event"]))
+        .order_by(AuditLog.created_at.desc()).limit(20)
+    )).scalars().all()
+    return {
+        "id": e.id, "title": e.title, "slug": e.slug, "status": e.status,
+        "short_description": e.short_description, "description": e.description,
+        "city": e.city, "country": e.country, "venue_name": e.venue_name, "venue_address": e.venue_address,
+        "start_at": e.start_at.isoformat() if e.start_at else None,
+        "end_at": e.end_at.isoformat() if e.end_at else None,
+        "timezone": e.timezone, "image_url": e.image_url, "gallery": e.gallery or [],
+        "category": cat.name if cat else None,
+        "organization": {"id": org.id, "name": org.name, "email": org.email} if org else None,
+        "ticket_types": [{"id": t.id, "name": t.name, "price": float(t.price or 0), "quantity_total": t.quantity_total, "quantity_sold": t.quantity_sold, "quantity_reserved": t.quantity_reserved} for t in types],
+        "capacity": capacity, "sold": sold, "available": available,
+        "orders": [{"id": o.id, "reference": o.reference, "status": o.status, "total_amount": float(o.total_amount or 0), "created_at": o.created_at.isoformat() if o.created_at else None} for o in orders],
+        "revenue": round(revenue, 2),
+        "history": [{"id": h.id, "action": h.action, "user_id": h.user_id, "details": h.details, "created_at": h.created_at.isoformat() if h.created_at else None} for h in history],
+    }
+
+
+class EventAdminUpdate(BaseModel):
+    title: Optional[str] = None
+    short_description: Optional[str] = None
+    description: Optional[str] = None
+    city: Optional[str] = None
+    venue_name: Optional[str] = None
+    venue_address: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+@admin.patch("/{event_id}", dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.SUPERADMIN))])
+async def admin_update_event(event_id: int, data: EventAdminUpdate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    e = await db.get(Event, event_id)
+    if not e:
+        raise HTTPException(404, "Event not found")
+    changed = {}
+    for field, value in data.model_dump(exclude_unset=True).items():
+        old = getattr(e, field)
+        if value != old:
+            setattr(e, field, value)
+            changed[field] = {"from": old, "to": value}
+    if changed:
+        await audit(db, user.id, "event_updated", e.id, changed)
+        await db.commit()
+    return {"id": e.id, "changed": list(changed.keys())}
+
+
+@admin.post("/{event_id}/reject", dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.SUPERADMIN))])
+async def reject_event(event_id: int, reason: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not reason or not reason.strip():
+        raise HTTPException(400, "Reason required")
+    e = await db.get(Event, event_id)
+    if not e:
+        raise HTTPException(404, "Event not found")
+    if e.status != EventStatus.SUBMITTED.value:
+        raise HTTPException(400, f"Cannot reject from {e.status}")
+    e.status = EventStatus.DRAFT.value
+    await audit(db, user.id, "event_rejected_to_draft", e.id, {"reason": reason.strip()})
+    await db.commit()
+    return {"id": e.id, "status": e.status, "note": "No REJECTED status in model. Returned to DRAFT with reason in audit."}
 
 async def _transition(event_id: int, new_status: str, user: User, db: AsyncSession, allowed_from: list):
     e = await db.get(Event, event_id)

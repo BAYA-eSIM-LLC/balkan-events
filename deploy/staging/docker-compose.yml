@@ -1,0 +1,15 @@
+# Isolated staging. Not the gateway. Not production.
+name: balkan-staging
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: staging
+    networks: [staging]
+  redis:
+    image: redis:7-alpine
+    networks: [staging]
+networks:
+  staging:

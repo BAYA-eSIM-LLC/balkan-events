@@ -1,11 +1,18 @@
 """Email service for payment notifications.
 Records emails in EmailLog. Real SMTP can be wired later via env.
 Prevents double-send via idempotency_key.
+Never sends real customer emails unless SMTP is explicitly configured.
 """
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.email_log import EmailLog
+from app.config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM
 from datetime import datetime
+import smtplib
+from email.message import EmailMessage
+import logging
+
+logger = logging.getLogger(__name__)
 
 async def queue_email(
     db: AsyncSession,
@@ -32,6 +39,24 @@ async def queue_email(
     )
     db.add(log)
     await db.commit()
+
+    # Optional real send – only if SMTP is configured. Never in CI by default.
+    if SMTP_HOST and SMTP_USER:
+        try:
+            msg = EmailMessage()
+            msg["Subject"] = subject
+            msg["From"] = SMTP_FROM
+            msg["To"] = to_email
+            msg.set_content(body)
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+                server.starttls()
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.send_message(msg)
+            log.sent = True
+            await db.commit()
+        except Exception as e:
+            logger.warning("SMTP send failed (queued only): %s", e)
+
     return log
 
 def payment_success_body(reference: str, tickets: list[str]) -> str:

@@ -69,7 +69,7 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     from app.models.platform_settings import PlatformSettings
     settings_row = await db.get(PlatformSettings, 1)
     platform_requires = bool(settings_row and settings_row.mfa_required_admins)
-    must_mfa = user.role in ("SUPERADMIN", "ADMIN") and (getattr(user, "mfa_enabled", False) or platform_requires)
+    must_mfa = user.role in ("superadmin", "admin") and (getattr(user, "mfa_enabled", False) or platform_requires)
     if must_mfa:
         if not getattr(user, "mfa_enabled", False) or not user.totp_secret:
             raise HTTPException(403, "MFA required for admin accounts. Complete MFA setup first.")
@@ -102,7 +102,7 @@ async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
     from app.models.platform_settings import PlatformSettings
     settings_row = await db.get(PlatformSettings, 1)
     platform_requires = bool(settings_row and settings_row.mfa_required_admins)
-    if user.role in ("SUPERADMIN", "ADMIN") and (getattr(user, "mfa_enabled", False) or platform_requires):
+    if user.role in ("superadmin", "admin") and (getattr(user, "mfa_enabled", False) or platform_requires):
         raise HTTPException(status_code=401, detail="MFA required. Use /auth/login and /auth/mfa/confirm")
     await db.commit()
     return await _issue_tokens(user, db)
@@ -131,11 +131,11 @@ class MFAConfirmRequest(BaseModel):
 # Short-lived tokens for MFA step. In-memory for this process only.
 
 def _require_admin_mfa(user: User):
-    return user.role in ("SUPERADMIN", "ADMIN") and user.mfa_enabled
+    return user.role in ("superadmin", "admin") and user.mfa_enabled
 
 @router.post("/mfa/setup")
 async def mfa_setup(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    if user.role not in ("SUPERADMIN", "ADMIN"):
+    if user.role not in ("superadmin", "admin"):
         raise HTTPException(403, "MFA setup is for admin roles")
     secret = pyotp.random_base32()
     user.totp_secret = encrypt_secret(secret)

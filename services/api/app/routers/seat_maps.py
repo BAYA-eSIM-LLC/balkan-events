@@ -396,13 +396,16 @@ async def seat_checkout(data: CheckoutRequest, user: User = Depends(get_current_
 
     # Create order
     total = sum(float(s.price_override) if s.price_override is not None else float(sector.base_price) for s in seats)
+    from app.models.platform_settings import PlatformSettings
+    settings_row = await db.get(PlatformSettings, 1)
+    expiry_min = settings_row.reservation_expiry_minutes if settings_row and settings_row.reservation_expiry_minutes else 15
     order = Order(
         user_id=user.id,
         status=OrderStatus.RESERVED.value,
         total_amount=total,
         currency="EUR",
         reference=f"BE-{uuid.uuid4().hex[:10].upper()}",
-        reserved_until=now + timedelta(minutes=15),
+        reserved_until=now + timedelta(minutes=expiry_min),
         idempotency_key=data.idempotency_key,
     )
     db.add(order)

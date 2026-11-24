@@ -205,7 +205,11 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                         payment.stripe_fee = bt.fee / 100.0
                 except Exception:
                     pass  # fee unknown – leave null
-                platform = float(order.total_amount) * (PLATFORM_FEE_PERCENT / 100.0)
+                # Prefer stored platform fee; fall back to env
+                from app.models.platform_settings import PlatformSettings
+                settings_row = await db.get(PlatformSettings, 1)
+                fee_pct = float(settings_row.platform_fee_percent) if settings_row and settings_row.platform_fee_percent is not None else PLATFORM_FEE_PERCENT
+                platform = float(order.total_amount) * (fee_pct / 100.0)
                 payment.platform_fee = platform
                 org_id = None
                 items = await db.execute(select(OrderItem).where(OrderItem.order_id == order.id))
@@ -224,7 +228,7 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                 db.add(LedgerEntry(
                     entry_type="platform_fee", reference_type="Order", reference_id=order.id,
                     organization_id=org_id, amount=-platform,
-                    description=f"Platform fee {PLATFORM_FEE_PERCENT}% {order.reference}", idempotency_key=f"fee-{event['id']}",
+                    description=f"Platform fee {fee_pct}% {order.reference}", idempotency_key=f"fee-{event['id']}",
                 ))
                 net = float(order.total_amount) - platform
                 db.add(LedgerEntry(

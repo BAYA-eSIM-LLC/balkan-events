@@ -118,6 +118,32 @@ async def assign_staff(point_id: int, data: StaffAssign, user: User = Depends(ge
     return {"id": staff.id, "role": staff.role}
 
 
+
+@router.get("/sales-points/{point_id}/staff")
+async def list_staff(point_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    sp = await db.get(SalesPoint, point_id)
+    if not sp:
+        raise HTTPException(404, "Sales point not found")
+    if user.role not in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
+        await get_org_member(sp.organization_id, user, db)
+    rows = (await db.execute(select(SalesPointStaff).where(SalesPointStaff.sales_point_id == point_id))).scalars().all()
+    return [{"id": s.id, "user_id": s.user_id, "role": s.role, "is_active": s.is_active} for s in rows]
+
+@router.post("/sales-points/{point_id}/staff/{staff_id}/deactivate")
+async def deactivate_staff(point_id: int, staff_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    sp = await db.get(SalesPoint, point_id)
+    if not sp:
+        raise HTTPException(404, "Sales point not found")
+    if user.role not in (UserRole.ADMIN.value, UserRole.SUPERADMIN.value):
+        await get_org_member(sp.organization_id, user, db)
+    staff = await db.get(SalesPointStaff, staff_id)
+    if not staff or staff.sales_point_id != point_id:
+        raise HTTPException(404, "Staff not found")
+    staff.is_active = False
+    await db.commit()
+    await log_audit(db, user.id, "pos.staff.deactivated", "SalesPointStaff", staff_id)
+    return {"id": staff_id, "is_active": False}
+
 @router.post("/registers/open")
 async def open_register(data: RegisterOpen, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     await _staff_for_point(db, data.sales_point_id, user)

@@ -12,6 +12,8 @@ export default function OrganizerPOS() {
   const [types, setTypes] = useState<any[]>([]);
   const [typeId, setTypeId] = useState('');
   const [msg, setMsg] = useState('');
+  const [staff, setStaff] = useState<any[]>([]);
+  const [staffUserId, setStaffUserId] = useState('');
 
   useEffect(() => {
     if (!activeOrg) return;
@@ -74,6 +76,15 @@ export default function OrganizerPOS() {
           <option value="">Odaberi kategoriju</option>
           {types.map(t => <option key={t.id} value={t.id}>{t.name} · {t.price} {t.currency}</option>)}
         </select>
+        {pointId && (
+          <div className="border-t border-white/10 pt-3">
+            <p className="text-xs text-zinc-400 mb-2">Zaposlenici</p>
+            <div className="flex gap-2 mb-2">
+              <input value={staffUserId} onChange={e => setStaffUserId(e.target.value)} placeholder="User ID" className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1 text-sm" />
+              <button onClick={async () => { if (!staffUserId) return; try { await adminFetch(`/pos/sales-points/${pointId}/staff`, { method: 'POST', body: JSON.stringify({ user_id: parseInt(staffUserId), role: 'SELLER' }) }); setMsg('Dodan'); setStaffUserId(''); adminFetch(`/pos/sales-points/${pointId}/staff`).then(setStaff); } catch (e: any) { setMsg(e.message); } }} className="bg-white/10 px-2 py-1 rounded text-xs">Dodaj</button>
+            </div>
+          </div>
+        )}
         <button onClick={sell} disabled={!reg} className="bg-purple-600 disabled:opacity-40 px-4 py-2 rounded-lg text-sm">Prodaj (cash)</button>
         {msg && <p className="text-sm text-zinc-300">{msg}</p>}
       </div>

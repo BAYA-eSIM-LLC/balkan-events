@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, events, admin, profile
+from app.routers.wallets import router as wallets_router
 from app.routers.locations import router as locations_router, categories_router, admin_router as locations_admin_router
 from app.routers.events_engine import public as events_public, organizer as events_organizer, admin as events_admin, venues_public
 from app.routers.search import router as search_router
@@ -68,6 +69,7 @@ app.include_router(admin_org_perm_router)
 app.include_router(preferences_router)
 app.include_router(orders_router)
 app.include_router(payments_router)
+app.include_router(wallets_router)
 app.include_router(profile.router)
 app.include_router(locations_router)
 app.include_router(categories_router)

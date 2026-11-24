@@ -50,6 +50,10 @@ function TicketCard({ t, token }: { t: any; token: string }) {
 }
 
 export default function MyTickets() {
+  const [walletStatus, setWalletStatus] = useState<any>(null);
+  useEffect(() => {
+    fetch((process.env.NEXT_PUBLIC_API_URL || '/api') + '/wallets/status').then(r => r.json()).then(setWalletStatus).catch(() => {});
+  }, []);
   const [tickets, setTickets] = useState<any[]>([]);
   const [needLogin, setNeedLogin] = useState(false);
   const [loading, setLoading] = useState(true);

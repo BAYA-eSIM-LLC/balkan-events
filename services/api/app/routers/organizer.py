@@ -270,12 +270,6 @@ async def report_events(org_id: int = Query(...), user: User = Depends(get_curre
         by_status[e.status] = by_status.get(e.status, 0) + 1
     return {"total": len(events), "by_status": by_status}
 
-@router.get("/reports/finance")
-async def report_finance(org_id: int = Query(...), user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    member = await get_org_member(org_id, user, db)
-    if not member:
-        raise HTTPException(status_code=403, detail="Not a member")
-    return {"available": False, "message": "No sales data available. Ledger records are the source of truth when sales begin.", "gross": None, "platform_fee": None, "net": None}
 
 # ---------- Admin verification ----------
 @admin_org.get("", dependencies=[Depends(require_role(*REVIEWER_ROLES))])
@@ -492,3 +486,103 @@ async def get_org_member_for_event(event_id: int, user: User, db: AsyncSession):
         OrganizationMember.user_id == user.id
     ))
     return result.scalar_one_or_none()
+
+# ---------- Payouts ----------
+from app.models.payout import OrganizerPayout
+from app.models.ledger import LedgerEntry
+from pydantic import BaseModel
+
+class PayoutRequest(BaseModel):
+    organization_id: int
+    amount: float
+    notes: Optional[str] = None
+
+async def _available_balance(db: AsyncSession, org_id: int) -> float:
+    """Net from ledger minus pending/approved/paid payouts."""
+    net = await db.scalar(select(func.coalesce(func.sum(LedgerEntry.amount), 0)).where(
+        LedgerEntry.organization_id == org_id,
+        LedgerEntry.entry_type.in_(["organizer_net", "refund"])
+    )) or 0
+    reserved = await db.scalar(select(func.coalesce(func.sum(OrganizerPayout.amount), 0)).where(
+        OrganizerPayout.organization_id == org_id,
+        OrganizerPayout.status.in_(["pending", "PENDING", "approved", "APPROVED", "paid", "PAID"])
+    )) or 0
+    return float(net) - float(reserved)
+
+@router.get("/payouts")
+async def list_payouts(org_id: int = Query(...), user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    member = await get_org_member(org_id, user, db)
+    if not member:
+        raise HTTPException(403, "Not a member")
+    rows = (await db.execute(select(OrganizerPayout).where(OrganizerPayout.organization_id == org_id).order_by(OrganizerPayout.created_at.desc()))).scalars().all()
+    return [{
+        "id": p.id, "amount": float(p.amount), "currency": p.currency, "status": p.status,
+        "notes": p.notes, "created_at": p.created_at.isoformat() if p.created_at else None,
+        "paid_at": p.paid_at.isoformat() if p.paid_at else None,
+    } for p in rows]
+
+@router.post("/payouts")
+async def request_payout(data: PayoutRequest, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    member = await get_org_member(data.organization_id, user, db)
+    if not member or member.role not in ("owner", "admin"):
+        raise HTTPException(403, "Insufficient role")
+    available = await _available_balance(db, data.organization_id)
+    if data.amount <= 0 or data.amount > available + 0.01:
+        raise HTTPException(400, f"Invalid amount. Available: {available:.2f}")
+    # Prevent double request for same amount while pending
+    pending = await db.scalar(select(func.count(OrganizerPayout.id)).where(
+        OrganizerPayout.organization_id == data.organization_id,
+        OrganizerPayout.status.in_(["pending", "PENDING"]),
+        OrganizerPayout.amount == data.amount
+    ))
+    if pending:
+        raise HTTPException(409, "A pending request for this amount already exists")
+    p = OrganizerPayout(
+        organization_id=data.organization_id, amount=data.amount,
+        status="PENDING", notes=data.notes,
+    )
+    db.add(p)
+    await db.commit()
+    await db.refresh(p)
+    await audit(db, user.id, "payout.requested", "OrganizerPayout", p.id, {"amount": data.amount})
+    return {"id": p.id, "status": p.status, "amount": float(p.amount), "available_after": available - data.amount}
+
+@router.get("/reports/finance")
+async def report_finance(
+    org_id: int = Query(...),
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
+    event_id: Optional[int] = None,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    member = await get_org_member(org_id, user, db)
+    if not member:
+        raise HTTPException(403, "Not a member")
+    q = select(LedgerEntry).where(LedgerEntry.organization_id == org_id)
+    if date_from:
+        q = q.where(LedgerEntry.created_at >= date_from)
+    if date_to:
+        q = q.where(LedgerEntry.created_at <= date_to)
+    rows = (await db.execute(q)).scalars().all()
+    gross = sum(float(r.amount) for r in rows if r.entry_type == "payment_gross")
+    fees = sum(float(r.amount) for r in rows if r.entry_type == "platform_fee")
+    refunds = sum(float(r.amount) for r in rows if r.entry_type == "refund")
+    net = sum(float(r.amount) for r in rows if r.entry_type == "organizer_net")
+    available = await _available_balance(db, org_id)
+    requested = await db.scalar(select(func.coalesce(func.sum(OrganizerPayout.amount), 0)).where(
+        OrganizerPayout.organization_id == org_id, OrganizerPayout.status.in_(["pending", "PENDING"])
+    )) or 0
+    paid = await db.scalar(select(func.coalesce(func.sum(OrganizerPayout.amount), 0)).where(
+        OrganizerPayout.organization_id == org_id, OrganizerPayout.status.in_(["paid", "PAID"])
+    )) or 0
+    return {
+        "gross": round(gross, 2),
+        "platform_fee": round(abs(fees), 2),
+        "refunds": round(abs(refunds), 2),
+        "net": round(net + refunds, 2),
+        "available": round(available, 2),
+        "requested": float(requested),
+        "paid": float(paid),
+        "entries": len(rows),
+    }

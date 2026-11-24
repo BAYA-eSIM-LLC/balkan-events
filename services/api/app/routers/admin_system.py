@@ -565,6 +565,42 @@ async def finance_payouts(
     return {"total": total or 0, "page": page, "page_size": page_size, "items": items, "note": "Read-only. No payout execution from this endpoint."}
 
 
+
+@router.post("/finance/payouts/{payout_id}/approve")
+async def approve_payout(payout_id: int, user: User = Depends(require_admin_role(*FINANCE_ROLES)), db: AsyncSession = Depends(get_db)):
+    from app.models.payout import OrganizerPayout
+    p = await db.get(OrganizerPayout, payout_id)
+    if not p or p.status not in ("pending", "PENDING"):
+        raise HTTPException(400, "Payout not pending")
+    p.status = "APPROVED"
+    await db.commit()
+    await log_audit(db, user.id, "payout.approved", "OrganizerPayout", payout_id, {"amount": float(p.amount)})
+    return {"id": p.id, "status": p.status}
+
+@router.post("/finance/payouts/{payout_id}/reject")
+async def reject_payout(payout_id: int, user: User = Depends(require_admin_role(*FINANCE_ROLES)), db: AsyncSession = Depends(get_db)):
+    from app.models.payout import OrganizerPayout
+    p = await db.get(OrganizerPayout, payout_id)
+    if not p or p.status not in ("pending", "PENDING"):
+        raise HTTPException(400, "Payout not pending")
+    p.status = "REJECTED"
+    await db.commit()
+    await log_audit(db, user.id, "payout.rejected", "OrganizerPayout", payout_id, {"amount": float(p.amount)})
+    return {"id": p.id, "status": p.status}
+
+@router.post("/finance/payouts/{payout_id}/mark-paid")
+async def mark_payout_paid(payout_id: int, user: User = Depends(require_admin_role(*FINANCE_ROLES)), db: AsyncSession = Depends(get_db)):
+    from app.models.payout import OrganizerPayout
+    from datetime import datetime
+    p = await db.get(OrganizerPayout, payout_id)
+    if not p or p.status not in ("approved", "APPROVED"):
+        raise HTTPException(400, "Payout not approved")
+    p.status = "PAID"
+    p.paid_at = datetime.utcnow()
+    await db.commit()
+    await log_audit(db, user.id, "payout.paid", "OrganizerPayout", payout_id, {"amount": float(p.amount)})
+    return {"id": p.id, "status": p.status}
+
 @router.get("/finance/monthly")
 async def finance_monthly(
     user: User = Depends(require_admin_role(*FINANCE_ROLES)),

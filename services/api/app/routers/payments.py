@@ -267,8 +267,9 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                     bt = getattr(pi.latest_charge, "balance_transaction", None)
                     if bt and getattr(bt, "fee", None) is not None:
                         payment.stripe_fee = bt.fee / 100.0
+                    # else: fee unavailable – leave null, do not set 0
                 except Exception:
-                    pass  # fee unknown – leave null
+                    pass  # fee unavailable – leave null, do not invent
                 # Prefer stored platform fee; fall back to env
                 from app.models.platform_settings import PlatformSettings
                 settings_row = await db.get(PlatformSettings, 1)

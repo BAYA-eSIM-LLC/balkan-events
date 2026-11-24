@@ -65,7 +65,7 @@ async def forgot_password(data: ForgotPasswordRequest, db: AsyncSession = Depend
         db.add(PasswordResetToken(user_id=user.id, token_hash=token_hash, expires_at=expires))
         await db.commit()
         # Queue email – SMTP may be BLOCKED
-        await queue_email(db, to=user.email, subject="Reset lozinke", body=f"Token: {raw}\nIstek: 1 sat")
+        await queue_email(db, to_email=user.email, subject="Reset lozinke", body=f"Token: {raw}", template="password_reset", reference_type="user", reference_id=user.id, idempotency_key=f"reset-{user.id}-{token_hash[:16]}")
     return {"ok": True, "message": "Ako račun postoji, poslan je e-mail s uputama."}
 
 @router.post("/reset-password")

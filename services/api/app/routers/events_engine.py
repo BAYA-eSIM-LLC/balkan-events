@@ -8,6 +8,7 @@ from app.database import get_db
 from app.deps import get_current_user, require_role, get_org_member
 from app.models.user import User, UserRole
 from app.models.event import Event, EventStatus
+from app.models.ticket import TicketType
 from app.models.organization import OrganizationMember
 from app.models.venue import Venue
 from app.models.performer import Performer, EventPerformer, EventSchedule
@@ -128,6 +129,14 @@ async def get_event(event_id: int, db: AsyncSession = Depends(get_db)):
     if not e or e.status != EventStatus.PUBLISHED.value:
         raise HTTPException(status_code=404, detail="Event not found")
     return event_to_public(e)
+
+
+@public.get("/{event_id}/ticket-types")
+async def public_ticket_types(event_id: int, db: AsyncSession = Depends(get_db)):
+    """Public ticket types for an event. No auth required."""
+    result = await db.execute(select(TicketType).where(TicketType.event_id == event_id, TicketType.is_active == True))
+    types = result.scalars().all()
+    return [{"id": t.id, "name": t.name, "price": float(t.price or 0), "currency": t.currency or "EUR", "available": (t.quantity_total or 0) - (t.quantity_sold or 0) - (t.quantity_reserved or 0)} for t in types]
 
 @public.get("/{event_id}/performers")
 async def event_performers(event_id: int, db: AsyncSession = Depends(get_db)):

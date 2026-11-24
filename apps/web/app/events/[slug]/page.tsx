@@ -1,5 +1,6 @@
 import { fetchEventBySlug, formatDate } from '@/lib/api';
 import Link from 'next/link';
+import BuyTickets from './BuyTickets';
 import { notFound } from 'next/navigation';
 
 export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -27,14 +28,8 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           {event.short_description && (
             <p className="mt-5 text-gray-700 leading-relaxed">{event.short_description}</p>
           )}
-          <div className="mt-8 flex flex-col sm:flex-row gap-3">
-            <Link href="/checkout" className="bg-[#6d3df5] hover:bg-[#7c50ff] text-white px-6 py-3.5 rounded-xl font-medium text-center transition">
-              Kupi ulaznice
-            </Link>
-            <Link href="/search" className="border border-gray-300 px-6 py-3.5 rounded-xl text-center hover:bg-gray-50 transition">
-              Nazad
-            </Link>
-          </div>
+          <BuyTickets eventId={event.id} />
+          <Link href="/search" className="mt-4 inline-block text-sm text-gray-500 hover:underline">Nazad na pretragu</Link>
         </div>
       </div>
     </div>

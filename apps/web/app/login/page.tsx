@@ -23,6 +23,12 @@ export default function Login() {
 
   function finish(token: string) {
     localStorage.setItem('token', token);
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next');
+    if (next && next.startsWith('/')) {
+      window.location.href = next;
+      return;
+    }
     const role = roleFromToken(token);
     const r = (role || '').toUpperCase();
     if (r === 'ADMIN' || r === 'SUPERADMIN') {

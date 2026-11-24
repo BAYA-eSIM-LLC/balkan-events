@@ -9,19 +9,23 @@ export default function AdminAnalyticsPage() {
   const [period, setPeriod] = useState('this_month');
   const [byEvent, setByEvent] = useState<any[]>([]);
 
+  const [error, setError] = useState<string | null>(null);
   const load = (p: string) => {
     const token = localStorage.getItem('token');
     const h: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
     fetch(`${API}/admin/analytics/overview?period=${p}`, { headers: h })
-      .then(r => r.json())
-      .then(setData);
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(setData)
+      .catch(e => setError(e.message));
     fetch(`${API}/admin/analytics/by-event`, { headers: h })
-      .then(r => r.json())
-      .then(setByEvent);
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(setByEvent)
+      .catch(() => {});
   };
 
   useEffect(() => { load(period); }, [period]);
 
+  if (error) return <div className="p-8 text-red-400">Greška: {error}. <a href="/login" className="underline">Prijavi se</a></div>;
   if (!data) return <div className="p-8">Loading analytics...</div>;
 
   return (

@@ -33,5 +33,3 @@ from app.models.permissions import EventPermission, OrgInvitation
 from app.models.discovery import UserPreference, SearchHistory
 
 from app.models.scanner import EntryPoint, ScannerDevice, ScanLog, ScannerDeviceToken
-
-from app.models.password_reset import PasswordResetToken

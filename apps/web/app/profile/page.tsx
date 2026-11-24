@@ -3,6 +3,20 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function Profile() {
+  const [curPw, setCurPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [pwMsg, setPwMsg] = useState('');
+  const changePw = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const r = await fetch((process.env.NEXT_PUBLIC_API_URL || '/api') + '/auth/change-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ current_password: curPw, new_password: newPw }),
+      });
+      const d = await r.json();
+      setPwMsg(r.ok ? 'Lozinka promijenjena.' : (d.detail || 'Greška'));
+    } catch { setPwMsg('Greška'); }
+  };
   const [user, setUser] = useState<any>(null);
   const [err, setErr] = useState('');
 
@@ -45,6 +59,13 @@ export default function Profile() {
           <p className="font-medium">Moje ulaznice</p>
           <p className="text-sm text-gray-500 mt-1">Pregledaj kupljene ulaznice</p>
         </Link>
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-black/5">
+          <p className="font-medium mb-3">Promjena lozinke</p>
+          <input type="password" value={curPw} onChange={e => setCurPw(e.target.value)} placeholder="Trenutna" className="w-full border rounded-lg px-3 py-2 mb-2 text-sm" />
+          <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Nova" className="w-full border rounded-lg px-3 py-2 mb-2 text-sm" />
+          <button onClick={changePw} className="bg-[#6d3df5] text-white px-4 py-2 rounded-lg text-sm">Spremi</button>
+          {pwMsg && <p className="text-sm mt-2">{pwMsg}</p>}
+        </div>
       </div>
     </div>
   );

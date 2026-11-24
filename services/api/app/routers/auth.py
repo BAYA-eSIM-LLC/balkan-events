@@ -37,6 +37,69 @@ class TokenResponse(BaseModel):
 
 REFRESH_EXPIRE_DAYS = 7
 
+from app.models.password_reset import PasswordResetToken
+from app.services.email import queue_email
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+@router.post("/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
+    if _limited(f"forgot:{data.email}", limit=3, window=600):
+        raise HTTPException(429, "Too many requests")
+    result = await db.execute(select(User).where(User.email == data.email))
+    user = result.scalar_one_or_none()
+    # Always return success to prevent enumeration
+    if user:
+        raw = secrets.token_urlsafe(32)
+        token_hash = hash_refresh_token(raw)
+        expires = datetime.utcnow() + timedelta(hours=1)
+        db.add(PasswordResetToken(user_id=user.id, token_hash=token_hash, expires_at=expires))
+        await db.commit()
+        # Queue email – SMTP may be BLOCKED
+        await queue_email(db, to=user.email, subject="Reset lozinke", body=f"Token: {raw}\nIstek: 1 sat")
+    return {"ok": True, "message": "Ako račun postoji, poslan je e-mail s uputama."}
+
+@router.post("/reset-password")
+async def reset_password(data: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    if len(data.new_password) < 8:
+        raise HTTPException(400, "Lozinka mora imati najmanje 8 znakova")
+    token_hash = hash_refresh_token(data.token)
+    result = await db.execute(select(PasswordResetToken).where(PasswordResetToken.token_hash == token_hash))
+    tok = result.scalar_one_or_none()
+    if not tok or tok.used or tok.expires_at < datetime.utcnow():
+        raise HTTPException(400, "Neispravan ili istekao token")
+    user = await db.get(User, tok.user_id)
+    if not user:
+        raise HTTPException(400, "Korisnik nije pronađen")
+    user.password_hash = hash_password(data.new_password)
+    tok.used = True
+    # Revoke all refresh tokens
+    await db.execute(update(RefreshToken).where(RefreshToken.user_id == user.id).values(is_revoked=True))
+    await db.commit()
+    return {"ok": True}
+
+@router.post("/change-password")
+async def change_password(data: ChangePasswordRequest, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not verify_password(data.current_password, user.password_hash):
+        raise HTTPException(401, "Pogrešna trenutna lozinka")
+    if len(data.new_password) < 8:
+        raise HTTPException(400, "Lozinka mora imati najmanje 8 znakova")
+    user.password_hash = hash_password(data.new_password)
+    await db.execute(update(RefreshToken).where(RefreshToken.user_id == user.id).values(is_revoked=True))
+    await db.commit()
+    return {"ok": True}
+
+
+
 async def _issue_tokens(user: User, db: AsyncSession) -> TokenResponse:
     access = create_access_token({"sub": str(user.id), "role": user.role})
     raw_refresh, token_hash = create_refresh_token()

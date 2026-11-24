@@ -241,10 +241,22 @@ async def create_ticket_type(event_id: int, data: TicketTypeCreate, user: User =
         raise HTTPException(status_code=400, detail="Invalid price or quantity")
     t = TicketType(event_id=event_id, name=data.name, description=data.description, price=data.price, currency=data.currency.upper()[:3], quantity_total=data.quantity_total, sale_start=data.sale_start, sale_end=data.sale_end)
     db.add(t)
-    await audit(db, user.id, "ticket_type_created", "TicketType", None)
+    await db.flush()
+    # Auto-create inventory row (idempotent via unique ticket_type_id)
+    from app.models.inventory import TicketInventory
+    existing_inv = await db.execute(select(TicketInventory).where(TicketInventory.ticket_type_id == t.id))
+    if not existing_inv.scalar_one_or_none():
+        db.add(TicketInventory(
+            ticket_type_id=t.id,
+            available=data.quantity_total,
+            reserved=0,
+            sold=0,
+            version=0,
+        ))
+    await audit(db, user.id, "ticket_type_created", "TicketType", t.id, {"quantity": data.quantity_total})
     await db.commit()
     await db.refresh(t)
-    return {"id": t.id, "name": t.name}
+    return {"id": t.id, "name": t.name, "quantity_total": t.quantity_total}
 
 # ---------- Reports ----------
 @router.get("/reports/events")

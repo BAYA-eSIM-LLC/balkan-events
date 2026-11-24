@@ -18,6 +18,8 @@ export default function AdminFinance() {
   const [daily, setDaily] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [ledger, setLedger] = useState<any[]>([]);
+  const [payouts, setPayouts] = useState<any[]>([]);
+  const [monthly, setMonthly] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,14 +33,18 @@ export default function AdminFinance() {
       adminFetch(`/admin/analytics/daily?period=${period === 'all' ? 'all' : period}`),
       adminFetch('/payments/admin'),
       adminFetch('/admin/finance/ledger?page=1&page_size=20'),
+      adminFetch('/admin/finance/payouts?page=1&page_size=20'),
+      adminFetch('/admin/finance/monthly'),
     ])
-      .then(([ov, orgs, events, days, pays, led]) => {
+      .then(([ov, orgs, events, days, pays, led, payo, mon]) => {
         setOverview(ov);
         setByOrg(Array.isArray(orgs) ? orgs : []);
         setByEvent(Array.isArray(events) ? events : []);
         setDaily(days?.days || []);
         setPayments(Array.isArray(pays) ? pays : []);
         setLedger(led?.items || []);
+        setPayouts(payo?.items || []);
+        setMonthly(mon?.months || []);
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
@@ -115,7 +121,23 @@ export default function AdminFinance() {
         {payments.length > 0 && <p className="text-xs text-zinc-500 mt-2">Platform fee i Stripe fee prikazani u detaljima narudžbe.</p>}
       </Panel>
 
-      <Panel title="Knjiga (ledger)">
+      
+      <Panel title="Mjesečni promet">
+        {monthly.length === 0 && <Empty />}
+        {monthly.map(m => (
+          <Row key={m.month} left={<span>{m.month}</span>} right={`${m.revenue} EUR · ${m.orders} nar.`} />
+        ))}
+      </Panel>
+
+      <Panel title="Isplate organizatorima (read-only)">
+        {payouts.length === 0 && <Empty />}
+        {payouts.map(p => (
+          <Row key={p.id} left={<span>{p.organization || `Org ${p.organization_id}`} · {p.status}</span>} right={`${p.amount} ${p.currency}`} />
+        ))}
+        <p className="text-xs text-zinc-500 mt-2">Isplate se ne izvršavaju iz ovog panela.</p>
+      </Panel>
+
+<Panel title="Knjiga (ledger)">
         {ledger.length === 0 && <Empty />}
         {ledger.map(e => (
           <Row key={e.id} left={<span>{e.entry_type} · {e.description || '—'}</span>} right={`${e.amount} ${e.currency}`} />

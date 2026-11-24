@@ -525,6 +525,57 @@ async def finance_ledger(
         } for e in rows],
     }
 
+
+
+@router.get("/finance/payouts")
+async def finance_payouts(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    status: Optional[str] = None,
+    user: User = Depends(require_admin_role(*FINANCE_ROLES)),
+    db: AsyncSession = Depends(get_db)
+):
+    from app.models.payout import OrganizerPayout
+    from app.models.organization import Organization
+    page, page_size = paginate(page, page_size)
+    q = select(OrganizerPayout)
+    if status:
+        q = q.where(OrganizerPayout.status == status)
+    total = await db.scalar(select(func.count()).select_from(q.subquery()))
+    rows = (await db.execute(q.order_by(OrganizerPayout.created_at.desc()).offset((page - 1) * page_size).limit(page_size))).scalars().all()
+    items = []
+    for r in rows:
+        org = await db.get(Organization, r.organization_id)
+        items.append({
+            "id": r.id, "organization_id": r.organization_id,
+            "organization": org.name if org else None,
+            "amount": float(r.amount), "currency": r.currency, "status": r.status,
+            "period_start": r.period_start.isoformat() if r.period_start else None,
+            "period_end": r.period_end.isoformat() if r.period_end else None,
+            "paid_at": r.paid_at.isoformat() if r.paid_at else None,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "notes": r.notes,
+        })
+    return {"total": total or 0, "page": page, "page_size": page_size, "items": items, "note": "Read-only. No payout execution from this endpoint."}
+
+
+@router.get("/finance/monthly")
+async def finance_monthly(
+    user: User = Depends(require_admin_role(*FINANCE_ROLES)),
+    db: AsyncSession = Depends(get_db)
+):
+    from app.models.order import OrderStatus
+    rows = (await db.execute(
+        select(
+            func.to_char(Order.created_at, "YYYY-MM"),
+            func.count(Order.id),
+            func.coalesce(func.sum(Order.total_amount), 0),
+        ).where(Order.status == OrderStatus.PAID.value)
+        .group_by(func.to_char(Order.created_at, "YYYY-MM"))
+        .order_by(func.to_char(Order.created_at, "YYYY-MM"))
+    )).all()
+    return {"months": [{"month": r[0], "orders": r[1], "revenue": float(r[2])} for r in rows], "note": "Real monthly aggregates from paid orders."}
+
 # --- Public Support (authenticated user) ---
 @public_support.post("/tickets")
 async def create_ticket(subject: str, body: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):

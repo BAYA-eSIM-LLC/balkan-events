@@ -450,11 +450,79 @@ async def audit_log(
     }
 
 @router.get("/finance/overview")
-async def finance_overview(user: User = Depends(require_admin_role(*FINANCE_ROLES)), db: AsyncSession = Depends(get_db)):
+async def finance_overview(
+    period: str = Query("all"),
+    user: User = Depends(require_admin_role(*FINANCE_ROLES)),
+    db: AsyncSession = Depends(get_db)
+):
+    from app.models.order import OrderStatus
+    from app.models.payment import Payment, Refund
+    from datetime import timedelta
+    now = datetime.utcnow()
+    start = None
+    if period == "today":
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == "7d":
+        start = now - timedelta(days=7)
+    elif period == "30d":
+        start = now - timedelta(days=30)
+    oq = select(Order)
+    pq = select(Payment)
+    if start:
+        oq = oq.where(Order.created_at >= start)
+        pq = pq.where(Payment.created_at >= start)
+    orders = (await db.execute(oq)).scalars().all()
+    payments = (await db.execute(pq)).scalars().all()
+    paid = [o for o in orders if o.status == OrderStatus.PAID.value]
+    refunded_orders = [o for o in orders if o.status == OrderStatus.REFUNDED.value]
+    gross = sum(float(o.total_amount or 0) for o in paid)
+    refunded_amount = sum(float(o.total_amount or 0) for o in refunded_orders)
+    platform = sum(float(p.platform_fee or 0) for p in payments)
+    stripe = sum(float(p.stripe_fee or 0) for p in payments if p.stripe_fee is not None)
+    refunds = (await db.execute(select(func.coalesce(func.sum(Refund.amount), 0)))).scalar() or 0
     ledger_count = await db.scalar(select(func.count(LedgerEntry.id)))
+    payout_count = 0
+    try:
+        from app.models.payout import OrganizerPayout
+        payout_count = await db.scalar(select(func.count(OrganizerPayout.id))) or 0
+    except Exception:
+        pass
     return {
+        "period": period,
+        "gross_paid": round(gross, 2),
+        "refunded_orders_amount": round(refunded_amount, 2),
+        "platform_fee": round(platform, 2),
+        "stripe_fee": round(stripe, 2),
+        "refunds_total": float(refunds),
+        "net_after_fees": round(gross - platform - stripe, 2),
+        "orders_paid": len(paid),
+        "orders_refunded": len(refunded_orders),
+        "payments_count": len(payments),
         "ledger_entries": ledger_count or 0,
-        "note": "Financial data is append-only. No payouts or live payments are active. Counts only."
+        "payouts_count": payout_count,
+        "note": "Real aggregates. No payout API. Refunds require Stripe. No finance CSV export.",
+    }
+
+
+@router.get("/finance/ledger")
+async def finance_ledger(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    user: User = Depends(require_admin_role(*FINANCE_ROLES)),
+    db: AsyncSession = Depends(get_db)
+):
+    page, page_size = paginate(page, page_size)
+    total = await db.scalar(select(func.count(LedgerEntry.id)))
+    rows = (await db.execute(
+        select(LedgerEntry).order_by(LedgerEntry.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+    )).scalars().all()
+    return {
+        "total": total or 0, "page": page, "page_size": page_size,
+        "items": [{
+            "id": e.id, "entry_type": e.entry_type, "amount": float(e.amount),
+            "currency": e.currency, "organization_id": e.organization_id,
+            "description": e.description, "created_at": e.created_at.isoformat() if e.created_at else None,
+        } for e in rows],
     }
 
 # --- Public Support (authenticated user) ---

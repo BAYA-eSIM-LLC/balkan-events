@@ -134,6 +134,30 @@ async def create_checkout_session(
     await log_audit(db, user.id, "payment.checkout_created", "Payment", payment.id, {"session": session.id})
     return CheckoutOut(session_id=session.id, url=session.url, order_id=order.id)
 
+@router.get("/status/session/{session_id}")
+async def order_status_by_session(session_id: str, db: AsyncSession = Depends(get_db)):
+    """Public status check after Stripe redirect. Verifies session_id with Stripe; no user token required."""
+    if not session_id.startswith("cs_"):
+        raise HTTPException(400, "Invalid session")
+    try:
+        sess = stripe.checkout.Session.retrieve(session_id)
+    except Exception:
+        raise HTTPException(404, "Session not found")
+    order_id = int(sess.metadata.get("order_id", 0)) if sess.metadata else 0
+    order = await db.get(Order, order_id) if order_id else None
+    if not order:
+        raise HTTPException(404, "Order not found")
+    pay = await db.execute(select(Payment).where(Payment.stripe_session_id == session_id))
+    payment = pay.scalar_one_or_none()
+    return {
+        "order_id": order.id,
+        "reference": order.reference,
+        "status": order.status,
+        "total_amount": float(order.total_amount),
+        "currency": order.currency,
+        "payment_status": payment.status if payment else None,
+    }
+
 @router.get("/status/{order_id}")
 async def order_status(order_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     order = await db.get(Order, order_id)

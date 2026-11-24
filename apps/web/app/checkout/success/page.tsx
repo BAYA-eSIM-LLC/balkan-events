@@ -1,21 +1,30 @@
 'use client';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { adminFetch } from '@/lib/admin-api';
 import Link from 'next/link';
+
+const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 function SuccessInner() {
   const params = useSearchParams();
+  const sessionId = params.get('session_id');
   const orderId = params.get('order');
   const [status, setStatus] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!orderId) return;
-    // Poll status – never trust redirect as proof of payment
+    if (!sessionId) {
+      setError('Nedostaje session_id. Ulaznice se izdaju nakon potvrde webhooka.');
+      return;
+    }
     const poll = async () => {
       try {
-        const s = await adminFetch(`/payments/status/${orderId}`);
+        const res = await fetch(`${API}/payments/status/session/${sessionId}`);
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`HTTP ${res.status}: ${text.slice(0, 120)}`);
+        }
+        const s = await res.json();
         setStatus(s);
         if (s.status !== 'paid' && s.status !== 'payment_late') {
           setTimeout(poll, 2000);
@@ -25,7 +34,7 @@ function SuccessInner() {
       }
     };
     poll();
-  }, [orderId]);
+  }, [sessionId]);
 
   return (
     <div className="max-w-lg mx-auto px-6 py-16 text-center">

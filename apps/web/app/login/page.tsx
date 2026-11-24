@@ -21,8 +21,9 @@ export default function Login() {
     }
   }
 
-  function finish(token: string) {
+  function finish(token: string, refresh?: string) {
     localStorage.setItem('token', token);
+    if (refresh) localStorage.setItem('refresh_token', refresh);
     const params = new URLSearchParams(window.location.search);
     const next = params.get('next');
     if (next && next.startsWith('/')) {
@@ -52,7 +53,7 @@ export default function Login() {
       setMfaToken(data.mfa_token);
       return;
     }
-    finish(data.access_token);
+    finish(data.access_token, data.refresh_token);
   }
 
   async function confirm(e: React.FormEvent) {
@@ -65,7 +66,7 @@ export default function Login() {
     });
     if (!res.ok) { setErr('Kod nije ispravan ili je istekao.'); return; }
     const data = await res.json();
-    finish(data.access_token);
+    finish(data.access_token, data.refresh_token);
   }
 
   return (

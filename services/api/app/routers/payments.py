@@ -1,3 +1,11 @@
+
+def _qr_b64(data: str) -> str:
+    import io, qrcode, base64
+    img = qrcode.make(data or "")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
 """Stripe payment system (TEST MODE only).
 Checkout Sessions, verified webhooks, refunds, ledger entries, emails.
 Never trusts frontend redirect or URL parameters. All financial actions are idempotent.
@@ -179,11 +187,41 @@ async def order_status(order_id: int, user: User = Depends(get_current_user), db
 
 @router.get("/my-tickets")
 async def my_tickets(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from app.models.event import Event
     result = await db.execute(
-        select(Ticket).join(OrderItem).join(Order).where(Order.user_id == user.id)
+        select(Ticket, OrderItem, Order, TicketType, Event)
+        .join(OrderItem, Ticket.order_item_id == OrderItem.id)
+        .join(Order, OrderItem.order_id == Order.id)
+        .join(TicketType, Ticket.ticket_type_id == TicketType.id)
+        .join(Event, TicketType.event_id == Event.id)
+        .where(Order.user_id == user.id)
+        .order_by(Ticket.id.desc())
     )
-    tickets = result.scalars().all()
-    return [{"id": t.id, "code": t.code, "qr_data": t.qr_data, "is_used": t.is_used} for t in tickets]
+    out = []
+    for t, oi, o, tt, e in result.all():
+        out.append({
+            "id": t.id,
+            "code": t.code,
+            "qr_data": t.qr_data,
+            "is_used": t.is_used,
+            "used_at": t.used_at.isoformat() if t.used_at else None,
+            "ticket_type": tt.name,
+            "price": float(tt.price),
+            "currency": tt.currency or "EUR",
+            "order_id": o.id,
+            "reference": o.reference,
+            "order_status": o.status,
+            "total_amount": float(o.total_amount),
+            "event_title": e.title,
+            "event_image": e.image_url,
+            "venue_name": e.venue_name,
+            "city": e.city,
+            "country": e.country,
+            "start_at": e.start_at.isoformat() if e.start_at else None,
+            "timezone": e.timezone,
+            "qr_png": _qr_b64(t.qr_data),
+        })
+    return out
 
 @router.post("/webhook")
 async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
@@ -408,3 +446,4 @@ async def organizer_payments(user: User = Depends(get_current_user), db: AsyncSe
         "id": e.id, "type": e.entry_type, "amount": float(e.amount),
         "description": e.description, "org_id": e.organization_id,
     } for e in result.scalars()]
+

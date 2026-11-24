@@ -19,7 +19,7 @@ export default function OrganizerDashboard() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-1">Dashboard</h1>
-      <p className="text-zinc-400 text-sm mb-6">{activeOrg.name} {!activeOrg.is_verified && <span className="text-amber-400">(nije verificirana)</span>}</p>
+      <p className="text-zinc-400 text-sm mb-6">{activeOrg.name} {activeOrg.verification_status !== 'VERIFIED' && <span className="text-amber-400">(nije verificirana)</span>}</p>
       {error && <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 rounded-xl p-4 text-sm mb-4">{error}</div>}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-5"><p className="text-xs text-zinc-400">Događaji</p><p className="text-2xl font-bold mt-1">{data?.total_events ?? '—'}</p></div>

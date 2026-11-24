@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { adminFetch } from './admin-api';
 
-type Org = { id: number; name: string; verification_status: string; is_verified: boolean };
+type Org = { id: number; name: string; verification_status: string; is_verified?: boolean };
 type Ctx = {
   orgs: Org[];
   activeOrg: Org | null;

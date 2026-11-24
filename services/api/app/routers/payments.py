@@ -260,7 +260,19 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         pi = event["data"]["object"]
         order_id = int(pi.get("metadata", {}).get("order_id", 0))
         order = await db.get(Order, order_id)
-        if order:
+        if order and order.status == OrderStatus.RESERVED.value:
+            # Definitive failure: expire reservation so it does not stay reserved forever
+            order.status = OrderStatus.EXPIRED.value
+            # Release reserved inventory
+            items = await db.execute(select(OrderItem).where(OrderItem.order_id == order.id))
+            for oi in items.scalars():
+                inv = await db.execute(
+                    select(TicketInventory).where(TicketInventory.ticket_type_id == oi.ticket_type_id).with_for_update()
+                )
+                inventory = inv.scalar_one_or_none()
+                if inventory and inventory.reserved >= oi.quantity:
+                    inventory.reserved -= oi.quantity
+                    inventory.available += oi.quantity
             pay = await db.execute(select(Payment).where(Payment.order_id == order.id))
             payment = pay.scalar_one_or_none()
             if payment:

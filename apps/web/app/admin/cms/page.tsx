@@ -68,13 +68,15 @@ export default function AdminCMS() {
 
   const filteredHero = hero.filter(s => {
     if (filter === 'published' && !s.is_published) return false;
-    if (filter === 'draft' && s.is_published) return false;
+    if (filter === 'draft' && (s.is_published || s.publish_at)) return false;
+    if (filter === 'scheduled' && !(s.publish_at && !s.is_published)) return false;
     if (q && !`${s.title || ''} ${s.subtitle || ''}`.toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
   const filteredSections = sections.filter(s => {
     if (filter === 'published' && !s.is_published) return false;
-    if (filter === 'draft' && s.is_published) return false;
+    if (filter === 'draft' && (s.is_published || s.publish_at)) return false;
+    if (filter === 'scheduled' && !(s.publish_at && !s.is_published)) return false;
     if (q && !`${s.key} ${s.title || ''} ${s.description || ''}`.toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
@@ -88,7 +90,7 @@ export default function AdminCMS() {
       </div>
 
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
-        Zakazano objavljivanje je aktivno. Blokade: Nema odvojenih modela za FAQ, O nama, Kontakt, Pravila i Privatnost – koriste se HomepageSection ključevi. Nema admin CRUD za kategorije događaja. Nema revizijske tablice sadržaja; historija je iz AuditLog.
+        Zakazano objavljivanje aktivno (publish_at + scheduler). Blokade: Nema odvojenih modela za FAQ/O nama/Kontakt/Pravila/Privatnost – koriste se HomepageSection ključevi. Nema admin CRUD za kategorije događaja. Historija iz AuditLog.
       </div>
 
       <div className="flex gap-2 flex-wrap text-sm">
@@ -102,6 +104,7 @@ export default function AdminCMS() {
         <select value={filter} onChange={e => setFilter(e.target.value)} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm">
           <option value="">Svi statusi</option>
           <option value="draft">Draft</option>
+          <option value="scheduled">Zakazano</option>
           <option value="published">Objavljeno</option>
         </select>
         <button onClick={load} className="px-3 py-2 rounded-lg border border-white/10 text-sm">Osvježi</button>
@@ -121,12 +124,13 @@ export default function AdminCMS() {
               <div className="flex justify-between gap-2">
                 <div>
                   <p className="font-medium">{s.title || 'Bez naslova'}</p>
-                  <p className="text-xs text-zinc-400">{s.subtitle || '—'} · {s.duration_seconds}s · {s.is_published ? 'Objavljen' : s.publish_at ? 'Zakazano' : 'Draft'} · {s.is_active ? 'Aktivan' : 'Neaktivan'}</p>
+                  <p className="text-xs text-zinc-400">{s.subtitle || '—'} · {s.duration_seconds}s · {s.is_published ? 'Objavljen' : s.publish_at ? `Zakazano za ${new Date(s.publish_at).toLocaleString()}` : 'Draft'} · {s.is_active ? 'Aktivan' : 'Neaktivan'}</p>
                   <p className="text-xs text-zinc-500 truncate">{s.image_url}</p>
                 </div>
                 <div className="flex gap-1 shrink-0">
                   <button onClick={() => setForm({ type: 'hero', ...s })} className="px-2 py-1 rounded border border-white/10 text-xs">Uredi</button>
                   {!s.is_published && <button onClick={() => ask('Objavi', s.title || `Banner #${s.id}`, () => adminFetch(`/admin/cms/hero/${s.id}/publish`, { method: 'POST' }))} className="px-2 py-1 rounded border border-white/10 text-xs">Objavi</button>}
+                  {s.publish_at && !s.is_published && <button onClick={() => ask('Poništi zakazivanje', s.title || `Banner #${s.id}`, () => adminFetch(`/admin/cms/hero/${s.id}`, { method: 'PATCH', body: JSON.stringify({ ...s, publish_at: null, is_published: false }) }))} className="px-2 py-1 rounded border border-amber-500/40 text-amber-300 text-xs">Poništi</button>}
                   <button onClick={() => ask('Obriši', s.title || `Banner #${s.id}`, () => adminFetch(`/admin/cms/hero/${s.id}`, { method: 'DELETE' }))} className="px-2 py-1 rounded border border-red-500/40 text-red-300 text-xs">Obriši</button>
                 </div>
               </div>
@@ -152,12 +156,13 @@ export default function AdminCMS() {
               <div className="flex justify-between gap-2">
                 <div>
                   <p className="font-medium">{s.title || s.key}</p>
-                  <p className="text-xs text-zinc-400">{s.key} · {s.is_published ? 'Objavljena' : s.publish_at ? 'Zakazano' : 'Draft'} · {s.platforms}</p>
+                  <p className="text-xs text-zinc-400">{s.key} · {s.is_published ? 'Objavljena' : s.publish_at ? `Zakazano za ${new Date(s.publish_at).toLocaleString()}` : 'Draft'} · {s.platforms}</p>
                   {s.description && <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{s.description}</p>}
                 </div>
                 <div className="flex gap-1 shrink-0">
                   <button onClick={() => setForm({ type: 'section', ...s })} className="px-2 py-1 rounded border border-white/10 text-xs">Uredi</button>
                   {!s.is_published && <button onClick={() => ask('Objavi', s.title || s.key, () => adminFetch(`/admin/cms/sections/${s.id}/publish`, { method: 'POST' }))} className="px-2 py-1 rounded border border-white/10 text-xs">Objavi</button>}
+                  {s.publish_at && !s.is_published && <button onClick={() => ask('Poništi zakazivanje', s.title || s.key, () => adminFetch(`/admin/cms/sections/${s.id}`, { method: 'PATCH', body: JSON.stringify({ ...s, publish_at: null, is_published: false }) }))} className="px-2 py-1 rounded border border-amber-500/40 text-amber-300 text-xs">Poništi</button>}
                   <button onClick={() => ask('Obriši', s.title || s.key, () => adminFetch(`/admin/cms/sections/${s.id}`, { method: 'DELETE' }))} className="px-2 py-1 rounded border border-red-500/40 text-red-300 text-xs">Obriši</button>
                 </div>
               </div>
@@ -223,7 +228,7 @@ export default function AdminCMS() {
             <textarea value={form.subtitle || form.description || ''} onChange={e => setForm({ ...form, [form.type === 'hero' ? 'subtitle' : 'description']: e.target.value })} placeholder="Opis" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" rows={3} />
             {form.type === 'hero' && <input value={form.image_url || ''} onChange={e => setForm({ ...form, image_url: e.target.value })} placeholder="URL slike (obavezno)" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />}
             <label className="text-xs text-zinc-400">Zakazano objavljivanje (ostavi prazno za draft)</label>
-            <input type="datetime-local" value={form.publish_at ? form.publish_at.slice(0, 16) : ''} onChange={e => setForm({ ...form, publish_at: e.target.value ? new Date(e.target.value).toISOString() : null })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />
+            <input type="datetime-local" value={form.publish_at ? form.publish_at.slice(0, 16) : ''} onChange={e => setForm({ ...form, publish_at: e.target.value ? e.target.value + ':00' : null })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />
             <div className="flex gap-2 justify-end">
               <button onClick={() => setForm(null)} className="px-3 py-1.5 rounded-lg border border-white/10 text-sm">Odustani</button>
               <button onClick={() => {

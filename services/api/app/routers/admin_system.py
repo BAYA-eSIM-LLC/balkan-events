@@ -565,14 +565,15 @@ async def finance_monthly(
     db: AsyncSession = Depends(get_db)
 ):
     from app.models.order import OrderStatus
+    month_expr = func.to_char(Order.created_at, "YYYY-MM")
     rows = (await db.execute(
         select(
-            func.to_char(Order.created_at, "YYYY-MM"),
+            month_expr.label("month"),
             func.count(Order.id),
             func.coalesce(func.sum(Order.total_amount), 0),
         ).where(Order.status == OrderStatus.PAID.value)
-        .group_by(func.to_char(Order.created_at, "YYYY-MM"))
-        .order_by(func.to_char(Order.created_at, "YYYY-MM"))
+        .group_by(month_expr)
+        .order_by(month_expr)
     )).all()
     return {"months": [{"month": r[0], "orders": r[1], "revenue": float(r[2])} for r in rows], "note": "Real monthly aggregates from paid orders."}
 

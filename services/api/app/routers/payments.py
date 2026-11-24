@@ -353,7 +353,8 @@ async def create_refund(
         status="succeeded", stripe_refund_id=refund.id,
     )
     db.add(r)
-    if amount >= remaining - 0.01:
+    is_full = amount >= remaining - 0.01
+    if is_full:
         payment.status = PaymentStatus.REFUNDED.value
     db.add(LedgerEntry(
         entry_type="refund", reference_type="Payment", reference_id=payment.id,
@@ -362,6 +363,16 @@ async def create_refund(
     await db.commit()
     order = await db.get(Order, payment.order_id)
     if order:
+        # Set order status based on full vs partial
+        total_refunded = already + amount
+        if total_refunded >= float(payment.amount) - 0.01:
+            order.status = OrderStatus.REFUNDED.value
+        else:
+            order.status = "partially_refunded"
+        await db.commit()
+        await log_audit(db, user.id, "order.refunded", "Order", order.id, {
+            "amount": amount, "full": is_full, "status": order.status
+        })
         u = await db.get(User, order.user_id)
         if u:
             await queue_email(
@@ -370,7 +381,7 @@ async def create_refund(
                 f"email-refund-{refund.id}"
             )
     await log_audit(db, user.id, "payment.refunded", "Refund", r.id, {"amount": amount})
-    return {"status": "refunded", "refund_id": refund.id, "amount": amount}
+    return {"status": "refunded", "refund_id": refund.id, "amount": amount, "order_status": order.status if order else None}
 
 @router.get("/admin")
 async def admin_payments(user: User = Depends(require_role(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.FINANCE_ADMIN)), db: AsyncSession = Depends(get_db)):

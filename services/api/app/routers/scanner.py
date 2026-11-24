@@ -94,6 +94,18 @@ async def validate_scan(
         await _write_log(db, ticket.id, data.event_id, data.entry_point_id, actor_id, "WRONG_EVENT")
         return {"status": "WRONG_EVENT"}
 
+    # Check if order is refunded
+    if ticket.order_item_id:
+        from app.models.order import OrderItem, Order, OrderStatus
+        oi = await db.get(OrderItem, ticket.order_item_id)
+        if oi:
+            order = await db.get(Order, oi.order_id)
+            if order and order.status in (OrderStatus.REFUNDED.value, "partially_refunded"):
+                # For partial, still allow scan unless fully refunded
+                if order.status == OrderStatus.REFUNDED.value:
+                    await _write_log(db, ticket.id, data.event_id, data.entry_point_id, actor_id, "REFUNDED", "order_refunded")
+                    return {"status": "REFUNDED", "reason": "order_refunded"}
+
     if ticket.is_used:
         await _write_log(db, ticket.id, data.event_id, data.entry_point_id, actor_id, "ALREADY_USED")
         return {"status": "ALREADY_USED", "used_at": ticket.used_at.isoformat() if ticket.used_at else None}

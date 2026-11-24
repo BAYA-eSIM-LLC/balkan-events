@@ -474,12 +474,15 @@ async def finance_overview(
     orders = (await db.execute(oq)).scalars().all()
     payments = (await db.execute(pq)).scalars().all()
     paid = [o for o in orders if o.status == OrderStatus.PAID.value]
-    refunded_orders = [o for o in orders if o.status == OrderStatus.REFUNDED.value]
+    refunded_orders = [o for o in orders if o.status in (OrderStatus.REFUNDED.value, "partially_refunded")]
     gross = sum(float(o.total_amount or 0) for o in paid)
-    refunded_amount = sum(float(o.total_amount or 0) for o in refunded_orders)
-    platform = sum(float(p.platform_fee or 0) for p in payments)
-    stripe = sum(float(p.stripe_fee or 0) for p in payments if p.stripe_fee is not None)
-    refunds = (await db.execute(select(func.coalesce(func.sum(Refund.amount), 0)))).scalar() or 0
+    # Also include original amount of refunded orders in gross
+    for o in refunded_orders:
+        gross += float(o.total_amount or 0)
+    refunds_total = float((await db.execute(select(func.coalesce(func.sum(Refund.amount), 0)))).scalar() or 0)
+    platform = sum(float(p.platform_fee or 0) for p in payments if p.status != "refunded")
+    stripe = sum(float(p.stripe_fee or 0) for p in payments if p.stripe_fee is not None and p.status != "refunded")
+    net = gross - refunds_total - platform - stripe
     ledger_count = await db.scalar(select(func.count(LedgerEntry.id)))
     payout_count = 0
     try:
@@ -489,18 +492,21 @@ async def finance_overview(
         pass
     return {
         "period": period,
+        "gross_revenue": round(gross, 2),
+        "total_refunds": round(refunds_total, 2),
+        "net_revenue": round(net, 2),
         "gross_paid": round(gross, 2),
-        "refunded_orders_amount": round(refunded_amount, 2),
+        "refunded_orders_amount": round(refunds_total, 2),
         "platform_fee": round(platform, 2),
         "stripe_fee": round(stripe, 2),
-        "refunds_total": float(refunds),
-        "net_after_fees": round(gross - platform - stripe, 2),
+        "refunds_total": round(refunds_total, 2),
+        "net_after_fees": round(net, 2),
         "orders_paid": len(paid),
         "orders_refunded": len(refunded_orders),
         "payments_count": len(payments),
         "ledger_entries": ledger_count or 0,
         "payouts_count": payout_count,
-        "note": "Real aggregates. No payout API. Refunds require Stripe. No finance CSV export.",
+        "note": "Gross includes paid + refunded orders. Net = gross - refunds - fees. No double counting.",
     }
 
 

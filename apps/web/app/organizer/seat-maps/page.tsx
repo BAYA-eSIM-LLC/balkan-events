@@ -1,82 +1,54 @@
 'use client';
-
-import { useState } from 'react';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/admin-api';
+import { useOrganizer } from '@/lib/organizer-context';
 
 export default function SeatMapBuilderPage() {
+  const { events, activeOrg, loading } = useOrganizer();
   const [eventId, setEventId] = useState('');
-  const [orgId, setOrgId] = useState('');
-  const [name, setName] = useState('Main Hall');
+  const [maps, setMaps] = useState<any[]>([]);
   const [mapId, setMapId] = useState<number | null>(null);
-  const [sectors, setSectors] = useState<any[]>([]);
+  const [name, setName] = useState('Main Hall');
   const [msg, setMsg] = useState('');
-  const [preview, setPreview] = useState(false);
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+  useEffect(() => {
+    if (!eventId) { setMaps([]); return; }
+    adminFetch(`/seat-maps?event_id=${eventId}`).then(setMaps).catch(() => setMaps([]));
+  }, [eventId]);
 
   const createMap = async () => {
-    const r = await fetch(`${API}/seat-maps`, {
-      method: 'POST', headers,
-      body: JSON.stringify({ event_id: Number(eventId), organization_id: Number(orgId), name }),
-    });
-    const d = await r.json();
-    if (r.ok) { setMapId(d.id); setMsg(`Map ${d.id} created`); }
-    else setMsg(d.detail || 'Error');
+    if (!eventId || !activeOrg) return;
+    try {
+      const d = await adminFetch('/seat-maps', { method: 'POST', body: JSON.stringify({ event_id: parseInt(eventId), organization_id: activeOrg.id, name }) });
+      setMsg(`Mapa ${d.id} kreirana`);
+      setMaps([...maps, d]);
+    } catch (e: any) { setMsg(e.message); }
   };
 
-  const addSector = async (type: string, price: number) => {
-    if (!mapId) return;
-    const r = await fetch(`${API}/seat-maps/${mapId}/sectors`, {
-      method: 'POST', headers,
-      body: JSON.stringify({ name: type, sector_type: type, base_price: price, is_numbered: true }),
-    });
-    const d = await r.json();
-    if (r.ok) {
-      setSectors(prev => [...prev, { id: d.id, name: type, price, rows: [] }]);
-      setMsg(`Sector ${d.id}`);
-    } else setMsg(d.detail || 'Error');
-  };
-
-  const addRow = async (sectorId: number, label: string, count: number) => {
-    const r = await fetch(`${API}/seat-maps/sectors/${sectorId}/rows`, {
-      method: 'POST', headers,
-      body: JSON.stringify({ label, seats_count: count, start_number: 1 }),
-    });
-    const d = await r.json();
-    setMsg(r.ok ? `Row ${d.id} with ${d.seats_created} seats` : (d.detail || 'Error'));
-  };
+  if (loading) return <p className="text-zinc-400">Učitavanje...</p>;
+  if (!activeOrg) return <p className="text-amber-300">Nema aktivne organizacije.</p>;
 
   return (
-    <div className="p-4 md:p-8 max-w-3xl">
-      <h1 className="text-2xl font-bold mb-4">Seat Map Builder</h1>
-      <div className="space-y-2 mb-6">
-        <input className="border p-2 w-full" placeholder="Event ID" value={eventId} onChange={e => setEventId(e.target.value)} />
-        <input className="border p-2 w-full" placeholder="Organization ID" value={orgId} onChange={e => setOrgId(e.target.value)} />
-        <input className="border p-2 w-full" placeholder="Map name" value={name} onChange={e => setName(e.target.value)} />
-        <button onClick={createMap} className="bg-black text-white px-4 py-2 rounded">Create Map</button>
-      </div>
-      {mapId && (
-        <div className="space-y-4">
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => addSector('STANDARD', 20)} className="bg-gray-700 text-white px-3 py-2 rounded text-sm">+ Standard</button>
-            <button onClick={() => addSector('VIP', 50)} className="bg-yellow-600 text-white px-3 py-2 rounded text-sm">+ VIP</button>
-            <button onClick={() => addSector('TRIBUNE', 15)} className="bg-blue-600 text-white px-3 py-2 rounded text-sm">+ Tribune</button>
-          </div>
-          {sectors.map(s => (
-            <div key={s.id} className="border p-3 rounded">
-              <div className="font-medium">{s.name} — {s.price} EUR</div>
-              <button onClick={() => addRow(s.id, 'A', 10)} className="mt-2 text-sm underline">Add row of 10</button>
-            </div>
-          ))}
-          <button onClick={() => setPreview(!preview)} className="border px-3 py-2 rounded text-sm">
-            {preview ? 'Hide' : 'Preview'} map
-          </button>
-          {preview && <p className="text-sm text-gray-600">Preview: map {mapId} is saved. Open public seats page to see live layout.</p>}
+    <div>
+      <h1 className="text-2xl font-bold mb-1">Mape sjedišta</h1>
+      <p className="text-zinc-400 text-sm mb-4">{activeOrg.name}</p>
+      <select value={eventId} onChange={e => setEventId(e.target.value)} className="w-full max-w-md bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm mb-4">
+        <option value="">Odaberi događaj</option>
+        {events.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
+      </select>
+      {eventId && (
+        <div className="flex gap-2 mb-4 max-w-md">
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Naziv mape" className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />
+          <button onClick={createMap} className="bg-purple-600 px-4 py-2 rounded-lg text-sm">Nova mapa</button>
         </div>
       )}
-      {msg && <p className="mt-4 text-sm">{msg}</p>}
+      {msg && <p className="text-sm text-zinc-300 mb-2">{msg}</p>}
+      <div className="space-y-2">
+        {maps.map((m: any) => (
+          <div key={m.id} className="bg-white/5 rounded-lg p-3 text-sm">{m.name} · ID {m.id}</div>
+        ))}
+        {maps.length === 0 && eventId && <p className="text-zinc-500 text-sm">Nema mapa za ovaj događaj.</p>}
+      </div>
     </div>
   );
 }

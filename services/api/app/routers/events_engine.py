@@ -193,7 +193,7 @@ async def my_events(user: User = Depends(get_current_user), db: AsyncSession = D
         .where(OrganizationMember.user_id == user.id)
         .order_by(Event.created_at.desc())
     )
-    return [{"id": e.id, "title": e.title, "slug": e.slug, "status": e.status, "start_at": e.start_at} for e in result.scalars().all()]
+    return [{"id": e.id, "title": e.title, "slug": e.slug, "status": e.status, "start_at": e.start_at, "organization_id": e.organization_id} for e in result.scalars().all()]
 
 @organizer.get("/{event_id}")
 async def get_my_event(event_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):

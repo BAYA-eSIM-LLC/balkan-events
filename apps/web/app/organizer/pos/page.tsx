@@ -1,53 +1,47 @@
 'use client';
+import { useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/admin-api';
+import { useOrganizer } from '@/lib/organizer-context';
 
-import { useState } from 'react';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-export default function POSPage() {
-  const [orgId, setOrgId] = useState('');
-  const [name, setName] = useState('Main Box Office');
-  const [pointId, setPointId] = useState<number | null>(null);
-  const [registerId, setRegisterId] = useState<number | null>(null);
+export default function OrganizerPOS() {
+  const { events, activeOrg, loading } = useOrganizer();
+  const [eventId, setEventId] = useState('');
+  const [types, setTypes] = useState<any[]>([]);
+  const [typeId, setTypeId] = useState('');
   const [msg, setMsg] = useState('');
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+  useEffect(() => {
+    if (!eventId) { setTypes([]); return; }
+    adminFetch(`/organizer/events/${eventId}/ticket-types`).then(setTypes).catch(() => setTypes([]));
+  }, [eventId]);
 
-  const createPoint = async () => {
-    const r = await fetch(`${API}/pos/sales-points`, {
-      method: 'POST', headers,
-      body: JSON.stringify({ organization_id: Number(orgId), name }),
-    });
-    const d = await r.json();
-    if (r.ok) { setPointId(d.id); setMsg(`Point ${d.id}`); }
-    else setMsg(d.detail || 'Error');
+  const sell = async () => {
+    if (!typeId) return;
+    try {
+      const r = await adminFetch('/pos/cash-sale', { method: 'POST', body: JSON.stringify({ ticket_type_id: parseInt(typeId), quantity: 1 }) });
+      setMsg(`Prodano: ${r.reference || r.id}`);
+    } catch (e: any) { setMsg(e.message); }
   };
 
-  const openRegister = async () => {
-    if (!pointId) return;
-    const r = await fetch(`${API}/pos/registers/open`, {
-      method: 'POST', headers,
-      body: JSON.stringify({ sales_point_id: pointId, opening_balance: 100 }),
-    });
-    const d = await r.json();
-    if (r.ok) { setRegisterId(d.id); setMsg(`Register ${d.id} open`); }
-    else setMsg(d.detail || 'Error');
-  };
+  if (loading) return <p className="text-zinc-400">Učitavanje...</p>;
+  if (!activeOrg) return <p className="text-amber-300">Nema aktivne organizacije.</p>;
 
   return (
-    <div className="p-8 max-w-xl">
-      <h1 className="text-2xl font-bold mb-4">POS – Sales Points</h1>
-      <div className="space-y-2 mb-4">
-        <input className="border p-2 w-full" placeholder="Organization ID" value={orgId} onChange={e => setOrgId(e.target.value)} />
-        <input className="border p-2 w-full" placeholder="Point name" value={name} onChange={e => setName(e.target.value)} />
-        <button onClick={createPoint} className="bg-black text-white px-4 py-2 rounded">Create Sales Point</button>
+    <div>
+      <h1 className="text-2xl font-bold mb-1">POS</h1>
+      <p className="text-zinc-400 text-sm mb-4">{activeOrg.name}</p>
+      <div className="space-y-3 max-w-md">
+        <select value={eventId} onChange={e => setEventId(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm">
+          <option value="">Odaberi događaj</option>
+          {events.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
+        </select>
+        <select value={typeId} onChange={e => setTypeId(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm">
+          <option value="">Odaberi kategoriju</option>
+          {types.map(t => <option key={t.id} value={t.id}>{t.name} · {t.price} {t.currency}</option>)}
+        </select>
+        <button onClick={sell} className="bg-purple-600 px-4 py-2 rounded-lg text-sm">Prodaj (cash)</button>
+        {msg && <p className="text-sm text-zinc-300">{msg}</p>}
       </div>
-      {pointId && (
-        <button onClick={openRegister} className="bg-gray-800 text-white px-4 py-2 rounded">Open Register</button>
-      )}
-      {registerId && <p className="mt-4 text-sm">Register {registerId} is open. Use API to sell.</p>}
-      {msg && <p className="mt-4 text-sm">{msg}</p>}
     </div>
   );
 }

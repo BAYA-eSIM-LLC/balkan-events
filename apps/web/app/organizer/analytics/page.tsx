@@ -1,41 +1,25 @@
 'use client';
-
 import { useEffect, useState } from 'react';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { adminFetch } from '@/lib/admin-api';
+import { useOrganizer } from '@/lib/organizer-context';
 
 export default function OrganizerAnalyticsPage() {
-  const [orgId, setOrgId] = useState('');
+  const { activeOrg, loading } = useOrganizer();
   const [data, setData] = useState<any>(null);
-  const [msg, setMsg] = useState('');
 
-  const load = async () => {
-    const token = localStorage.getItem('token');
-    const r = await fetch(`${API}/analytics/organizer/${orgId}?period=this_month`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    const d = await r.json();
-    if (r.ok) setData(d);
-    else setMsg(d.detail || 'Error');
-  };
+  useEffect(() => {
+    if (!activeOrg) return;
+    adminFetch(`/organizer/reports/events?org_id=${activeOrg.id}`).then(setData).catch(() => setData(null));
+  }, [activeOrg]);
+
+  if (loading) return <p className="text-zinc-400">Učitavanje...</p>;
+  if (!activeOrg) return <p className="text-amber-300">Nema aktivne organizacije.</p>;
 
   return (
-    <div className="p-8 max-w-xl">
-      <h1 className="text-2xl font-bold mb-4">Organizer Analytics</h1>
-      <div className="flex gap-2 mb-4">
-        <input className="border p-2 flex-1" placeholder="Organization ID" value={orgId} onChange={e => setOrgId(e.target.value)} />
-        <button onClick={load} className="bg-black text-white px-4 py-2 rounded">Load</button>
-      </div>
-      {data && (
-        <div className="space-y-2 text-sm">
-          <div>Revenue: {data.revenue}</div>
-          <div>Web: {data.web_revenue}</div>
-          <div>POS: {data.pos_revenue}</div>
-          <div>Orders: {data.orders}</div>
-          <div>Tickets: {data.tickets} (used {data.tickets_used})</div>
-        </div>
-      )}
-      {msg && <p className="text-sm text-red-600">{msg}</p>}
+    <div>
+      <h1 className="text-2xl font-bold mb-1">Analitika</h1>
+      <p className="text-zinc-400 text-sm mb-4">{activeOrg.name}</p>
+      {data && <pre className="text-xs text-zinc-400 bg-white/5 rounded-xl p-4">{JSON.stringify(data, null, 2)}</pre>}
     </div>
   );
 }

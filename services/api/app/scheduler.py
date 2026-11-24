@@ -14,6 +14,7 @@ async def run_expiry_loop():
     urls = [
         base + "/orders/internal/expire-reservations",
         base + "/seat-maps/internal/expire-seat-reservations",
+        base + "/admin/cms/internal/publish-scheduled",
     ]
     while True:
         for url in urls:

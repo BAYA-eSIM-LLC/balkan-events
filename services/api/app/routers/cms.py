@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from pydantic import BaseModel
@@ -31,6 +31,7 @@ class HeroSlideIn(BaseModel):
     duration_seconds: int = 6
     is_active: bool = True
     is_published: bool = False
+    publish_at: Optional[datetime] = None
 
 class HeroSlideOut(HeroSlideIn):
     id: int
@@ -50,6 +51,7 @@ class SectionIn(BaseModel):
     platforms: str = "web,ios,android"
     is_active: bool = True
     is_published: bool = False
+    publish_at: Optional[datetime] = None
     sort_order: int = 0
 
 class SectionOut(SectionIn):
@@ -242,6 +244,33 @@ async def cms_preview(user: User = Depends(require_cms_admin), db: AsyncSession 
     }
 
 # --- Public (only published + active) ---
+
+@router.post("/internal/publish-scheduled")
+async def publish_scheduled(x_internal_job: Optional[str] = Header(None), db: AsyncSession = Depends(get_db)):
+    """Publish hero slides and sections whose publish_at is due. Scheduler only."""
+    import os
+    secret = os.getenv("INTERNAL_API_SECRET", "")
+    if not secret or x_internal_job != secret:
+        raise HTTPException(403, "Internal job only")
+    now = datetime.utcnow()
+    slides = (await db.execute(
+        select(HeroSlide).where(HeroSlide.is_published == False, HeroSlide.publish_at != None, HeroSlide.publish_at <= now)
+    )).scalars().all()
+    sections = (await db.execute(
+        select(HomepageSection).where(HomepageSection.is_published == False, HomepageSection.publish_at != None, HomepageSection.publish_at <= now)
+    )).scalars().all()
+    for s in slides:
+        s.is_published = True
+        s.is_active = True
+        await log_audit(db, None, "cms.hero.scheduled_publish", "HeroSlide", s.id, {"publish_at": s.publish_at.isoformat()})
+    for sec in sections:
+        sec.is_published = True
+        sec.is_active = True
+        await log_audit(db, None, "cms.section.scheduled_publish", "HomepageSection", sec.id, {"publish_at": sec.publish_at.isoformat()})
+    await db.commit()
+    return {"hero": len(slides), "sections": len(sections)}
+
+
 @public_router.get("/homepage")
 async def public_homepage(db: AsyncSession = Depends(get_db)):
     slides = await db.execute(

@@ -29,6 +29,7 @@ class HeroSlide(Base):
     duration_seconds = Column(Integer, default=6)
     is_active = Column(Boolean, default=True)
     is_published = Column(Boolean, default=False)
+    publish_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -45,5 +46,6 @@ class HomepageSection(Base):
     platforms = Column(String(100), default="web,ios,android")
     is_active = Column(Boolean, default=True)
     is_published = Column(Boolean, default=False)
+    publish_at = Column(DateTime, nullable=True)
     sort_order = Column(Integer, default=0)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

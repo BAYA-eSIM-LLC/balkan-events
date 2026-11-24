@@ -88,7 +88,7 @@ export default function AdminCMS() {
       </div>
 
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
-        Blokade: nema statusa „zakazano“. Nema odvojenih modela za FAQ, O nama, Kontakt, Pravila i Privatnost – koriste se HomepageSection ključevi. Nema admin CRUD za kategorije događaja. Nema revizijske tablice sadržaja; historija je iz AuditLog.
+        Zakazano objavljivanje je aktivno. Blokade: Nema odvojenih modela za FAQ, O nama, Kontakt, Pravila i Privatnost – koriste se HomepageSection ključevi. Nema admin CRUD za kategorije događaja. Nema revizijske tablice sadržaja; historija je iz AuditLog.
       </div>
 
       <div className="flex gap-2 flex-wrap text-sm">
@@ -121,7 +121,7 @@ export default function AdminCMS() {
               <div className="flex justify-between gap-2">
                 <div>
                   <p className="font-medium">{s.title || 'Bez naslova'}</p>
-                  <p className="text-xs text-zinc-400">{s.subtitle || '—'} · {s.duration_seconds}s · {s.is_published ? 'Objavljen' : 'Draft'} · {s.is_active ? 'Aktivan' : 'Neaktivan'}</p>
+                  <p className="text-xs text-zinc-400">{s.subtitle || '—'} · {s.duration_seconds}s · {s.is_published ? 'Objavljen' : s.publish_at ? 'Zakazano' : 'Draft'} · {s.is_active ? 'Aktivan' : 'Neaktivan'}</p>
                   <p className="text-xs text-zinc-500 truncate">{s.image_url}</p>
                 </div>
                 <div className="flex gap-1 shrink-0">
@@ -152,7 +152,7 @@ export default function AdminCMS() {
               <div className="flex justify-between gap-2">
                 <div>
                   <p className="font-medium">{s.title || s.key}</p>
-                  <p className="text-xs text-zinc-400">{s.key} · {s.is_published ? 'Objavljena' : 'Draft'} · {s.platforms}</p>
+                  <p className="text-xs text-zinc-400">{s.key} · {s.is_published ? 'Objavljena' : s.publish_at ? 'Zakazano' : 'Draft'} · {s.platforms}</p>
                   {s.description && <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{s.description}</p>}
                 </div>
                 <div className="flex gap-1 shrink-0">
@@ -222,6 +222,8 @@ export default function AdminCMS() {
             <input value={form.title || ''} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Naslov" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />
             <textarea value={form.subtitle || form.description || ''} onChange={e => setForm({ ...form, [form.type === 'hero' ? 'subtitle' : 'description']: e.target.value })} placeholder="Opis" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" rows={3} />
             {form.type === 'hero' && <input value={form.image_url || ''} onChange={e => setForm({ ...form, image_url: e.target.value })} placeholder="URL slike (obavezno)" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />}
+            <label className="text-xs text-zinc-400">Zakazano objavljivanje (ostavi prazno za draft)</label>
+            <input type="datetime-local" value={form.publish_at ? form.publish_at.slice(0, 16) : ''} onChange={e => setForm({ ...form, publish_at: e.target.value ? new Date(e.target.value).toISOString() : null })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />
             <div className="flex gap-2 justify-end">
               <button onClick={() => setForm(null)} className="px-3 py-1.5 rounded-lg border border-white/10 text-sm">Odustani</button>
               <button onClick={() => {
@@ -230,8 +232,8 @@ export default function AdminCMS() {
                   : (form.id ? `/admin/cms/sections/${form.id}` : '/admin/cms/sections');
                 const method = form.id ? 'PATCH' : 'POST';
                 const body = form.type === 'hero'
-                  ? { title: form.title, subtitle: form.subtitle, image_url: form.image_url, is_published: !!form.is_published, is_active: form.is_active !== false, duration_seconds: form.duration_seconds || 6, sort_order: form.sort_order || 0 }
-                  : { key: form.key, title: form.title, description: form.description, is_published: !!form.is_published, is_active: form.is_active !== false, platforms: form.platforms || 'web,ios,android', sort_order: form.sort_order || 0 };
+                  ? { title: form.title, subtitle: form.subtitle, image_url: form.image_url, is_published: !!form.is_published, is_active: form.is_active !== false, duration_seconds: form.duration_seconds || 6, sort_order: form.sort_order || 0, publish_at: form.publish_at || null }
+                  : { key: form.key, title: form.title, description: form.description, is_published: !!form.is_published, is_active: form.is_active !== false, platforms: form.platforms || 'web,ios,android', sort_order: form.sort_order || 0, publish_at: form.publish_at || null };
                 ask('Spremi', form.title || form.key || 'stavku', () => adminFetch(path, { method, body: JSON.stringify(body) }));
               }} className="px-3 py-1.5 rounded-lg bg-white text-black text-sm">Spremi</button>
             </div>

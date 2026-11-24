@@ -141,9 +141,10 @@ async def order_status_by_session(session_id: str, db: AsyncSession = Depends(ge
         raise HTTPException(400, "Invalid session")
     try:
         sess = stripe.checkout.Session.retrieve(session_id)
+        meta = sess.metadata.to_dict() if hasattr(sess.metadata, "to_dict") else dict(sess.metadata or {})
     except Exception:
         raise HTTPException(404, "Session not found")
-    order_id = int(sess.metadata.get("order_id", 0)) if sess.metadata else 0
+    order_id = int(meta.get("order_id", 0))
     order = await db.get(Order, order_id) if order_id else None
     if not order:
         raise HTTPException(404, "Order not found")

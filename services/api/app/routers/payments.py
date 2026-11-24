@@ -300,6 +300,12 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                     organization_id=org_id, amount=net,
                     description=f"Net to organizer {order.reference}", idempotency_key=f"net-{event['id']}",
                 ))
+                if payment.stripe_fee:
+                    db.add(LedgerEntry(
+                        entry_type="stripe_fee", reference_type="Order", reference_id=order.id,
+                        organization_id=org_id, amount=-float(payment.stripe_fee),
+                        description=f"Stripe fee {order.reference}", idempotency_key=f"stripe-{event['id']}",
+                    ))
                 await db.commit()
                 user = await db.get(User, order.user_id)
                 if user:
@@ -394,9 +400,22 @@ async def create_refund(
     is_full = amount >= remaining - 0.01
     if is_full:
         payment.status = PaymentStatus.REFUNDED.value
+    # Resolve org from order for refund ledger
+    refund_org_id = None
+    order_for_org = await db.get(Order, payment.order_id)
+    if order_for_org:
+        items = await db.execute(select(OrderItem).where(OrderItem.order_id == order_for_org.id))
+        first = items.scalars().first()
+        if first:
+            tt = await db.get(TicketType, first.ticket_type_id)
+            if tt:
+                ev = await db.get(Event, tt.event_id)
+                if ev:
+                    refund_org_id = ev.organization_id
     db.add(LedgerEntry(
         entry_type="refund", reference_type="Payment", reference_id=payment.id,
-        amount=-amount, description=f"Refund {refund.id}", idempotency_key=f"refund-{refund.id}",
+        organization_id=refund_org_id, amount=-amount,
+        description=f"Refund {refund.id}", idempotency_key=f"refund-{refund.id}",
     ))
     await db.commit()
     order = await db.get(Order, payment.order_id)

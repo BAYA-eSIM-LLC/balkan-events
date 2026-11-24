@@ -568,6 +568,7 @@ async def report_finance(
     gross = sum(float(r.amount) for r in rows if r.entry_type == "payment_gross")
     fees = sum(float(r.amount) for r in rows if r.entry_type == "platform_fee")
     refunds = sum(float(r.amount) for r in rows if r.entry_type == "refund")
+    stripe = sum(float(r.amount) for r in rows if r.entry_type == "stripe_fee")
     net = sum(float(r.amount) for r in rows if r.entry_type == "organizer_net")
     available = await _available_balance(db, org_id)
     requested = await db.scalar(select(func.coalesce(func.sum(OrganizerPayout.amount), 0)).where(
@@ -580,6 +581,7 @@ async def report_finance(
         "gross": round(gross, 2),
         "platform_fee": round(abs(fees), 2),
         "refunds": round(abs(refunds), 2),
+        "stripe_fee": round(abs(stripe), 2),
         "net": round(net + refunds, 2),
         "available": round(available, 2),
         "requested": float(requested),

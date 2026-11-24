@@ -12,6 +12,8 @@ from app.models.order import Order, OrderItem
 from app.models.ticket import Ticket, TicketType
 from app.models.event import Event
 from app.models.organization import Organization
+from app.models.payment import Payment, Refund
+from app.models.audit import AuditLog
 
 from app.routers.admin_system import ADMIN_ONLY, log_audit, paginate
 
@@ -45,6 +47,29 @@ async def order_detail(order_id: int, user: User = Depends(require_role(*ADMIN_O
         "used_at": t.used_at.isoformat() if t.used_at else None,
         "qr_data_preview": (t.qr_data or "")[:20] + "..." if t.qr_data else None,
     } for t in tickets.scalars()]
+    buyer = await db.get(User, order.user_id)
+    orgs = {}
+    for it in item_rows:
+        if it.get("event_id"):
+            ev = await db.get(Event, it["event_id"])
+            if ev and ev.organization_id:
+                org = await db.get(Organization, ev.organization_id)
+                if org:
+                    orgs[org.id] = {"id": org.id, "name": org.name}
+    payments = (await db.execute(select(Payment).where(Payment.order_id == order.id))).scalars().all()
+    pay_rows = []
+    for pay in payments:
+        refunds = (await db.execute(select(Refund).where(Refund.payment_id == pay.id))).scalars().all()
+        pay_rows.append({
+            "id": pay.id, "provider": pay.provider, "status": pay.status,
+            "amount": float(pay.amount) if pay.amount else 0, "currency": pay.currency,
+            "stripe_fee": float(pay.stripe_fee) if pay.stripe_fee is not None else None,
+            "platform_fee": float(pay.platform_fee) if pay.platform_fee is not None else None,
+            "provider_id_prefix": (pay.provider_id or "")[:8] + "..." if pay.provider_id else None,
+            "created_at": pay.created_at.isoformat() if pay.created_at else None,
+            "refunds": [{"id": r.id, "amount": float(r.amount), "reason": r.reason, "status": r.status, "created_at": r.created_at.isoformat() if r.created_at else None} for r in refunds],
+        })
+    audits = (await db.execute(select(AuditLog).where(AuditLog.entity_type == "Order", AuditLog.entity_id == order.id).order_by(AuditLog.created_at.desc()).limit(20))).scalars().all()
     return {
         "id": order.id,
         "reference": order.reference,
@@ -52,10 +77,15 @@ async def order_detail(order_id: int, user: User = Depends(require_role(*ADMIN_O
         "total_amount": float(order.total_amount),
         "currency": order.currency,
         "user_id": order.user_id,
+        "buyer": {"id": buyer.id, "email": buyer.email, "full_name": buyer.full_name} if buyer else None,
+        "organizers": list(orgs.values()),
         "reserved_until": order.reserved_until.isoformat() if order.reserved_until else None,
         "created_at": order.created_at.isoformat() if order.created_at else None,
         "items": item_rows,
         "tickets": ticket_rows,
+        "payments": pay_rows,
+        "audit": [{"action": a.action, "user_id": a.user_id, "created_at": a.created_at.isoformat() if a.created_at else None, "details": a.details} for a in audits],
+        "note": "No card data returned. Refund endpoint exists but requires Stripe. No orders CSV export.",
     }
 
 @router.get("/tickets")

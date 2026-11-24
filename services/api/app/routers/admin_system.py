@@ -13,7 +13,7 @@ from app.models.audit import AuditLog
 from app.models.support import SupportTicket, AdminNote
 from app.models.ledger import LedgerEntry
 from app.models.order import Order, OrderItem
-from app.models.ticket import Ticket
+from app.models.ticket import Ticket, TicketType
 from app.security import hash_password, verify_password
 
 router = APIRouter(prefix="/admin", tags=["admin-system"])
@@ -265,29 +265,50 @@ async def change_event_status(event_id: int, new_status: str, user: User = Depen
 @router.get("/orders")
 async def list_orders(
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=100),
+    page_size: int = Query(20, ge=1, le=100),
+    q: Optional[str] = None,
+    status: Optional[str] = None,
+    sort: str = Query("created_at"),
+    order: str = Query("desc"),
     user: User = Depends(require_admin_role(*ADMIN_ONLY)),
     db: AsyncSession = Depends(get_db)
 ):
+    from app.models.order import OrderStatus
+    from sqlalchemy import or_
     page, page_size = paginate(page, page_size)
-    total = await db.scalar(select(func.count(Order.id)))
-    q = select(Order).order_by(Order.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
-    result = await db.execute(q)
-    orders = result.scalars().all()
-    return {
-        "total": total or 0,
-        "page": page,
-        "page_size": page_size,
-        "items": [{
-            "id": o.id,
-            "reference": o.reference,
-            "status": o.status,
+    query = select(Order)
+    if status and status in {s.value for s in OrderStatus}:
+        query = query.where(Order.status == status)
+    if q:
+        term = f"%{q.strip()}%"
+        buyer_ids = [r[0] for r in (await db.execute(select(User.id).where(or_(User.email.ilike(term), User.full_name.ilike(term))))).all()]
+        event_ids = [r[0] for r in (await db.execute(select(Event.id).where(Event.title.ilike(term)))).all()]
+        type_ids = [r[0] for r in (await db.execute(select(TicketType.id).where(TicketType.event_id.in_(event_ids)))).all()] if event_ids else []
+        order_ids_from_event = [r[0] for r in (await db.execute(select(OrderItem.order_id).where(OrderItem.ticket_type_id.in_(type_ids)))).all()] if type_ids else []
+        conds = [Order.reference.ilike(term)]
+        if buyer_ids:
+            conds.append(Order.user_id.in_(buyer_ids))
+        if order_ids_from_event:
+            conds.append(Order.id.in_(order_ids_from_event))
+        if q.strip().isdigit():
+            conds.append(Order.id == int(q.strip()))
+        query = query.where(or_(*conds))
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    col = {"id": Order.id, "created_at": Order.created_at, "total_amount": Order.total_amount}.get(sort, Order.created_at)
+    query = query.order_by(col.asc() if order == "asc" else col.desc())
+    orders = (await db.execute(query.offset((page - 1) * page_size).limit(page_size))).scalars().all()
+    items = []
+    for o in orders:
+        buyer = await db.get(User, o.user_id)
+        items.append({
+            "id": o.id, "reference": o.reference, "status": o.status,
             "total_amount": float(o.total_amount) if o.total_amount else 0,
-            "currency": o.currency,
-            "user_id": o.user_id,
+            "currency": o.currency, "user_id": o.user_id,
+            "buyer_email": buyer.email if buyer else None,
+            "buyer_name": buyer.full_name if buyer else None,
             "created_at": o.created_at.isoformat() if o.created_at else None,
-        } for o in orders]
-    }
+        })
+    return {"total": total or 0, "page": page, "page_size": page_size, "items": items, "statuses": [s.value for s in OrderStatus]}
 
 # Platform settings removed from here. Use app.routers.admin_settings (PostgreSQL PlatformSettings).
 

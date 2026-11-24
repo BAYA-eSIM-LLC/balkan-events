@@ -481,7 +481,9 @@ async def finance_overview(
         gross += float(o.total_amount or 0)
     refunds_total = float((await db.execute(select(func.coalesce(func.sum(Refund.amount), 0)))).scalar() or 0)
     platform = sum(float(p.platform_fee or 0) for p in payments if p.status != "refunded")
-    stripe = sum(float(p.stripe_fee or 0) for p in payments if p.stripe_fee is not None and p.status != "refunded")
+    stripe_known = [p for p in payments if p.stripe_fee is not None and p.status != "refunded"]
+    stripe = sum(float(p.stripe_fee) for p in stripe_known)
+    stripe_unavailable = sum(1 for p in payments if p.stripe_fee is None and p.status != "refunded")
     net = gross - refunds_total - platform - stripe
     ledger_count = await db.scalar(select(func.count(LedgerEntry.id)))
     payout_count = 0

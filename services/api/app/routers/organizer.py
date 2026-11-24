@@ -581,7 +581,7 @@ async def report_finance(
         "gross": round(gross, 2),
         "platform_fee": round(abs(fees), 2),
         "refunds": round(abs(refunds), 2),
-        "stripe_fee": round(abs(stripe), 2),
+        "stripe_fee": round(abs(stripe), 2), "stripe_fee_status": "unavailable" if stripe == 0 else "known",
         "net": round(net + refunds, 2),
         "available": round(available, 2),
         "requested": float(requested),

@@ -65,7 +65,14 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     user = result.scalar_one_or_none()
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    if user.role in ("SUPERADMIN", "ADMIN") and getattr(user, "mfa_enabled", False):
+    # Enforce MFA for admins if user has it enabled OR platform requires it
+    from app.models.platform_settings import PlatformSettings
+    settings_row = await db.get(PlatformSettings, 1)
+    platform_requires = bool(settings_row and settings_row.mfa_required_admins)
+    must_mfa = user.role in ("SUPERADMIN", "ADMIN") and (getattr(user, "mfa_enabled", False) or platform_requires)
+    if must_mfa:
+        if not getattr(user, "mfa_enabled", False) or not user.totp_secret:
+            raise HTTPException(403, "MFA required for admin accounts. Complete MFA setup first.")
         token = secrets.token_urlsafe(32)
         pending = MFAPending(
             token_hash=hash_code(token),
@@ -92,7 +99,10 @@ async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
     user = await db.get(User, rt.user_id)
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="User inactive")
-    if user.role in ("SUPERADMIN", "ADMIN") and getattr(user, "mfa_enabled", False):
+    from app.models.platform_settings import PlatformSettings
+    settings_row = await db.get(PlatformSettings, 1)
+    platform_requires = bool(settings_row and settings_row.mfa_required_admins)
+    if user.role in ("SUPERADMIN", "ADMIN") and (getattr(user, "mfa_enabled", False) or platform_requires):
         raise HTTPException(status_code=401, detail="MFA required. Use /auth/login and /auth/mfa/confirm")
     await db.commit()
     return await _issue_tokens(user, db)

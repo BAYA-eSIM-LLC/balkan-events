@@ -9,6 +9,9 @@ function TicketCard({ t, token }: { t: any; token: string }) {
   const [full, setFull] = useState(false);
   const status = t.order_status === 'paid' && !t.is_used ? 'VAŽEĆA' : t.is_used ? 'ISKORIŠTENA' : t.order_status?.toUpperCase();
   const qrUrl = t.qr_png;
+  const ticketUrl = `https://balkanevents.org/ticket/${t.code}`;
+  const shareText = `🎫 Ulaznica: ${t.event_title}\n📅 ${t.start_at ? new Date(t.start_at).toLocaleDateString('hr') : ''}\n📍 ${t.venue_name || t.city}\n\nPrikaži QR kod na ulazu:\n${ticketUrl}`;
+  
   return (
     <>
       <article className="bg-gradient-to-b from-[#1a1230] to-[#0d0b1f] border border-white/10 rounded-3xl overflow-hidden shadow-xl">
@@ -33,21 +36,21 @@ function TicketCard({ t, token }: { t: any; token: string }) {
             <img src={qrUrl} alt="QR" className="w-48 h-48" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <div className="flex gap-2 mt-2">
-            <a href={`https://wa.me/?text=${encodeURIComponent("Ulaznica: " + t.event_title + "\nQR: " + t.qr_data)}`} target="_blank" className="flex-1 bg-green-600 text-center rounded-xl py-2 text-sm">WhatsApp</a>
-            <a href={`https://t.me/share/url?url=${encodeURIComponent(t.qr_data)}<button onClick={() => setFull(true)} className="flex-1 bg-white/10 hover:bg-white/15 rounded-xl py-2 text-sm">Puni ekran</button>text=${encodeURIComponent(t.event_title)}`} target="_blank" className="flex-1 bg-blue-500 text-center rounded-xl py-2 text-sm">Telegram</a>
-            <a href={`mailto:?subject=${encodeURIComponent("Ulaznica: " + t.event_title)}<button onClick={() => setFull(true)} className="flex-1 bg-white/10 hover:bg-white/15 rounded-xl py-2 text-sm">Puni ekran</button>body=${encodeURIComponent("QR kod: " + t.qr_data)}`} className="flex-1 bg-zinc-600 text-center rounded-xl py-2 text-sm">Email</a>
+            <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" className="flex-1 bg-green-600 text-center rounded-xl py-2 text-sm text-white">WhatsApp</a>
+            <a href={`https://t.me/share/url?url=${encodeURIComponent(ticketUrl)}&text=${encodeURIComponent(t.event_title)}`} target="_blank" className="flex-1 bg-blue-500 text-center rounded-xl py-2 text-sm text-white">Telegram</a>
+            <a href={`mailto:?subject=${encodeURIComponent('Ulaznica: ' + t.event_title)}&body=${encodeURIComponent(shareText)}`} className="flex-1 bg-zinc-600 text-center rounded-xl py-2 text-sm text-white">Email</a>
           </div>
-          <button onClick={() => setFull(true)} className="flex-1 bg-white/10 hover:bg-white/15 rounded-xl py-2 text-sm mt-2">Puni ekran</button>
+          <div className="mt-2 flex gap-2">
+            <button onClick={() => setFull(true)} className="flex-1 bg-white/10 hover:bg-white/15 rounded-xl py-2 text-sm">Puni ekran</button>
             <a href={`${API}/tickets/${t.id}/pdf`} className="flex-1 bg-violet-600 hover:bg-violet-500 text-center rounded-xl py-2 text-sm">PDF</a>
           </div>
         </div>
       </article>
       {full && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4" onClick={() => setFull(false)}>
+        <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-4" onClick={() => setFull(false)}>
           <img src={qrUrl} alt="QR" className="w-72 h-72 bg-white rounded-2xl p-4" />
           <p className="mt-4 text-white text-sm">{t.event_title} · {t.code}</p>
-          <p className="text-zinc-400 text-xs mt-1">Dodirni za zatvaranje · Spremi screenshotom</p>
+          <button className="mt-4 text-zinc-400 text-sm">Zatvori</button>
         </div>
       )}
     </>

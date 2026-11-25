@@ -185,6 +185,30 @@ async def order_status(order_id: int, user: User = Depends(get_current_user), db
         "platform_fee": float(payment.platform_fee) if payment and payment.platform_fee else None,
     }
 
+@router.get("/tickets/public/{code}")
+async def public_ticket(code: str, db: AsyncSession = Depends(get_db)):
+    from app.models.event import Event
+    result = await db.execute(
+        select(Ticket, TicketType, Event)
+        .join(TicketType, Ticket.ticket_type_id == TicketType.id)
+        .join(Event, TicketType.event_id == Event.id)
+        .where(Ticket.code == code)
+    )
+    row = result.first()
+    if not row:
+        raise HTTPException(404, "Ticket not found")
+    t, tt, e = row
+    return {
+        "code": t.code,
+        "qr_data": t.qr_data,
+        "qr_png": _qr_b64(t.qr_data),
+        "ticket_type": tt.name,
+        "event_title": e.title,
+        "venue_name": e.venue_name,
+        "city": e.city,
+        "status": "VAŽEĆA" if not t.is_used else "ISKORIŠTENA"
+    }
+
 @router.get("/my-tickets")
 async def my_tickets(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     from app.models.event import Event

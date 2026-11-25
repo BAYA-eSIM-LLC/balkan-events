@@ -19,6 +19,7 @@ export interface EventItem {
   image_url?: string;
   is_featured?: boolean;
   status?: string;
+  performers?: { id: number; name: string; slug?: string; type?: string; bio?: string; image_url?: string; role?: string }[];
 }
 
 export async function fetchEvents(path: string): Promise<EventItem[]> {

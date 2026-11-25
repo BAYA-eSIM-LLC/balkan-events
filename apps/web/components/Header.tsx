@@ -29,7 +29,7 @@ export default function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5 text-white">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#070b1c]/95 backdrop-blur border-b border-white/5 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
           <span className="w-11 h-11 bg-gradient-to-br from-[#7C3AED] to-[#A020F0] rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30 group-hover:scale-105 transition">

@@ -62,17 +62,28 @@ async def advanced_search(
     if q:
         nq = normalize(q)
         raw = q.lower()
+        # Create normalized version of title for comparison
+        title_norm = func.lower(func.translate(
+            Event.title,
+            'ŽžĆćČčŠšĐđ',
+            'ZzCcCcSsDd'
+        ))
+        desc_norm = func.lower(func.translate(
+            func.coalesce(Event.short_description, ''),
+            'ŽžĆćČčŠšĐđ',
+            'ZzCcCcSsDd'
+        ))
+        venue_norm = func.lower(func.translate(
+            func.coalesce(Event.venue_name, ''),
+            'ŽžĆćČčŠšĐđ',
+            'ZzCcCcSsDd'
+        ))
         query = query.where(or_(
-            func.lower(Event.title).contains(nq),
+            title_norm.contains(nq),
             func.lower(Event.title).contains(raw),
-            func.lower(Event.short_description).contains(nq),
-            func.lower(Event.short_description).contains(raw),
-            func.lower(Event.description).contains(nq),
-            func.lower(Event.description).contains(raw),
-            func.lower(Event.city).contains(nq),
-            func.lower(Event.city).contains(raw),
-            func.lower(Event.venue_name).contains(nq),
-            func.lower(Event.venue_name).contains(raw)
+            desc_norm.contains(nq),
+            venue_norm.contains(nq),
+            func.lower(func.coalesce(Event.venue_name, '')).contains(raw)
         ))
     if country_id:
         query = query.where(Event.country_id == country_id)

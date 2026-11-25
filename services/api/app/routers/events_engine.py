@@ -115,7 +115,7 @@ async def search_events(q: Optional[str] = None, city: Optional[str] = None, cat
     result = await db.execute(query)
     return [event_to_public(e) for e in result.scalars().all()]
 
-async def event_performers(db, event_id: int):
+async def load_event_performers(db, event_id: int):
     rows = await db.execute(
         select(Performer, EventPerformer.role, EventPerformer.sort_order)
         .join(EventPerformer, EventPerformer.performer_id == Performer.id)
@@ -134,7 +134,7 @@ async def get_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
     if not e or e.status not in (EventStatus.PUBLISHED.value,):
         raise HTTPException(status_code=404, detail="Event not found")
     data = event_to_public(e)
-    data["performers"] = await event_performers(db, e.id)
+    data["performers"] = await load_event_performers(db, e.id)
     return data
 
 @public.get("/{event_id}")

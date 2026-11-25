@@ -4,18 +4,26 @@ import { useEffect, useState } from 'react';
 const API = '/api';
 
 type Sponsor = { id: number; name: string; level?: string; status?: string; logo_url?: string; website?: string };
+type Event = { id: number; title: string; slug: string };
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [form, setForm] = useState({ name: '', level: 'GOLD', logo_url: '', website: '' });
+  const [placement, setPlacement] = useState({ sponsor_id: '', event_id: '', position: 'EVENT_PAGE' });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
   const token = () => localStorage.getItem('token') || '';
 
   const load = async () => {
-    const r = await fetch(`${API}/admin/sponsors`, { headers: { Authorization: `Bearer ${token()}` } });
-    if (r.ok) setSponsors(await r.json());
+    const h = { Authorization: `Bearer ${token()}` };
+    const [s, e] = await Promise.all([
+      fetch(`${API}/admin/sponsors`, { headers: h }).then(r => r.ok ? r.json() : []),
+      fetch(`${API}/events`).then(r => r.ok ? r.json() : []),
+    ]);
+    setSponsors(s);
+    setEvents(Array.isArray(e) ? e : e.results || []);
   };
 
   useEffect(() => { load(); }, []);
@@ -31,7 +39,7 @@ export default function AdminSponsorsPage() {
     const d = await r.json();
     setLoading(false);
     if (r.ok) {
-      setMsg(`Sponzor ${d.name} kreiran`);
+      setMsg(`Sponzor "${d.name}" kreiran`);
       setForm({ name: '', level: 'GOLD', logo_url: '', website: '' });
       load();
     } else setMsg(d.detail || 'Greška');
@@ -45,10 +53,33 @@ export default function AdminSponsorsPage() {
     load();
   };
 
+  const addPlacement = async () => {
+    if (!placement.sponsor_id || !placement.position) return;
+    setLoading(true);
+    const r = await fetch(`${API}/sponsors/placements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+      body: JSON.stringify({
+        sponsor_id: parseInt(placement.sponsor_id),
+        event_id: placement.event_id ? parseInt(placement.event_id) : null,
+        position: placement.position,
+      }),
+    });
+    setLoading(false);
+    if (r.ok) {
+      setMsg('Placement dodan');
+      setPlacement({ sponsor_id: '', event_id: '', position: 'EVENT_PAGE' });
+    } else {
+      const d = await r.json();
+      setMsg(d.detail || 'Greška');
+    }
+  };
+
   return (
     <div className="p-6 max-w-4xl">
       <h1 className="text-2xl font-bold mb-6">Sponzori</h1>
 
+      {/* Create sponsor */}
       <div className="bg-white border rounded-xl p-4 mb-6">
         <h2 className="font-semibold mb-3">Dodaj sponzora</h2>
         <div className="grid md:grid-cols-2 gap-3">
@@ -64,10 +95,34 @@ export default function AdminSponsorsPage() {
           <input className="border rounded-lg px-3 py-2" placeholder="Logo URL" value={form.logo_url} onChange={e => setForm({ ...form, logo_url: e.target.value })} />
           <input className="border rounded-lg px-3 py-2" placeholder="Website" value={form.website} onChange={e => setForm({ ...form, website: e.target.value })} />
         </div>
-        <button onClick={create} disabled={loading} className="mt-3 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm">{loading ? '...' : 'Dodaj'}</button>
-        {msg && <p className="mt-2 text-sm text-zinc-600">{msg}</p>}
+        <button onClick={create} disabled={loading} className="mt-3 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm">{loading ? '...' : 'Dodaj sponzora'}</button>
       </div>
 
+      {/* Add placement */}
+      <div className="bg-white border rounded-xl p-4 mb-6">
+        <h2 className="font-semibold mb-3">Poveži sponzora s događajem</h2>
+        <div className="grid md:grid-cols-3 gap-3">
+          <select className="border rounded-lg px-3 py-2" value={placement.sponsor_id} onChange={e => setPlacement({ ...placement, sponsor_id: e.target.value })}>
+            <option value="">Odaberi sponzora</option>
+            {sponsors.filter(s => s.status === 'ACTIVE').map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <select className="border rounded-lg px-3 py-2" value={placement.event_id} onChange={e => setPlacement({ ...placement, event_id: e.target.value })}>
+            <option value="">Svi događaji (homepage)</option>
+            {events.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
+          </select>
+          <select className="border rounded-lg px-3 py-2" value={placement.position} onChange={e => setPlacement({ ...placement, position: e.target.value })}>
+            <option value="HOMEPAGE">Homepage</option>
+            <option value="EVENT_PAGE">Stranica događaja</option>
+            <option value="EVENT_HEADER">Header događaja</option>
+            <option value="EVENT_FOOTER">Footer događaja</option>
+          </select>
+        </div>
+        <button onClick={addPlacement} disabled={loading} className="mt-3 bg-zinc-800 text-white px-4 py-2 rounded-lg text-sm">{loading ? '...' : 'Poveži'}</button>
+      </div>
+
+      {msg && <p className="mb-4 text-sm text-zinc-600">{msg}</p>}
+
+      {/* List */}
       <div className="space-y-2">
         {sponsors.map(s => (
           <div key={s.id} className="bg-white border rounded-xl p-4 flex items-center justify-between">

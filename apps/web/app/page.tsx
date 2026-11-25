@@ -101,7 +101,7 @@ export default async function HomePage() {
                 className={`flex-shrink-0 flex flex-col items-center gap-2 rounded-2xl px-5 py-4 min-w-[88px] transition-all duration-200 border ${
                   i === 0
                     ? 'bg-gradient-to-br from-[#7C3AED] to-[#A020F0] border-transparent text-white shadow-lg shadow-purple-500/40 scale-105'
-                    : 'bg-[#1a1635] border-white/10 text-zinc-300 hover-lift hover:border-[#7C3AED]/50 hover:text-white'
+                    : 'bg-[#1a1635] border-white/10 text-zinc-300 hover-lift hover:border-[#7C3AED]/50 hover:text-white hover:shadow-lg hover:shadow-purple-500/20'
                 }`}
               >
                 <c.Icon className="w-6 h-6" />
@@ -136,8 +136,12 @@ export default async function HomePage() {
                     <span className="absolute top-3 left-3 bg-black/70 backdrop-blur text-white text-[11px] font-bold px-2 py-1 rounded-lg tracking-wide">
                         {new Date(e.start_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }).toUpperCase()}
                       </span>
+                      {e.pricing && e.pricing.price === 0 ? null : null}
+                      {new Date(e.start_at) > new Date(Date.now() + 30*864e5) && (
+                        <span className="absolute top-3 right-12 text-[10px] font-bold uppercase tracking-wider bg-[#A78BFA]/90 text-white px-2 py-1 rounded-full">Uskoro</span>
+                      )}
                     {e.pricing?.low && (
-                      <span className="absolute top-12 left-3 text-[10px] font-bold uppercase tracking-wider bg-[#FF6B9D] text-white px-2 py-1 rounded-full">Malo ulaznica</span>
+                      <span className="absolute top-12 left-3 text-[10px] font-bold uppercase tracking-wider bg-[#FF6B9D] text-white px-2 py-1 rounded-full">Posljednje</span>
                     )}
                     <button className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white/70 hover:text-[#FF6B9D] hover:scale-110 transition-all duration-200 group-hover:bg-black/60" aria-label="Favorit">
                       <svg className="w-4 h-4 group-hover:fill-[#FF6B9D]/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
@@ -145,11 +149,11 @@ export default async function HomePage() {
                   </div>
                   <div className="p-4">
                     <p className="font-bold text-base leading-tight line-clamp-2 group-hover:text-[#A78BFA] transition">{e.title}</p>
-                    <p className="text-xs text-zinc-400 mt-1.5 flex items-center gap-1">
+                    <p className="text-xs text-zinc-300 mt-1.5 flex items-center gap-1">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
                       {e.venue_name || e.city || 'Lokacija'}
                     </p>
-                    <p className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
+                    <p className="text-xs text-zinc-400 mt-1 flex items-center gap-1">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                       {new Date(e.start_at).toLocaleDateString('bs-BA', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                     </p>
@@ -181,7 +185,7 @@ export default async function HomePage() {
             <div key={t.title} className="flex flex-col items-center gap-1.5 group">
               <t.Icon className="w-6 h-6 text-[#A78BFA] group-hover:scale-110 transition-transform" />
               <p className="text-sm font-semibold text-white">{t.title}</p>
-              <p className="text-xs text-zinc-400">{t.sub}</p>
+              <p className="text-xs text-zinc-300">{t.sub}</p>
             </div>
           ))}
         </div>
@@ -200,7 +204,7 @@ export default async function HomePage() {
               <div key={s.n} className="p-6 rounded-2xl bg-[#10152B] border border-white/10 hover-lift hover:border-[#7C3AED]/40">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7C3AED] to-[#A020F0] flex items-center justify-center font-bold text-sm">{s.n}</div>
                 <h3 className="mt-4 font-semibold">{s.t}</h3>
-                <p className="mt-1 text-sm text-zinc-400">{s.d}</p>
+                <p className="mt-1 text-sm text-zinc-300">{s.d}</p>
               </div>
             ))}
           </div>
@@ -226,12 +230,12 @@ export default async function HomePage() {
       <section className="py-16 border-t border-white/5">
         <div className="max-w-4xl mx-auto px-5 text-center">
           <h2 className="text-3xl font-bold">Balkan Events aplikacija</h2>
-          <p className="mt-3 text-zinc-400 text-lg">Svi događaji u tvom džepu.</p>
+          <p className="mt-3 text-zinc-300 text-lg">Svi događaji u tvom džepu.</p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <AppStoreBadge />
             <GooglePlayBadge />
           </div>
-          <p className="mt-5 text-xs text-zinc-500">Aplikacija je u razvoju. Dostupna uskoro.</p>
+          <p className="mt-5 text-xs text-zinc-400">Aplikacija je u razvoju. Dostupna uskoro.</p>
         </div>
       </section>
     </div>

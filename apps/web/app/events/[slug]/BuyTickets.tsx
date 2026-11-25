@@ -25,8 +25,15 @@ export default function BuyTickets({ eventId }: { eventId: number }) {
         body: JSON.stringify({ items: [{ ticket_type_id: selected, quantity: 1 }] }),
       });
       const d = await r.json();
-      if (r.ok) router.push(`/checkout?order=${d.id}`);
-      else setMsg(d.detail || 'Greška');
+      if (r.ok) {
+        router.push(`/checkout?order=${d.id}`);
+      } else if (r.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        router.push(`/login?next=/events/${eventId}`);
+      } else {
+        setMsg(d.detail || 'Greška');
+      }
     } catch { setMsg('Greška pri kreiranju narudžbe'); }
   };
 

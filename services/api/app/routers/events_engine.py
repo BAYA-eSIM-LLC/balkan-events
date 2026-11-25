@@ -9,7 +9,7 @@ from app.deps import get_current_user, require_role, get_org_member
 from app.models.user import User, UserRole
 from app.models.event import Event, EventStatus
 from app.models.ticket import TicketType
-from app.models.organization import OrganizationMember
+from app.models.organization import OrganizationMember, Organization
 from app.models.venue import Venue
 from app.models.performer import Performer, EventPerformer, EventSchedule
 from app.models.audit import AuditLog

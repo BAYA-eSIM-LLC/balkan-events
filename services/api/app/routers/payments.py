@@ -337,7 +337,7 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                     await queue_email(
                         db, user.email,
                         f"Potvrda narudžbe {order.reference}",
-                        payment_success_body(order.reference, codes),
+                        payment_success_body(order.reference, codes, float(order.total_amount), order.currency or "EUR"),
                         "payment_success", "Order", order.id, f"email-success-{event['id']}"
                     )
                 await log_audit(db, None, "payment.completed", "Order", order.id, {"event": event["id"]})

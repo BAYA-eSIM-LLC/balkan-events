@@ -59,12 +59,27 @@ async def queue_email(
 
     return log
 
-def payment_success_body(reference: str, tickets: list[str]) -> str:
-    lines = [f"Narudžba {reference} je uspješno plaćena.", "", "Vaše ulaznice:"]
+def payment_success_body(reference: str, tickets: list[str], amount: float = 0, currency: str = "EUR", event_name: str = "", event_date: str = "") -> str:
+    lines = [
+        f"Narudžba {reference} je uspješno plaćena.",
+        "",
+        f"Iznos: {amount:.2f} {currency}",
+    ]
+    if event_name:
+        lines.append(f"Događaj: {event_name}")
+    if event_date:
+        lines.append(f"Datum: {event_date}")
+    lines.append("")
+    lines.append("Vaše ulaznice:")
     for t in tickets:
         lines.append(f"- {t}")
+        lines.append(f"  Link: https://balkanevents.org/ticket/{t}")
     lines.append("")
-    lines.append("QR kodovi su dostupni u sekciji Moje ulaznice.")
+    lines.append("QR kod možete prikazati otvaranjem linka ili u sekciji Moje ulaznice.")
+    lines.append("")
+    lines.append("---")
+    lines.append("BALKAN EVENTS")
+    lines.append("https://balkanevents.org")
     return "\n".join(lines)
 
 def payment_failed_body(reference: str) -> str:

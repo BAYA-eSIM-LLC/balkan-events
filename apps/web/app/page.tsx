@@ -87,7 +87,7 @@ export default async function HomePage() {
                 <Link key={e.id} href={`/events/${e.slug}`} className="group relative rounded-2xl overflow-hidden bg-[#1a1635] border border-white/10 hover:border-[#7C3AED]/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-900/40">
                   <div className="aspect-[4/3] relative overflow-hidden">
                     {e.image_url ? (
-                      <img src={e.image_url} alt={e.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                      <img src={e.image_url} alt={e.title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-[#7C3AED]/40 to-[#15112F]" />
                     )}

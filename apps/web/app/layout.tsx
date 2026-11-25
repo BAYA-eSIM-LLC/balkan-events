@@ -1,11 +1,18 @@
 import './globals.css';
 import AppShell from '@/components/AppShell';
 import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
+
+const inter = Inter({
+  subsets: ['latin', 'latin-ext'],
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800'],
+});
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#7c3aed',
+  themeColor: '#10152B',
 };
 
 export const metadata: Metadata = {
@@ -32,16 +39,12 @@ export const metadata: Metadata = {
     description: 'Ulaznice za najbolje događaje na Balkanu',
   },
   alternates: { canonical: 'https://balkanevents.org' },
-  verification: {},
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="bs">
+    <html lang="bs" className={inter.className}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
@@ -53,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           sameAs: [],
         })}} />
       </head>
-      <body className="bg-white text-zinc-900 antialiased">
+      <body className="bg-[#10152B] text-white antialiased">
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] focus:bg-white focus:text-black focus:px-3 focus:py-2 focus:rounded">Preskoči na sadržaj</a>
         <AppShell>{children}</AppShell>
       </body>

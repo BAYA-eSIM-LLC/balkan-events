@@ -31,11 +31,11 @@ export default async function HomePage() {
       {/* HERO */}
       <section className="relative min-h-[78vh] flex items-center overflow-hidden bg-[#070b1c]">
         <img
-          src="https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?auto=format&fit=crop&w=2400&q=80"
+          src="https://images.unsplash.com/photo-1459749411174-04c9f25e4c6b?auto=format&fit=crop&w=2400&q=80"
           alt=""
           className="absolute inset-0 w-full h-full object-cover object-[center_30%]"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#070b1c]/70 via-[#070b1c]/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#070b1c]/75 via-[#070b1c]/40 to-[#070b1c]/10" />
         <div className="relative z-10 w-full max-w-7xl mx-auto px-5 pt-28 pb-16">
           <p className="text-[12px] tracking-[0.28em] text-purple-300 font-semibold">DISCOVER. EXPERIENCE. CONNECT.</p>
           <h1 className="mt-3 text-4xl md:text-6xl font-extrabold text-white leading-[1.05] max-w-xl">

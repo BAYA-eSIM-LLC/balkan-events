@@ -1,24 +1,32 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { getAccessToken, refreshAccessToken, clearTokens } from '@/lib/auth';
 
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
-        .then(r => r.ok ? r.json() : null)
-        .then(d => d && setUser(d))
-        .catch(() => {});
+    async function loadUser() {
+      let token = getAccessToken();
+      if (!token) return;
+      let r = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+      if (r.status === 401) {
+        token = await refreshAccessToken();
+        if (!token) { clearTokens(); return; }
+        r = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+      }
+      if (r.ok) {
+        const d = await r.json();
+        setUser(d);
+      }
     }
+    loadUser();
   }, []);
 
   function logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refresh_token');
+    clearTokens();
     setUser(null);
     window.location.href = '/';
   }

@@ -31,7 +31,7 @@ export default async function HomePage() {
       {/* HERO */}
       <section className="relative min-h-[78vh] flex items-center overflow-hidden bg-[#070b1c]">
         <img
-          src="https://images.unsplash.com/photo-1459749411174-04c9f25e4c6b?auto=format&fit=crop&w=2400&q=80"
+          src="/hero-festival.jpg"
           alt=""
           className="absolute inset-0 w-full h-full object-cover object-[center_30%]"
         />

@@ -42,9 +42,9 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   return (
     <div className="bg-[#f6f5fb] min-h-screen pb-24 md:pb-12">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="relative h-[42vh] md:h-[52vh]">
-        <img src={img} alt={event.title} className="absolute inset-0 w-full h-full object-cover" loading="eager" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0b1f] via-[#0d0b1f]/40 to-transparent" />
+      <div className="relative h-[50vh] md:h-[62vh]">
+        <img src={img} alt={event.title} className="absolute inset-0 w-full h-full object-cover object-center" loading="eager" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0b1f] via-[#0d0b1f]/50 to-transparent" />
       </div>
       <div className="max-w-3xl mx-auto px-5 -mt-24 relative">
         <div className="bg-white rounded-3xl shadow-xl p-6 md:p-10">

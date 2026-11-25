@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import HeroBanner from '@/components/HeroBanner';
 import Sponsors from '@/components/Sponsors';
 import Link from 'next/link';
-import { fetchEvents } from '@/lib/api';
+import { fetchEvents, API } from '@/lib/api';
 
 const categories = [
   { name: 'Koncerti', href: '/search?category=koncerti', icon: '🎵' },
@@ -15,6 +15,28 @@ const categories = [
   { name: 'Konferencije', href: '/search?category=konferencije', icon: '💼' },
   { name: 'Više', href: '/categories', icon: '⋯' },
 ];
+
+const cities = [
+  { name: 'Sarajevo', href: '/search?city=Sarajevo' },
+  { name: 'Zagreb', href: '/search?city=Zagreb' },
+  { name: 'Beograd', href: '/search?city=Beograd' },
+  { name: 'Mostar', href: '/search?city=Mostar' },
+  { name: 'Split', href: '/search?city=Split' },
+  { name: 'Ljubljana', href: '/search?city=Ljubljana' },
+];
+
+async function getMinPrice(eventId: number): Promise<{ price: number; currency: string; low: boolean } | null> {
+  try {
+    const r = await fetch(`${API}/events/${eventId}/ticket-types`, { next: { revalidate: 60 } });
+    if (!r.ok) return null;
+    const types = await r.json();
+    if (!Array.isArray(types) || !types.length) return null;
+    const prices = types.map((t: any) => Number(t.price)).filter((n: number) => !isNaN(n));
+    const avail = types.reduce((s: number, t: any) => s + (Number(t.available) || 0), 0);
+    if (!prices.length) return null;
+    return { price: Math.min(...prices), currency: types[0].currency || 'EUR', low: avail > 0 && avail <= 20 };
+  } catch { return null; }
+}
 
 function AppStoreBadge() {
   return (
@@ -45,12 +67,30 @@ export default async function HomePage() {
   const featured = events.filter(e => e.is_featured).slice(0, 4);
   const display = featured.length ? featured : events.slice(0, 4);
 
+  const withPrice = await Promise.all(display.map(async e => ({
+    ...e,
+    pricing: await getMinPrice(e.id),
+  })));
+
   return (
     <div className="bg-[#10152B] text-white min-h-screen">
       <HeroBanner />
 
+      {/* City chips */}
+      <section className="pt-6 pb-2">
+        <div className="max-w-7xl mx-auto px-5">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            {cities.map(c => (
+              <Link key={c.name} href={c.href} className="flex-shrink-0 px-4 py-2 rounded-full bg-[#1a1635] border border-white/10 text-sm text-zinc-300 hover:border-[#7C3AED] hover:text-white hover:bg-[#7C3AED]/20 transition-all duration-200">
+                {c.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Categories */}
-      <section className="relative -mt-8 z-10">
+      <section className="relative mt-4 z-10">
         <div className="max-w-7xl mx-auto px-5">
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide justify-start md:justify-center">
             {categories.map((c, i) => (
@@ -59,8 +99,8 @@ export default async function HomePage() {
                 href={c.href}
                 className={`flex-shrink-0 flex flex-col items-center gap-2 rounded-2xl px-5 py-4 min-w-[88px] transition-all duration-200 border ${
                   i === 0
-                    ? 'bg-gradient-to-br from-[#7C3AED] to-[#A020F0] border-transparent text-white shadow-lg shadow-purple-500/40'
-                    : 'bg-[#1a1635] border-white/10 text-zinc-300 hover:border-[#7C3AED]/50 hover:text-white hover:-translate-y-0.5'
+                    ? 'bg-gradient-to-br from-[#7C3AED] to-[#A020F0] border-transparent text-white shadow-lg shadow-purple-500/40 scale-105'
+                    : 'bg-[#1a1635] border-white/10 text-zinc-300 hover:border-[#7C3AED]/50 hover:text-white hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-900/30'
                 }`}
               >
                 <span className="text-2xl">{c.icon}</span>
@@ -72,7 +112,7 @@ export default async function HomePage() {
       </section>
 
       {/* Featured */}
-      {display.length > 0 && (
+      {withPrice.length > 0 && (
         <section className="py-14">
           <div className="max-w-7xl mx-auto px-5">
             <div className="flex items-center justify-between mb-6">
@@ -83,32 +123,38 @@ export default async function HomePage() {
               <Link href="/search" className="text-sm text-[#A78BFA] hover:text-white font-medium">Pogledaj sve događaje →</Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {display.map(e => (
-                <Link key={e.id} href={`/events/${e.slug}`} className="group relative rounded-2xl overflow-hidden bg-[#1a1635] border border-white/10 hover:border-[#7C3AED]/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-900/40">
+              {withPrice.map(e => (
+                <Link key={e.id} href={`/events/${e.slug}`} className="group relative rounded-2xl overflow-hidden bg-[#1a1635] border border-white/10 hover:border-[#7C3AED]/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-purple-900/50">
                   <div className="aspect-[4/3] relative overflow-hidden">
                     {e.image_url ? (
-                      <img src={e.image_url} alt={e.title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                      <img src={e.image_url} alt={e.title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700" />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-[#7C3AED]/40 to-[#15112F]" />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#10152B] via-transparent to-transparent" />
-                    <button className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white/70 hover:text-[#FF6B9D] transition" aria-label="Favorit">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                    {e.pricing?.low && (
+                      <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wider bg-[#FF6B9D] text-white px-2 py-1 rounded-full animate-pulse">Malo ulaznica</span>
+                    )}
+                    <button className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white/70 hover:text-[#FF6B9D] hover:scale-110 transition-all duration-200 group-hover:bg-black/60" aria-label="Favorit">
+                      <svg className="w-4 h-4 group-hover:fill-[#FF6B9D]/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
                     </button>
                   </div>
                   <div className="p-4">
                     <p className="font-bold text-base leading-tight line-clamp-2 group-hover:text-[#A78BFA] transition">{e.title}</p>
                     <p className="text-xs text-zinc-400 mt-1.5 flex items-center gap-1">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
-                      {e.city}{e.country ? `, ${e.country}` : ''}
+                      {e.venue_name || e.city || 'Lokacija'}
                     </p>
                     <p className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                       {new Date(e.start_at).toLocaleDateString('bs-BA', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                     </p>
-                    <div className="mt-3">
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold bg-gradient-to-r from-[#7C3AED] to-[#A020F0] text-white px-3 py-1.5 rounded-full">
-                        Kupi ulaznice →
+                    <div className="mt-3 flex items-center justify-between">
+                      {e.pricing ? (
+                        <span className="text-sm font-bold text-white">od {e.pricing.price.toFixed(2)} {e.pricing.currency}</span>
+                      ) : <span />}
+                      <span className="text-xs font-semibold bg-gradient-to-r from-[#7C3AED] to-[#A020F0] text-white px-3 py-1.5 rounded-full group-hover:shadow-lg group-hover:shadow-purple-500/40 transition-all">
+                        Kupi →
                       </span>
                     </div>
                   </div>
@@ -128,8 +174,8 @@ export default async function HomePage() {
             { icon: '📱', title: 'Digitalna ulaznica', sub: 'QR kod u aplikaciji' },
             { icon: '🎧', title: 'Podrška 24/7', sub: 'Uvijek uz tebe' },
           ].map(t => (
-            <div key={t.title} className="flex flex-col items-center gap-1.5">
-              <span className="text-2xl">{t.icon}</span>
+            <div key={t.title} className="flex flex-col items-center gap-1.5 group">
+              <span className="text-2xl group-hover:scale-110 transition-transform">{t.icon}</span>
               <p className="text-sm font-semibold text-white">{t.title}</p>
               <p className="text-xs text-zinc-400">{t.sub}</p>
             </div>
@@ -147,7 +193,7 @@ export default async function HomePage() {
               { n: '2', t: 'Kupi ulaznicu', d: 'Sigurna kupovina karticom. QR kod stiže na email.' },
               { n: '3', t: 'Dođi i uživaj', d: 'Pokaži QR na ulazu. Ulaznica je spremna.' },
             ].map(s => (
-              <div key={s.n} className="p-6 rounded-2xl bg-[#10152B] border border-white/10">
+              <div key={s.n} className="p-6 rounded-2xl bg-[#10152B] border border-white/10 hover:border-[#7C3AED]/40 hover:-translate-y-1 transition-all duration-300">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7C3AED] to-[#A020F0] flex items-center justify-center font-bold text-sm">{s.n}</div>
                 <h3 className="mt-4 font-semibold">{s.t}</h3>
                 <p className="mt-1 text-sm text-zinc-400">{s.d}</p>
@@ -162,11 +208,11 @@ export default async function HomePage() {
       {/* Organizer CTA */}
       <section className="py-16">
         <div className="max-w-5xl mx-auto px-5">
-          <div className="rounded-3xl bg-gradient-to-br from-[#7C3AED]/20 to-[#FF6B9D]/10 border border-white/10 p-8 md:p-12 flex flex-col md:flex-row items-center gap-8">
+          <div className="rounded-3xl bg-gradient-to-br from-[#7C3AED]/20 to-[#FF6B9D]/10 border border-white/10 p-8 md:p-12 flex flex-col md:flex-row items-center gap-8 hover:border-[#7C3AED]/30 transition">
             <div className="flex-1">
               <h2 className="text-3xl md:text-4xl font-bold leading-tight">Organizuješ događaj?</h2>
               <p className="mt-4 text-white/70 text-lg">Objavi svoj događaj, prodaj ulaznice i dođi do hiljada posjetilaca širom Balkana.</p>
-              <Link href="/organizer" className="inline-block mt-6 bg-white text-[#10152B] hover:bg-zinc-100 px-7 py-3 rounded-full font-semibold text-sm">Postani organizator →</Link>
+              <Link href="/organizer" className="inline-block mt-6 bg-white text-[#10152B] hover:bg-zinc-100 hover:shadow-xl px-7 py-3 rounded-full font-semibold text-sm transition-all">Postani organizator →</Link>
             </div>
           </div>
         </div>

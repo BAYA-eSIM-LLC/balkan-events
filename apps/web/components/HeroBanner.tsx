@@ -51,28 +51,53 @@ export default function HeroBanner() {
       ))}
 
       <div className="relative max-w-7xl mx-auto px-5 sm:px-6 w-full z-10 pt-20 pb-32">
-        <div className="max-w-xl">
-          <p className="text-[11px] tracking-[0.28em] text-[#A78BFA] font-semibold mb-4 uppercase">Koncerti · Festivali · Sport · Kultura · Noćni život</p>
-          
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-[1.05] tracking-tight">
-            Doživi najbolje<br />
-            <span className="text-white">događaje </span>
-            <span className="bg-gradient-to-r from-[#FF6B9D] to-[#A020F0] bg-clip-text text-transparent">na Balkanu.</span>
-          </h1>
-          
-          <p className="mt-5 text-base sm:text-lg text-white/75 max-w-md leading-relaxed">
-            Koncerti, festivali, sport, teatar i još mnogo toga — na jednom mjestu.
-          </p>
+        <div className="flex flex-col lg:flex-row items-center gap-10">
+          <div className="flex-1 max-w-xl">
+            <p className="text-[11px] tracking-[0.28em] text-[#A78BFA] font-semibold mb-4 uppercase">Koncerti · Festivali · Sport · Kultura · Noćni život</p>
+            
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-[1.05] tracking-tight">
+              Doživi najbolje<br />
+              <span className="text-white">događaje </span>
+              <span className="bg-gradient-to-r from-[#FF6B9D] to-[#A020F0] bg-clip-text text-transparent">na Balkanu.</span>
+            </h1>
+            
+            <p className="mt-5 text-base sm:text-lg text-white/75 max-w-md leading-relaxed">
+              Koncerti, festivali, sport, teatar i još mnogo toga — na jednom mjestu.
+            </p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a href="/search" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#A020F0] hover:opacity-95 px-6 py-3.5 rounded-full font-semibold text-sm shadow-xl shadow-purple-500/30 transition">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              Otkrij događaje →
-            </a>
-            <a href="#how" className="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 px-6 py-3.5 rounded-full font-medium text-sm transition">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-              Kako funkcioniše
-            </a>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a href="/search" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#A020F0] hover:opacity-95 hover:shadow-lg hover:shadow-purple-500/50 px-6 py-3.5 rounded-full font-semibold text-sm transition-all duration-300">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                Otkrij događaje →
+              </a>
+              <a href="#how" className="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 px-6 py-3.5 rounded-full font-medium text-sm transition">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                Kako funkcioniše
+              </a>
+            </div>
+          </div>
+
+          {/* Phone mockup */}
+          <div className="hidden lg:block relative">
+            <div className="w-[280px] h-[560px] bg-zinc-900 rounded-[40px] border-4 border-zinc-700 shadow-2xl shadow-purple-900/50 overflow-hidden relative">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-zinc-800 rounded-b-2xl z-10" />
+              <img src={slide.desktop} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#10152B]/60 via-transparent to-[#10152B]" />
+              <div className="relative p-6 pt-10 text-white">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="w-8 h-8 bg-gradient-to-br from-[#7C3AED] to-[#A020F0] rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                  </span>
+                  <span className="text-xs font-bold">BALKAN EVENTS</span>
+                </div>
+                <p className="text-lg font-black leading-tight">Doživi najbolje događaje na Balkanu.</p>
+                <div className="mt-4 bg-white/10 backdrop-blur rounded-xl p-2 text-xs text-white/70">Pretraži događaje...</div>
+                <div className="mt-4 grid grid-cols-4 gap-2">
+                  {['🎵','🎪','⚽','🎭'].map(i => <div key={i} className="aspect-square bg-white/10 rounded-xl flex items-center justify-center text-lg">{i}</div>)}
+                </div>
+              </div>
+            </div>
+            <div className="absolute -inset-4 bg-gradient-to-r from-[#7C3AED]/20 to-[#FF6B9D]/20 blur-3xl -z-10 rounded-full" />
           </div>
         </div>
 
@@ -90,7 +115,7 @@ export default function HeroBanner() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
               Svi gradovi
             </div>
-            <button type="submit" className="m-1.5 bg-gradient-to-r from-[#7C3AED] to-[#A020F0] text-white px-6 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-95 transition">
+            <button type="submit" className="m-1.5 bg-gradient-to-r from-[#7C3AED] to-[#A020F0] text-white px-6 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-95 hover:shadow-lg transition-all">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               Pretraži
             </button>

@@ -2,6 +2,8 @@ import { fetchEventBySlug, formatDate } from '@/lib/api';
 import Link from 'next/link';
 import BuyTickets from './BuyTickets';
 import { notFound } from 'next/navigation';
+import Countdown from '@/components/Countdown';
+import ShareButtons from '@/components/ShareButtons';
 
 export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -9,6 +11,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   if (!event) notFound();
 
   const img = event.image_url || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=1600&q=80';
+  const shareUrl = `https://balkanevents.org/events/${slug}`;
 
   return (
     <div className="bg-[#f6f5fb] min-h-screen">
@@ -25,9 +28,18 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             <span className="px-3 py-1 bg-gray-100 rounded-full">{formatDate(event.start_at, event.timezone)}</span>
             {event.venue_name && <span className="px-3 py-1 bg-gray-100 rounded-full">{event.venue_name}</span>}
           </div>
+
+          {event.start_at && <Countdown date={event.start_at} />}
+
           {event.short_description && (
             <p className="mt-5 text-gray-700 leading-relaxed">{event.short_description}</p>
           )}
+
+          <div className="mt-4">
+            <p className="text-xs text-zinc-500 mb-1">Podijeli događaj</p>
+            <ShareButtons title={event.title} url={shareUrl} />
+          </div>
+
           <BuyTickets eventId={event.id} />
           <Link href="/search" className="mt-4 inline-block text-sm text-gray-500 hover:underline">Nazad na pretragu</Link>
         </div>

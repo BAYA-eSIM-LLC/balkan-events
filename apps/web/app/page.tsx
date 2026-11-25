@@ -130,6 +130,40 @@ export default async function Home() {
         </div>
       </section>
 
+      <section className="py-16 bg-white">
+        <div className="max-w-5xl mx-auto px-5 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold">Kako radi</h2>
+          <div className="mt-8 grid md:grid-cols-3 gap-6 text-left">
+            <div className="p-6 rounded-2xl border border-zinc-200">
+              <div className="text-2xl font-bold text-purple-600">1</div>
+              <h3 className="mt-2 font-semibold">Odaberi događaj</h3>
+              <p className="mt-1 text-sm text-zinc-500">Pronađi koncert, festival ili sportski događaj.</p>
+            </div>
+            <div className="p-6 rounded-2xl border border-zinc-200">
+              <div className="text-2xl font-bold text-purple-600">2</div>
+              <h3 className="mt-2 font-semibold">Kupi ulaznicu</h3>
+              <p className="mt-1 text-sm text-zinc-500">Sigurna kupovina karticom. QR kod stiže na email.</p>
+            </div>
+            <div className="p-6 rounded-2xl border border-zinc-200">
+              <div className="text-2xl font-bold text-purple-600">3</div>
+              <h3 className="mt-2 font-semibold">Dođi i uživaj</h3>
+              <p className="mt-1 text-sm text-zinc-500">Pokaži QR na ulazu. Ulaznica je spremna.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-12 bg-zinc-50">
+        <div className="max-w-xl mx-auto px-5 text-center">
+          <h2 className="text-xl font-bold">Ostani u toku</h2>
+          <p className="mt-2 text-sm text-zinc-500">Prijavi se za novosti o događajima.</p>
+          <form className="mt-4 flex gap-2" action="/contact" method="get">
+            <input type="email" placeholder="Tvoj email" className="flex-1 border border-zinc-300 rounded-xl px-4 py-3 text-sm" />
+            <button className="bg-purple-600 text-white px-5 py-3 rounded-xl text-sm font-medium">Prijavi se</button>
+          </form>
+        </div>
+      </section>
+
       <section className="py-16 bg-gradient-to-br from-indigo-950 via-purple-950 to-indigo-900 text-white">
         <div className="max-w-5xl mx-auto px-5 flex flex-col md:flex-row items-center gap-10">
           <div className="flex-1">

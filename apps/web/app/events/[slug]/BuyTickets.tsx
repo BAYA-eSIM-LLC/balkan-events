@@ -42,18 +42,18 @@ export default function BuyTickets({ eventId }: { eventId: number }) {
   return (
     <div className="mt-6 space-y-3">
       {types.map(t => (
-        <label key={t.id} className={`flex items-center justify-between p-3 border rounded-xl cursor-pointer ${selected === t.id ? 'border-[#6d3df5] bg-purple-50' : 'border-gray-200'}`}>
+        <label key={t.id} className={`flex items-center justify-between p-4 border-2 rounded-2xl cursor-pointer transition ${selected === t.id ? 'border-[#7C3AED] bg-purple-50 shadow-sm' : 'border-zinc-200 hover:border-zinc-300'}`}>
           <div>
-            <p className="font-medium">{t.name}</p>
-            <p className="text-sm text-gray-500">{t.available} dostupno</p>
+            <p className="font-semibold text-[#0d0b1f]">{t.name}</p>
+            <p className="text-sm text-zinc-500 mt-0.5">{t.available} dostupno</p>
           </div>
-          <div className="text-right">
-            <p className="font-bold">{t.price} {t.currency}</p>
-            <input type="radio" name="ticket" checked={selected === t.id} onChange={() => setSelected(t.id)} />
+          <div className="text-right flex items-center gap-3">
+            <p className="font-bold text-lg text-[#0d0b1f]">{t.price} {t.currency}</p>
+            <input type="radio" name="ticket" checked={selected === t.id} onChange={() => setSelected(t.id)} className="accent-[#7C3AED]" />
           </div>
         </label>
       ))}
-      <button onClick={buy} disabled={!selected} className="w-full bg-[#6d3df5] disabled:opacity-40 text-white py-3 rounded-xl font-medium">
+      <button onClick={buy} disabled={!selected} className="w-full bg-gradient-to-r from-[#7C3AED] to-[#A020F0] disabled:opacity-40 text-white py-3.5 rounded-2xl font-semibold shadow-lg shadow-purple-500/25 hover:opacity-95 transition">
         Kupi ulaznicu
       </button>
       {msg && <p className="text-red-500 text-sm">{msg}</p>}

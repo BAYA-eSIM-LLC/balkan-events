@@ -21,7 +21,7 @@ function MiniGooglePlay() {
 export default function Footer() {
   return (
     <footer className="bg-[#0d1020] text-zinc-400 text-sm">
-      <div className="max-w-7xl mx-auto px-5 py-12 grid grid-cols-2 md:grid-cols-5 gap-8">
+      <div className="max-w-7xl mx-auto px-5 py-12 grid grid-cols-2 md:grid-cols-6 gap-8">
         <div className="col-span-2 md:col-span-1">
           <Link href="/" className="flex items-center gap-2.5 text-white">
             <span className="w-9 h-9 bg-gradient-to-br from-[#7C3AED] to-[#A020F0] rounded-lg flex items-center justify-center">
@@ -57,6 +57,13 @@ export default function Footer() {
           <div className="space-y-2 text-xs">
             <Link href="/organizer" className="block hover:text-white">Postani organizator</Link>
             <Link href="/organizer-terms" className="block hover:text-white">Uslovi za organizatore</Link>
+          </div>
+        </div>
+        <div>
+          <p className="text-white font-semibold text-xs tracking-wider mb-3">KONTAKT</p>
+          <div className="space-y-2 text-xs">
+            <a href="mailto:hello@balkanevents.org" className="block hover:text-white">hello@balkanevents.org</a>
+            <p>Sarajevo · Zagreb · Beograd</p>
           </div>
         </div>
         <div>

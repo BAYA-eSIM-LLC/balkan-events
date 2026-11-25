@@ -3,17 +3,18 @@ import HeroBanner from '@/components/HeroBanner';
 import Sponsors from '@/components/Sponsors';
 import Link from 'next/link';
 import { fetchEvents, API } from '@/lib/api';
+import { IconConcert, IconFestival, IconSport, IconTheater, IconCulture, IconNight, IconMic, IconBrief, IconMore, IconTicket, IconShield, IconPhone, IconHeadset } from '@/components/Icons';
 
 const categories = [
-  { name: 'Koncerti', href: '/search?category=koncerti', icon: '🎵' },
-  { name: 'Festivali', href: '/search?category=festivali', icon: '🎪' },
-  { name: 'Sport', href: '/search?category=sport', icon: '⚽' },
-  { name: 'Teatar', href: '/search?category=pozoriste', icon: '🎭' },
-  { name: 'Kultura', href: '/search?category=kultura', icon: '🏛️' },
-  { name: 'Noćni život', href: '/search?category=nightlife', icon: '🍸' },
-  { name: 'Stand-up', href: '/search?category=standup', icon: '🎤' },
-  { name: 'Konferencije', href: '/search?category=konferencije', icon: '💼' },
-  { name: 'Više', href: '/categories', icon: '⋯' },
+  { name: 'Koncerti', href: '/search?category=koncerti', Icon: IconConcert },
+  { name: 'Festivali', href: '/search?category=festivali', Icon: IconFestival },
+  { name: 'Sport', href: '/search?category=sport', Icon: IconSport },
+  { name: 'Teatar', href: '/search?category=pozoriste', Icon: IconTheater },
+  { name: 'Kultura', href: '/search?category=kultura', Icon: IconCulture },
+  { name: 'Noćni život', href: '/search?category=nightlife', Icon: IconNight },
+  { name: 'Stand-up', href: '/search?category=standup', Icon: IconMic },
+  { name: 'Konferencije', href: '/search?category=konferencije', Icon: IconBrief },
+  { name: 'Više', href: '/categories', Icon: IconMore },
 ];
 
 const cities = [
@@ -103,7 +104,7 @@ export default async function HomePage() {
                     : 'bg-[#1a1635] border-white/10 text-zinc-300 hover-lift hover:border-[#7C3AED]/50 hover:text-white'
                 }`}
               >
-                <span className="text-2xl">{c.icon}</span>
+                <c.Icon className="w-6 h-6" />
                 <span className="text-xs font-medium whitespace-nowrap">{c.name}</span>
               </Link>
             ))}
@@ -132,8 +133,11 @@ export default async function HomePage() {
                       <div className="absolute inset-0 bg-gradient-to-br from-[#7C3AED]/40 to-[#15112F]" />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#10152B] via-transparent to-transparent" />
+                    <span className="absolute top-3 left-3 bg-black/70 backdrop-blur text-white text-[11px] font-bold px-2 py-1 rounded-lg tracking-wide">
+                        {new Date(e.start_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }).toUpperCase()}
+                      </span>
                     {e.pricing?.low && (
-                      <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wider bg-[#FF6B9D] text-white px-2 py-1 rounded-full">Malo ulaznica</span>
+                      <span className="absolute top-12 left-3 text-[10px] font-bold uppercase tracking-wider bg-[#FF6B9D] text-white px-2 py-1 rounded-full">Malo ulaznica</span>
                     )}
                     <button className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white/70 hover:text-[#FF6B9D] hover:scale-110 transition-all duration-200 group-hover:bg-black/60" aria-label="Favorit">
                       <svg className="w-4 h-4 group-hover:fill-[#FF6B9D]/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
@@ -169,13 +173,13 @@ export default async function HomePage() {
       <section className="py-10 border-t border-white/5">
         <div className="max-w-6xl mx-auto px-5 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {[
-            { icon: '🎫', title: 'Brza i sigurna kupovina', sub: 'Ulaznice za par sekundi' },
-            { icon: '🛡️', title: 'Provjereni događaji', sub: 'Direktno od organizatora' },
-            { icon: '📱', title: 'Digitalna ulaznica', sub: 'QR kod u aplikaciji' },
-            { icon: '🎧', title: 'Podrška 24/7', sub: 'Uvijek uz tebe' },
+            { Icon: IconTicket, title: 'Brza i sigurna kupovina', sub: 'Ulaznice za par sekundi' },
+            { Icon: IconShield, title: 'Provjereni događaji', sub: 'Direktno od organizatora' },
+            { Icon: IconPhone, title: 'Digitalna ulaznica', sub: 'QR kod u aplikaciji' },
+            { Icon: IconHeadset, title: 'Podrška 24/7', sub: 'Uvijek uz tebe' },
           ].map(t => (
             <div key={t.title} className="flex flex-col items-center gap-1.5 group">
-              <span className="text-2xl group-hover:scale-110 transition-transform">{t.icon}</span>
+              <t.Icon className="w-6 h-6 text-[#A78BFA] group-hover:scale-110 transition-transform" />
               <p className="text-sm font-semibold text-white">{t.title}</p>
               <p className="text-xs text-zinc-400">{t.sub}</p>
             </div>

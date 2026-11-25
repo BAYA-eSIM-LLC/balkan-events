@@ -11,21 +11,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const event = await fetchEventBySlug(slug);
   if (!event) return { title: 'Događaj nije pronađen' };
-
   const title = `${event.title} – Ulaznice`;
   const description = event.short_description || `Kupi ulaznice za ${event.title}. ${event.city || ''} ${event.venue_name || ''}`.trim();
   const url = `https://balkanevents.org/events/${slug}`;
-
   return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      url,
-      type: 'website',
-      images: event.image_url ? [{ url: event.image_url, width: 1200, height: 630 }] : undefined,
-    },
+    title, description,
+    openGraph: { title, description, url, type: 'website', images: event.image_url ? [{ url: event.image_url, width: 1200, height: 630 }] : undefined },
     twitter: { card: 'summary_large_image', title, description },
     alternates: { canonical: url },
   };
@@ -35,67 +26,53 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const { slug } = await params;
   const event = await fetchEventBySlug(slug);
   if (!event) notFound();
-
   const img = event.image_url || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=1600&q=80';
   const shareUrl = `https://balkanevents.org/events/${slug}`;
-
   const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Event',
-    name: event.title,
-    description: event.short_description || event.title,
-    startDate: event.start_at,
-    endDate: event.end_at || event.start_at,
+    '@context': 'https://schema.org', '@type': 'Event',
+    name: event.title, description: event.short_description || event.title,
+    startDate: event.start_at, endDate: event.end_at || event.start_at,
     eventStatus: 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-    location: {
-      '@type': 'Place',
-      name: event.venue_name || event.city || 'Lokacija',
-      address: {
-        '@type': 'PostalAddress',
-        addressLocality: event.city || '',
-        addressCountry: event.country || 'BA',
-      },
-    },
-    image: img,
-    organizer: { '@type': 'Organization', name: 'BALKAN EVENTS', url: 'https://balkanevents.org' },
+    location: { '@type': 'Place', name: event.venue_name || event.city || 'Lokacija', address: { '@type': 'PostalAddress', addressLocality: event.city || '', addressCountry: event.country || 'BA' } },
+    image: img, organizer: { '@type': 'Organization', name: 'BALKAN EVENTS', url: 'https://balkanevents.org' },
     offers: { '@type': 'Offer', url: shareUrl, availability: 'https://schema.org/InStock', priceCurrency: 'EUR' },
   };
 
   return (
-    <div className="bg-[#f6f5fb] min-h-screen">
+    <div className="bg-[#f6f5fb] min-h-screen pb-24 md:pb-12">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="relative h-[45vh] md:h-[55vh]">
+      <div className="relative h-[42vh] md:h-[52vh]">
         <img src={img} alt={event.title} className="absolute inset-0 w-full h-full object-cover" loading="eager" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0b1f]/90 via-[#0d0b1f]/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0b1f] via-[#0d0b1f]/40 to-transparent" />
       </div>
-      <div className="max-w-3xl mx-auto px-5 -mt-20 relative pb-12">
-        <div className="bg-white rounded-3xl shadow-lg p-6 md:p-8">
-          <p className="text-[#d4af77] text-xs font-medium tracking-widest">DOGAĐAJ</p>
-          <h1 className="mt-2 text-2xl md:text-4xl font-display font-extrabold text-[#0d0b1f]">{event.title}</h1>
-          <div className="mt-4 flex flex-wrap gap-3 text-sm text-gray-600">
-            <span className="px-3 py-1 bg-gray-100 rounded-full">{event.city}{event.country ? `, ${event.country}` : ''}</span>
-            <span className="px-3 py-1 bg-gray-100 rounded-full">{formatDate(event.start_at, event.timezone)}</span>
-            {event.venue_name && <span className="px-3 py-1 bg-gray-100 rounded-full">{event.venue_name}</span>}
+      <div className="max-w-3xl mx-auto px-5 -mt-24 relative">
+        <div className="bg-white rounded-3xl shadow-xl p-6 md:p-10">
+          <p className="text-[#7C3AED] text-xs font-semibold tracking-widest uppercase">Događaj</p>
+          <h1 className="mt-2 text-3xl md:text-5xl font-extrabold text-[#0d0b1f] leading-tight tracking-tight">{event.title}</h1>
+          <div className="mt-5 flex flex-wrap gap-2 text-sm">
+            {event.city && <span className="px-3 py-1.5 bg-[#f6f5fb] text-zinc-700 rounded-full font-medium">{event.city}{event.country ? `, ${event.country}` : ''}</span>}
+            <span className="px-3 py-1.5 bg-[#f6f5fb] text-zinc-700 rounded-full font-medium">{formatDate(event.start_at, event.timezone)}</span>
+            {event.venue_name && <span className="px-3 py-1.5 bg-[#f6f5fb] text-zinc-700 rounded-full font-medium">{event.venue_name}</span>}
           </div>
-
           {event.start_at && <Countdown date={event.start_at} />}
-
-          {event.short_description && (
-            <p className="mt-5 text-gray-700 leading-relaxed">{event.short_description}</p>
-          )}
-
+          {event.short_description && <p className="mt-6 text-zinc-700 leading-relaxed text-base">{event.short_description}</p>}
           <Sponsors position="EVENT_PAGE" eventId={event.id} title="Sponzori" />
-
-          <div className="mt-4">
-            <p className="text-xs text-zinc-500 mb-1">Podijeli događaj</p>
+          <div className="mt-6">
+            <p className="text-xs text-zinc-500 mb-2 font-medium">Podijeli</p>
             <ShareButtons title={event.title} url={shareUrl} />
           </div>
-
-          <BuyTickets eventId={event.id} />
-          <Link href="/search" className="mt-4 inline-block text-sm text-gray-500 hover:underline">Nazad na pretragu</Link>
+          <div id="buy" className="mt-8">
+            <h2 className="text-lg font-bold text-[#0d0b1f] mb-3">Ulaznice</h2>
+            <BuyTickets eventId={event.id} />
+          </div>
+          <Link href="/search" className="mt-6 inline-block text-sm text-zinc-500 hover:text-[#7C3AED]">← Nazad na događaje</Link>
         </div>
       </div>
+      <a href="#buy" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0d0b1f] text-white px-5 py-3 flex items-center justify-between shadow-[0_-8px_30px_rgba(0,0,0,0.25)]">
+        <span className="text-sm font-medium text-zinc-300">Ulaznice</span>
+        <span className="bg-gradient-to-r from-[#7C3AED] to-[#A020F0] px-5 py-2.5 rounded-full text-sm font-semibold">Kupi</span>
+      </a>
     </div>
   );
 }

@@ -36,13 +36,14 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             <p className="mt-5 text-gray-700 leading-relaxed">{event.short_description}</p>
           )}
 
+          <Sponsors position="EVENT_PAGE" eventId={event.id} title="Sponzori" />
+
           <div className="mt-4">
             <p className="text-xs text-zinc-500 mb-1">Podijeli događaj</p>
             <ShareButtons title={event.title} url={shareUrl} />
           </div>
 
           <BuyTickets eventId={event.id} />
-          <Sponsors position="EVENT_PAGE" eventId={event.id} title="Sponzori događaja" />
           <Link href="/search" className="mt-4 inline-block text-sm text-gray-500 hover:underline">Nazad na pretragu</Link>
         </div>
       </div>

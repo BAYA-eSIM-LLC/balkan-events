@@ -77,7 +77,7 @@ async def _issue_tickets_for_order(db: AsyncSession, order: Order) -> list[str]:
                 is_used=False,
             )
             db.add(ticket)
-            codes.append(ticket.qr_data)
+            codes.append(ticket.code)
     order.status = OrderStatus.PAID.value
     await db.commit()
     return codes

@@ -220,7 +220,7 @@ export default async function HomePage() {
         <div className="max-w-5xl mx-auto px-5">
           <div className="rounded-3xl bg-gradient-to-br from-[#7C3AED]/20 to-[#FF6B9D]/10 border border-white/10 p-8 md:p-12 flex flex-col md:flex-row items-center gap-8 hover:border-[#7C3AED]/30 transition">
             <div className="flex-1">
-              <h2 className="text-3xl md:text-4xl font-bold leading-tight">Organizuješ <span class="text-[#A78BFA]">događaj</span>?</h2>
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight">Organizuješ <span className="text-[#A78BFA]">događaj</span>?</h2>
               <p className="mt-4 text-white/70 text-lg">Objavi svoj događaj, prodaj ulaznice i dođi do hiljada posjetilaca širom Balkana.</p>
               <Link href="/organizer" className="inline-block mt-6 bg-white text-[#10152B] hover:bg-zinc-100 hover:shadow-xl px-7 py-3 rounded-full font-semibold text-sm transition-all">Postani organizator →</Link>
             </div>

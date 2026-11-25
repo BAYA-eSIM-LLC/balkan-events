@@ -82,8 +82,8 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto px-5">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {cities.map(c => (
-              <Link key={c.name} href={c.href} className="flex-shrink-0 px-4 py-2 rounded-full bg-[#1a1635] border border-white/10 text-sm text-zinc-300 hover:border-[#7C3AED] hover:text-white hover:bg-[#7C3AED]/20 transition-all duration-200">
-                {c.name}
+              <Link key={c.name} href={c.href} className="flex-shrink-0 px-4 py-2 rounded-full bg-[#1a1635] border border-white/10 text-sm text-zinc-300 hover:border-[#7C3AED] hover:text-white hover:bg-[#7C3AED]/20 hover:shadow-md hover:shadow-purple-500/20 transition-all duration-200">
+                <span className="opacity-60">📍</span> {c.name}
               </Link>
             ))}
           </div>
@@ -119,13 +119,13 @@ export default async function HomePage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
               <div className="flex items-center gap-3 min-w-0">
                 <span className="w-1 h-6 bg-gradient-to-b from-[#7C3AED] to-[#FF6B9D] rounded-full shrink-0" />
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold">Izdvojeni događaji</h2>
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-[#C4B5FD] bg-clip-text text-transparent">Izdvojeni događaji</h2>
               </div>
               <Link href="/search" className="text-sm text-[#A78BFA] hover:text-white font-medium shrink-0 pl-4 sm:pl-0">Pogledaj sve →</Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {withPrice.map(e => (
-                <Link key={e.id} href={`/events/${e.slug}`} className="group relative rounded-2xl overflow-hidden bg-[#1a1635] border border-white/10 hover-lift hover:border-[#7C3AED]/50 card-contain">
+                <Link key={e.id} href={`/events/${e.slug}`} className="group relative rounded-2xl overflow-hidden bg-[#1a1635] border border-white/10 hover-lift hover:border-[#7C3AED] hover:shadow-xl hover:shadow-purple-500/15 card-contain">
                   <div className="aspect-[16/10] relative overflow-hidden">
                     {e.image_url ? (
                       <img src={e.image_url} alt={e.title} loading="lazy" decoding="async" sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 25vw" className="absolute inset-0 w-full h-full object-contain object-center img-zoom bg-[#0d0b1f]" style={{imageRendering:'auto'}} />
@@ -220,7 +220,7 @@ export default async function HomePage() {
         <div className="max-w-5xl mx-auto px-5">
           <div className="rounded-3xl bg-gradient-to-br from-[#7C3AED]/20 to-[#FF6B9D]/10 border border-white/10 p-8 md:p-12 flex flex-col md:flex-row items-center gap-8 hover:border-[#7C3AED]/30 transition">
             <div className="flex-1">
-              <h2 className="text-3xl md:text-4xl font-bold leading-tight">Organizuješ događaj?</h2>
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight">Organizuješ <span class="text-[#A78BFA]">događaj</span>?</h2>
               <p className="mt-4 text-white/70 text-lg">Objavi svoj događaj, prodaj ulaznice i dođi do hiljada posjetilaca širom Balkana.</p>
               <Link href="/organizer" className="inline-block mt-6 bg-white text-[#10152B] hover:bg-zinc-100 hover:shadow-xl px-7 py-3 rounded-full font-semibold text-sm transition-all">Postani organizator →</Link>
             </div>

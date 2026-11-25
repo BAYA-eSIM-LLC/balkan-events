@@ -27,6 +27,8 @@ export default function AdminEvents() {
   const [confirm, setConfirm] = useState<any>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const [create, setCreate] = useState(false);
+  const [newEvent, setNewEvent] = useState({ title: "", organization_id: 1, start_at: "", venue_name: "" });
   const pageSize = 20;
 
   function load(p = page) {
@@ -69,7 +71,7 @@ export default function AdminEvents() {
     <div className="space-y-4">
       <div>
         <p className="text-[11px] uppercase tracking-[0.18em] text-[#d4af77]">Događaji</p>
-        <h1 className="text-2xl font-semibold mt-1">Događaji platforme</h1>
+        <div className="flex items-center justify-between"><h1 className="text-2xl font-semibold mt-1">Događaji platforme</h1><button onClick={() => setCreate(true)} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-sm">+ Novi događaj</button></div>
         <p className="text-sm text-zinc-400 mt-1">Stvarni podaci iz /admin/events. Status REJECTED ne postoji u modelu.</p>
       </div>
 
@@ -106,7 +108,7 @@ export default function AdminEvents() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link href={`/admin/events/${e.id}`} className="px-3 py-1.5 rounded-lg border border-white/10 text-xs">Detalji</Link>
+              <Link href={`/admin/events/${e.id}`} className="px-3 py-1.5 rounded-lg border border-white/10 text-xs">Detalji</Link><button onClick={async () => { if(confirm("Obrisati " + e.title + "?")) { await adminFetch("/admin/events/" + e.id, { method: "DELETE" }); load(); } }} className="px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-200 text-xs">Obriši</button>
               {e.status === 'SUBMITTED' && <button onClick={() => setConfirm({ ...e, action: 'approve' })} className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-200 text-xs">Odobri</button>}
               {e.status === 'APPROVED' && <button onClick={() => setConfirm({ ...e, action: 'publish' })} className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-200 text-xs">Objavi</button>}
               {e.status === 'PUBLISHED' && <button onClick={() => setConfirm({ ...e, action: 'suspend' })} className="px-3 py-1.5 rounded-lg bg-white/10 text-xs">Deaktiviraj</button>}
@@ -126,6 +128,20 @@ export default function AdminEvents() {
         </div>
       </div>
 
+      {create && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#12121f] border border-white/10 rounded-2xl p-5 max-w-md w-full space-y-3">
+            <h3 className="font-semibold">Novi događaj</h3>
+            <input value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} placeholder="Naziv događaja" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />
+            <input type="datetime-local" value={newEvent.start_at} onChange={e => setNewEvent({...newEvent, start_at: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />
+            <input value={newEvent.venue_name} onChange={e => setNewEvent({...newEvent, venue_name: e.target.value})} placeholder="Lokacija" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />
+            <div className="flex gap-2">
+              <button onClick={() => setCreate(false)} className="flex-1 py-2 rounded-lg border border-white/10 text-sm">Odustani</button>
+              <button onClick={async () => { setBusy(true); try { await adminFetch("/admin/events", { method: "POST", body: JSON.stringify({ ...newEvent, start_at: newEvent.start_at + ":00" }) }); setCreate(false); load(); } catch(err: any) { setError(err.message); } finally { setBusy(false); } }} disabled={busy || !newEvent.title} className="flex-1 py-2 rounded-lg bg-emerald-500 text-white text-sm disabled:opacity-50">{busy ? "..." : "Kreiraj"}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {confirm && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
           <div className="bg-[#12121f] border border-white/10 rounded-2xl p-5 max-w-sm w-full">

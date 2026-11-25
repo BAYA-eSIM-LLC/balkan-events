@@ -397,3 +397,31 @@ async def suspend_event(event_id: int, user: User = Depends(get_current_user), d
 @admin.post("/{event_id}/cancel", dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.SUPERADMIN))])
 async def cancel_event(event_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     return await _transition(event_id, EventStatus.CANCELLED.value, user, db, [EventStatus.SUBMITTED.value, EventStatus.APPROVED.value, EventStatus.PUBLISHED.value, EventStatus.SUSPENDED.value])
+
+@admin.post("", dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.SUPERADMIN))])
+async def admin_create_event(data: EventCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    slug = re.sub(r'[^a-z0-9]+', '-', data.title.lower()).strip('-')
+    e = Event(
+        organization_id=data.organization_id, title=data.title, slug=slug,
+        short_description=data.short_description, description=data.description,
+        venue_name=data.venue_name, venue_address=data.venue_address,
+        start_at=data.start_at.replace(tzinfo=None) if data.start_at.tzinfo else data.start_at,
+        end_at=data.end_at.replace(tzinfo=None) if data.end_at and data.end_at.tzinfo else data.end_at,
+        timezone=data.timezone, status=EventStatus.PUBLISHED.value, is_published=True,
+        published_at=datetime.utcnow()
+    )
+    db.add(e)
+    await db.commit()
+    await db.refresh(e)
+    await audit(db, user.id, "admin_event_created", e.id, {"title": e.title})
+    return {"id": e.id, "slug": e.slug, "status": e.status}
+
+@admin.delete("/{event_id}", dependencies=[Depends(require_role(UserRole.ADMIN, UserRole.SUPERADMIN))])
+async def admin_delete_event(event_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    e = await db.get(Event, event_id)
+    if not e:
+        raise HTTPException(404, "Event not found")
+    await audit(db, user.id, "admin_event_deleted", e.id, {"title": e.title})
+    await db.delete(e)
+    await db.commit()
+    return {"deleted": True, "id": event_id}

@@ -4,6 +4,7 @@ import BuyTickets from './BuyTickets';
 import { notFound } from 'next/navigation';
 import Countdown from '@/components/Countdown';
 import ShareButtons from '@/components/ShareButtons';
+import Sponsors from '@/components/Sponsors';
 
 export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -41,6 +42,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           </div>
 
           <BuyTickets eventId={event.id} />
+          <Sponsors position="EVENT_PAGE" eventId={event.id} title="Sponzori događaja" />
           <Link href="/search" className="mt-4 inline-block text-sm text-gray-500 hover:underline">Nazad na pretragu</Link>
         </div>
       </div>

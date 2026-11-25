@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import HeroBanner from '@/components/HeroBanner';
+import Sponsors from '@/components/Sponsors';
 import Link from 'next/link';
 import { fetchEvents } from '@/lib/api';
 
@@ -163,6 +164,8 @@ export default async function Home() {
           </form>
         </div>
       </section>
+
+      <Sponsors position="HOMEPAGE" title="Naši sponzori" />
 
       <section className="py-16 bg-gradient-to-br from-indigo-950 via-purple-950 to-indigo-900 text-white">
         <div className="max-w-5xl mx-auto px-5 flex flex-col md:flex-row items-center gap-10">

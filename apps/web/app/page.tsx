@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import HeroBanner from '@/components/HeroBanner';
 import Link from 'next/link';
 import { fetchEvents } from '@/lib/api';

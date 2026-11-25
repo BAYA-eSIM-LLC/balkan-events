@@ -1,36 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+const CATEGORIES: Record<string, number> = {
+  koncerti: 1, festivali: 2, sport: 3, teatar: 4, kultura: 5, nightlife: 6
+};
+
 export default function SearchPage() {
+  const params = useSearchParams();
   const [q, setQ] = useState('');
   const [city, setCity] = useState('');
+  const [categoryId, setCategoryId] = useState<number | null>(null);
   const [results, setResults] = useState<any[]>([]);
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState('');
 
-  const load = async (p: number, append: boolean) => {
+  useEffect(() => {
+    const cat = params.get('category');
+    if (cat && CATEGORIES[cat]) {
+      setCategoryId(CATEGORIES[cat]);
+      load(CATEGORIES[cat]);
+    }
+  }, [params]);
+
+  const load = async (catId?: number) => {
     setLoading(true);
     setError('');
     try {
-      const params = new URLSearchParams({ page: String(p), limit: '12' });
-      if (q) params.set('q', q);
-      if (city) params.set('city', city);
-      const r = await fetch(`${API}/events/search?${params}`);
+      const urlParams = new URLSearchParams({ limit: '20' });
+      if (q) urlParams.set('q', q);
+      if (city) urlParams.set('city', city);
+      if (catId) urlParams.set('category_id', String(catId));
+      const r = await fetch(`${API}/events/search?${urlParams}`);
       if (!r.ok) throw new Error('Search failed');
       const d = await r.json();
-      const items = d.results || [];
-      setResults(prev => {
-        if (!append) return items;
-        const ids = new Set(prev.map(x => x.id));
-        return [...prev, ...items.filter((x: any) => !ids.has(x.id))];
-      });
-      setHasMore(items.length === 12);
-      setPage(p);
+      setResults(d.results || d || []);
     } catch (e: any) {
       setError(e.message || 'Error');
     } finally {
@@ -38,32 +46,31 @@ export default function SearchPage() {
     }
   };
 
-  const search = () => load(1, false);
-  const more = () => load(page + 1, true);
+  const search = () => load(categoryId || undefined);
 
   return (
-    <div className="p-4 md:p-8 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Search events</h1>
-      <div className="space-y-2 mb-4">
-        <input className="border p-2 w-full" placeholder="Event, artist..." value={q} onChange={e => setQ(e.target.value)} />
-        <input className="border p-2 w-full" placeholder="City" value={city} onChange={e => setCity(e.target.value)} />
-        <button onClick={search} className="bg-black text-white px-4 py-2 rounded">Search</button>
+    <div className="min-h-screen bg-gray-50 pt-20">
+      <div className="max-w-4xl mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">{categoryId ? Object.keys(CATEGORIES).find(k => CATEGORIES[k] === categoryId)?.replace(/^\w/, c => c.toUpperCase()) : 'Pretraga'}</h1>
+        <div className="flex gap-2 mb-6">
+          <input className="flex-1 border rounded-lg px-4 py-2" placeholder="Događaj, izvođač..." value={q} onChange={e => setQ(e.target.value)} />
+          <button onClick={search} className="bg-purple-600 text-white px-6 py-2 rounded-lg">Pretraži</button>
+        </div>
+        {loading && <p className="text-gray-500">Učitavanje...</p>}
+        {error && <p className="text-red-500">{error}</p>}
+        <div className="grid gap-4">
+          {results.map(e => (
+            <Link key={e.id} href={`/events/${e.slug}`} className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md flex gap-4">
+              {e.image_url && <img src={e.image_url} alt="" className="w-24 h-24 object-cover rounded-lg" />}
+              <div>
+                <h2 className="font-semibold">{e.title}</h2>
+                <p className="text-sm text-gray-500">{e.city} • {e.start_at ? new Date(e.start_at).toLocaleDateString('hr') : ''}</p>
+              </div>
+            </Link>
+          ))}
+          {!loading && results.length === 0 && <p className="text-gray-500">Nema rezultata.</p>}
+        </div>
       </div>
-      {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
-      <div className="space-y-2">
-        {results.map(e => (
-          <a key={e.id} href={`/events/${e.slug}`} className="block border rounded p-3">
-            <div className="font-medium">{e.title}</div>
-            <div className="text-xs text-gray-500">{e.city}, {e.country}</div>
-          </a>
-        ))}
-      </div>
-      {results.length === 0 && !loading && <p className="text-sm text-gray-500 mt-4">No results.</p>}
-      {hasMore && results.length > 0 && (
-        <button onClick={more} disabled={loading} className="mt-4 border px-4 py-2 rounded text-sm">
-          {loading ? 'Loading...' : 'Load more'}
-        </button>
-      )}
     </div>
   );
 }

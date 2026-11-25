@@ -61,7 +61,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             <div className="mt-8">
               <h2 className="text-lg font-bold text-[#0d0b1f] mb-3">Izvođači</h2>
               <div className="space-y-4">
-                {event.performers.map((pf: any) => (
+                {(event.performers ?? []).map((pf: any) => (
                   <div key={pf.id} className="flex gap-4 p-4 bg-[#f6f5fb] rounded-2xl">
                     {pf.image_url && <img src={pf.image_url} alt={pf.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />}
                     <div>

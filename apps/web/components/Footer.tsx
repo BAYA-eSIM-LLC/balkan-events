@@ -49,6 +49,7 @@ export default function Footer() {
             <Link href="/categories" className="block hover:text-white">Kategorije</Link>
             <Link href="/cities" className="block hover:text-white">Gradovi</Link>
             <Link href="/contact" className="block hover:text-white">Kontakt</Link>
+            <Link href="/faq" className="block hover:text-white">FAQ</Link>
           </div>
         </div>
         <div>

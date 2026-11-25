@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getAccessToken } from '@/lib/auth';
 
 const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -10,6 +11,13 @@ export default function Login() {
   const [code, setCode] = useState('');
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [err, setErr] = useState('');
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (token) {
+      window.location.href = '/profile';
+    }
+  }, []);
 
   function roleFromToken(token: string): string | undefined {
     try {

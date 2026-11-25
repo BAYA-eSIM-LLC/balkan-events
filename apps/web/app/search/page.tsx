@@ -62,7 +62,15 @@ function SearchContent() {
               </div>
             </Link>
           ))}
-          {!loading && results.length === 0 && <p className="text-gray-500">Nema rezultata.</p>}
+          {!loading && results.length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#7C3AED]/10 flex items-center justify-center">
+                <svg className="w-8 h-8 text-[#7C3AED]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              </div>
+              <p className="text-zinc-600 font-medium">Nema događaja</p>
+              <p className="text-sm text-zinc-400 mt-1">Pokušaj drugu pretragu ili kategoriju</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

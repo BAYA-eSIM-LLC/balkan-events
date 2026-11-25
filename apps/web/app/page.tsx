@@ -101,7 +101,7 @@ export default async function HomePage() {
                 className={`flex-shrink-0 flex flex-col items-center gap-2 rounded-2xl px-5 py-4 min-w-[88px] transition-all duration-200 border ${
                   i === 0
                     ? 'bg-gradient-to-br from-[#7C3AED] to-[#A020F0] border-transparent text-white shadow-lg shadow-purple-500/40 scale-105'
-                    : 'bg-[#1a1635] border-white/10 text-zinc-300 hover-lift hover:border-[#7C3AED]/50 hover:text-white hover:shadow-lg hover:shadow-purple-500/20'
+                    : 'bg-[#1a1635] border-white/10 text-zinc-300 hover-lift hover:border-[#7C3AED]/50 hover:text-white hover:shadow-lg hover:shadow-purple-500/30 hover:scale-105'
                 }`}
               >
                 <c.Icon className="w-6 h-6" />

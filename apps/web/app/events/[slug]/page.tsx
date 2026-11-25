@@ -71,7 +71,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
       </div>
       <a href="#buy" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0d0b1f] text-white px-5 py-3 flex items-center justify-between shadow-[0_-8px_30px_rgba(0,0,0,0.25)]">
         <span className="text-sm font-medium text-zinc-300">Ulaznice</span>
-        <span className="bg-gradient-to-r from-[#7C3AED] to-[#A020F0] px-5 py-2.5 rounded-full text-sm font-semibold">Kupi</span>
+        <span className="bg-gradient-to-r from-[#7C3AED] to-[#A020F0] px-5 py-2.5 rounded-full text-sm font-semibold animate-pulse">Kupi</span>
       </a>
     </div>
   );

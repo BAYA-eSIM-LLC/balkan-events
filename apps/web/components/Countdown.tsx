@@ -5,7 +5,8 @@ export default function Countdown({ date }: { date: string }) {
   const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 });
 
   useEffect(() => {
-    const target = new Date(date).getTime();
+    const hasTz = /Z$|[+-]\d{2}:?\d{2}$/.test(date);
+    const target = new Date(hasTz ? date : date + '+01:00').getTime();
     const tick = () => {
       const diff = Math.max(0, target - Date.now());
       setTime({

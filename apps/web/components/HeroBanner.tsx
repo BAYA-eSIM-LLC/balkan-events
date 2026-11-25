@@ -46,8 +46,8 @@ export default function HeroBanner() {
       {slides.map((s, i) => (
         <div key={i} className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}>
           <img src={s.desktop} alt={s.alt} className="absolute inset-0 w-full h-full object-cover scale-105" loading={i === 0 ? "eager" : "lazy"} fetchPriority={i === 0 ? "high" : "low"} decoding="async" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#10152B] via-[#10152B]/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#10152B] via-transparent to-[#10152B]/40" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#10152B] via-[#10152B]/55 to-[#10152B]/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#10152B] via-transparent to-[#10152B]/20" />
         </div>
       ))}
 

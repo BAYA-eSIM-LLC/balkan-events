@@ -45,7 +45,10 @@ export async function fetchEventBySlug(slug: string): Promise<EventItem | null> 
 
 export function formatDate(iso: string, tz = 'Europe/Sarajevo') {
   try {
-    return new Date(iso).toLocaleString('bs-BA', { timeZone: tz, dateStyle: 'medium', timeStyle: 'short' });
+    // Naive datetime (no Z/offset) is event-local, not UTC
+    const hasTz = /Z$|[+-]\d{2}:?\d{2}$/.test(iso);
+    const d = hasTz ? new Date(iso) : new Date(iso + (tz === 'Europe/Sarajevo' ? '+01:00' : 'Z'));
+    return d.toLocaleString('bs-BA', { timeZone: tz, dateStyle: 'medium', timeStyle: 'short' });
   } catch {
     return iso;
   }

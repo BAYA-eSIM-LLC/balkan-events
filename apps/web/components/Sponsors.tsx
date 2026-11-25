@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 type Sponsor = { id: number; name: string; logo_url?: string; website?: string; level?: string; placement_id?: number };
 
@@ -7,6 +7,9 @@ export default function Sponsors({ position = 'HOMEPAGE', eventId, title = 'Spon
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [hovered, setHovered] = useState<number | null>(null);
   const [clicked, setClicked] = useState<number | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const touchStart = useRef<number | null>(null);
+  const touchEnd = useRef<number | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams({ position });
@@ -26,6 +29,28 @@ export default function Sponsors({ position = 'HOMEPAGE', eventId, title = 'Spon
     if (s.placement_id) trackClick(s.placement_id);
     setTimeout(() => setClicked(null), 300);
     if (s.website) window.open(s.website, '_blank');
+  };
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchEnd.current = null;
+    touchStart.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchEnd.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart.current || !touchEnd.current) return;
+    const distance = touchStart.current - touchEnd.current;
+    if (Math.abs(distance) < minSwipeDistance) return;
+    if (distance > 0 && currentIndex < sponsors.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+    } else if (distance < 0 && currentIndex > 0) {
+      setCurrentIndex(prev => prev - 1);
+    }
   };
 
   if (sponsors.length === 0) return null;
@@ -55,38 +80,61 @@ export default function Sponsors({ position = 'HOMEPAGE', eventId, title = 'Spon
         <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-[0.2em]">{title}</span>
         <div className="h-px flex-1 bg-gradient-to-l from-transparent to-zinc-200" />
       </div>
-      <div className="flex flex-wrap justify-center items-center gap-3">
-        {sponsors.map(s => (
-          <button
-            key={s.id}
-            onClick={() => handleClick(s)}
-            onMouseEnter={() => setHovered(s.id)}
-            onMouseLeave={() => setHovered(null)}
-            className={`relative group flex items-center gap-3 px-6 py-4 bg-gradient-to-br ${levelColors[s.level || 'PARTNER'] || levelColors.PARTNER} rounded-2xl border-2 shadow-sm transition-all duration-300 ${
-              hovered === s.id ? 'scale-105 shadow-lg -translate-y-1' : ''
-            } ${clicked === s.id ? 'scale-95' : ''}`}
-          >
-            {s.level && (
-              <span className={`absolute -top-2 -right-2 w-3 h-3 rounded-full ${levelBadge[s.level] || 'bg-zinc-400'} shadow-sm`} />
-            )}
-            {s.logo_url ? (
-              <img src={s.logo_url} alt={s.name} className="h-12 w-auto max-w-[140px] object-contain" />
-            ) : (
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-lg font-bold text-zinc-600 transition-transform ${hovered === s.id ? 'rotate-6' : ''}`}>
-                  {s.name.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-sm font-semibold text-zinc-800">{s.name}</span>
-              </div>
-            )}
-            {hovered === s.id && s.website && (
-              <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-zinc-500 whitespace-nowrap">
-                Klikni za više
-              </span>
-            )}
-          </button>
-        ))}
+
+      <div
+        className="overflow-hidden touch-pan-y"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        <div
+          className="flex transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+        >
+          {sponsors.map(s => (
+            <div key={s.id} className="w-full flex-shrink-0 flex justify-center px-4">
+              <button
+                onClick={() => handleClick(s)}
+                onMouseEnter={() => setHovered(s.id)}
+                onMouseLeave={() => setHovered(null)}
+                className={`relative group flex items-center gap-3 px-8 py-5 bg-gradient-to-br ${levelColors[s.level || 'PARTNER'] || levelColors.PARTNER} rounded-2xl border-2 shadow-sm transition-all duration-300 ${
+                  hovered === s.id ? 'scale-105 shadow-lg' : ''
+                } ${clicked === s.id ? 'scale-95' : ''}`}
+              >
+                {s.level && (
+                  <span className={`absolute -top-2 -right-2 w-3 h-3 rounded-full ${levelBadge[s.level] || 'bg-zinc-400'} shadow-sm`} />
+                )}
+                {s.logo_url ? (
+                  <img src={s.logo_url} alt={s.name} className="h-14 w-auto max-w-[160px] object-contain" />
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-xl font-bold text-zinc-600 transition-transform ${hovered === s.id ? 'rotate-6' : ''}`}>
+                      {s.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-base font-semibold text-zinc-800">{s.name}</span>
+                  </div>
+                )}
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
+
+      {sponsors.length > 1 && (
+        <div className="flex justify-center gap-2 mt-4">
+          {sponsors.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentIndex(i)}
+              className={`w-2 h-2 rounded-full transition-all ${i === currentIndex ? 'bg-zinc-600 w-4' : 'bg-zinc-300'}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {sponsors.length > 1 && (
+        <p className="text-center text-[10px] text-zinc-400 mt-2">← Povuci za više →</p>
+      )}
     </div>
   );
 }

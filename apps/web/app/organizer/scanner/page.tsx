@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { adminFetch } from '@/lib/admin-api';
 import { useOrganizer } from '@/lib/organizer-context';
 
@@ -11,6 +11,7 @@ export default function OrganizerScanner() {
   const [camera, setCamera] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const scan = (data: string) => {
     if (!eventId || !data) return;
@@ -27,10 +28,9 @@ export default function OrganizerScanner() {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
         setCamera(true);
-        detectQR();
       }
     } catch (e) {
-      setResult({ status: 'ERROR', reason: 'Kamera nije dostupna' });
+      setResult({ status: 'ERROR', reason: 'Kamera nije dostupna. Koristi upload.' });
     }
   };
 
@@ -41,28 +41,34 @@ export default function OrganizerScanner() {
     setCamera(false);
   };
 
-  const detectQR = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const video = videoRef.current;
-    const check = () => {
-      if (!camera || !video.videoWidth) { requestAnimationFrame(check); return; }
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx?.drawImage(video, 0, 0);
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0);
       if ('BarcodeDetector' in window) {
-        const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
-        detector.detect(canvas).then((codes: any[]) => {
+        try {
+          const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
+          const codes = await detector.detect(canvas);
           if (codes.length > 0) {
-            stopCamera();
             setQr(codes[0].rawValue);
             scan(codes[0].rawValue);
-          } else requestAnimationFrame(check);
-        }).catch(() => requestAnimationFrame(check));
-      } else requestAnimationFrame(check);
+          } else {
+            setResult({ status: 'ERROR', reason: 'QR kod nije pronađen u slici' });
+          }
+        } catch {
+          setResult({ status: 'ERROR', reason: 'Greška pri čitanju QR koda' });
+        }
+      } else {
+        setResult({ status: 'ERROR', reason: 'Browser ne podržava čitanje QR koda. Unesi ručno.' });
+      }
     };
-    requestAnimationFrame(check);
+    img.src = URL.createObjectURL(file);
   };
 
   if (loading) return <p className="text-zinc-400">Učitavanje...</p>;
@@ -81,9 +87,15 @@ export default function OrganizerScanner() {
           <input value={qr} onChange={e => setQr(e.target.value)} placeholder="QR data" className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />
           <button onClick={() => scan(qr)} className="bg-purple-600 px-4 py-2 rounded-lg text-sm">Validiraj</button>
         </div>
-        <button onClick={camera ? stopCamera : startCamera} className="w-full bg-blue-600 px-4 py-2 rounded-lg text-sm">
-          {camera ? 'Zaustavi kameru' : 'Otvori kameru'}
-        </button>
+        <div className="flex gap-2">
+          <button onClick={camera ? stopCamera : startCamera} className="flex-1 bg-blue-600 px-4 py-2 rounded-lg text-sm">
+            {camera ? 'Zaustavi kameru' : 'Otvori kameru'}
+          </button>
+          <button onClick={() => fileRef.current?.click()} className="flex-1 bg-emerald-600 px-4 py-2 rounded-lg text-sm">
+            Upload slike
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+        </div>
         {camera && (
           <div className="relative">
             <video ref={videoRef} className="w-full rounded-lg" playsInline muted />

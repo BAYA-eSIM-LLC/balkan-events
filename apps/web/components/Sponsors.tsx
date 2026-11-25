@@ -8,6 +8,8 @@ export default function Sponsors({ position = 'HOMEPAGE', eventId, title = 'Spon
   const [hovered, setHovered] = useState<number | null>(null);
   const [clicked, setClicked] = useState<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [direction, setDirection] = useState<'left' | 'right' | null>(null);
   const touchStart = useRef<number | null>(null);
   const touchEnd = useRef<number | null>(null);
 
@@ -27,8 +29,21 @@ export default function Sponsors({ position = 'HOMEPAGE', eventId, title = 'Spon
   const handleClick = (s: Sponsor) => {
     setClicked(s.id);
     if (s.placement_id) trackClick(s.placement_id);
-    setTimeout(() => setClicked(null), 300);
+    setTimeout(() => setClicked(null), 200);
     if (s.website) window.open(s.website, '_blank');
+  };
+
+  const navigate = (dir: 'left' | 'right') => {
+    if (isAnimating) return;
+    if (dir === 'left' && currentIndex >= sponsors.length - 1) return;
+    if (dir === 'right' && currentIndex <= 0) return;
+    setIsAnimating(true);
+    setDirection(dir);
+    setTimeout(() => {
+      setCurrentIndex(prev => dir === 'left' ? prev + 1 : prev - 1);
+      setIsAnimating(false);
+      setDirection(null);
+    }, 300);
   };
 
   const minSwipeDistance = 50;
@@ -46,11 +61,7 @@ export default function Sponsors({ position = 'HOMEPAGE', eventId, title = 'Spon
     if (!touchStart.current || !touchEnd.current) return;
     const distance = touchStart.current - touchEnd.current;
     if (Math.abs(distance) < minSwipeDistance) return;
-    if (distance > 0 && currentIndex < sponsors.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else if (distance < 0 && currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
-    }
+    navigate(distance > 0 ? 'left' : 'right');
   };
 
   if (sponsors.length === 0) return null;
@@ -82,33 +93,42 @@ export default function Sponsors({ position = 'HOMEPAGE', eventId, title = 'Spon
       </div>
 
       <div
-        className="overflow-hidden touch-pan-y"
+        className="relative overflow-hidden"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        <div
-          className="flex transition-transform duration-300 ease-out"
-          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-        >
-          {sponsors.map(s => (
-            <div key={s.id} className="w-full flex-shrink-0 flex justify-center px-4">
+        <div className="flex justify-center">
+          {sponsors.map((s, i) => (
+            <div
+              key={s.id}
+              className={`absolute w-full flex justify-center px-4 transition-all duration-300 ease-out ${
+                i === currentIndex
+                  ? 'opacity-100 translate-x-0 scale-100 relative'
+                  : i < currentIndex
+                  ? 'opacity-0 -translate-x-full scale-95'
+                  : 'opacity-0 translate-x-full scale-95'
+              } ${direction === 'left' && i === currentIndex ? 'animate-slide-out-left' : ''} ${
+                direction === 'right' && i === currentIndex ? 'animate-slide-out-right' : ''
+              }`}
+              style={{ zIndex: i === currentIndex ? 10 : 0 }}
+            >
               <button
                 onClick={() => handleClick(s)}
                 onMouseEnter={() => setHovered(s.id)}
                 onMouseLeave={() => setHovered(null)}
-                className={`relative group flex items-center gap-3 px-8 py-5 bg-gradient-to-br ${levelColors[s.level || 'PARTNER'] || levelColors.PARTNER} rounded-2xl border-2 shadow-sm transition-all duration-300 ${
-                  hovered === s.id ? 'scale-105 shadow-lg' : ''
-                } ${clicked === s.id ? 'scale-95' : ''}`}
+                className={`relative group flex items-center gap-3 px-8 py-5 bg-gradient-to-br ${levelColors[s.level || 'PARTNER'] || levelColors.PARTNER} rounded-2xl border-2 shadow-sm transition-all duration-200 ${
+                  hovered === s.id ? 'scale-105 shadow-xl' : ''
+                } ${clicked === s.id ? 'scale-90' : ''}`}
               >
                 {s.level && (
-                  <span className={`absolute -top-2 -right-2 w-3 h-3 rounded-full ${levelBadge[s.level] || 'bg-zinc-400'} shadow-sm`} />
+                  <span className={`absolute -top-2 -right-2 w-3 h-3 rounded-full ${levelBadge[s.level] || 'bg-zinc-400'} shadow-sm animate-pulse`} />
                 )}
                 {s.logo_url ? (
                   <img src={s.logo_url} alt={s.name} className="h-14 w-auto max-w-[160px] object-contain" />
                 ) : (
                   <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-xl font-bold text-zinc-600 transition-transform ${hovered === s.id ? 'rotate-6' : ''}`}>
+                    <div className={`w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-xl font-bold text-zinc-600 transition-all duration-300 ${hovered === s.id ? 'rotate-12 scale-110' : ''}`}>
                       {s.name.charAt(0).toUpperCase()}
                     </div>
                     <span className="text-base font-semibold text-zinc-800">{s.name}</span>
@@ -121,19 +141,40 @@ export default function Sponsors({ position = 'HOMEPAGE', eventId, title = 'Spon
       </div>
 
       {sponsors.length > 1 && (
-        <div className="flex justify-center gap-2 mt-4">
-          {sponsors.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentIndex(i)}
-              className={`w-2 h-2 rounded-full transition-all ${i === currentIndex ? 'bg-zinc-600 w-4' : 'bg-zinc-300'}`}
-            />
-          ))}
+        <div className="flex justify-center items-center gap-4 mt-4">
+          <button
+            onClick={() => navigate('right')}
+            disabled={currentIndex === 0}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+              currentIndex === 0 ? 'text-zinc-300' : 'text-zinc-600 hover:bg-zinc-100'
+            }`}
+          >
+            ←
+          </button>
+          <div className="flex gap-2">
+            {sponsors.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  setDirection(i > currentIndex ? 'left' : 'right');
+                  setCurrentIndex(i);
+                }}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  i === currentIndex ? 'bg-zinc-600 w-6' : 'bg-zinc-300 w-2 hover:bg-zinc-400'
+                }`}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => navigate('left')}
+            disabled={currentIndex === sponsors.length - 1}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+              currentIndex === sponsors.length - 1 ? 'text-zinc-300' : 'text-zinc-600 hover:bg-zinc-100'
+            }`}
+          >
+            →
+          </button>
         </div>
-      )}
-
-      {sponsors.length > 1 && (
-        <p className="text-center text-[10px] text-zinc-400 mt-2">← Povuci za više →</p>
       )}
     </div>
   );

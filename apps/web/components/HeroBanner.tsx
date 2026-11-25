@@ -67,9 +67,8 @@ export default function HeroBanner() {
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <a href="/search" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#A020F0] hover:opacity-95 hover:opacity-95 px-6 py-3.5 rounded-full font-semibold text-sm transition-all duration-300">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                Otkrij događaje →
+              <a href="/events/zeljko-joksimovic-ljubuski" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#A020F0] hover:opacity-95 px-6 py-3.5 rounded-full font-semibold text-sm transition-all duration-300">
+                Ulaznice od 17.90 EUR →
               </a>
               <a href="#how" className="inline-flex items-center gap-2 border border-white/25 hover:bg-white/10 px-6 py-3.5 rounded-full font-medium text-sm transition">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>

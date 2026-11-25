@@ -35,7 +35,7 @@ export async function fetchEvents(path: string): Promise<EventItem[]> {
 export async function fetchEventBySlug(slug: string): Promise<EventItem | null> {
   try {
     // Backend exposes GET /events/{slug}
-    const res = await fetch(`${API}/events/${slug}`, { next: { revalidate: 60 } });
+    const res = await fetch(`${API}/events/slug/${slug}`, { next: { revalidate: 60 } });
     if (!res.ok) return null;
     return res.json();
   } catch {

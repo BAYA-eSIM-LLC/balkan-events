@@ -18,16 +18,16 @@ export default function Sponsors({ position = 'HOMEPAGE', eventId, title = 'Spon
   if (sponsors.length === 0) return null;
 
   return (
-    <section className="py-10 bg-zinc-50">
+    <section className="py-8 bg-white border-t border-zinc-100">
       <div className="max-w-5xl mx-auto px-5">
-        <p className="text-center text-xs text-zinc-400 uppercase tracking-wider mb-6">{title}</p>
-        <div className="flex flex-wrap justify-center items-center gap-8">
+        <p className="text-center text-xs text-zinc-500 uppercase tracking-widest mb-4">{title}</p>
+        <div className="flex flex-wrap justify-center items-center gap-6">
           {sponsors.map(s => (
-            <a key={s.id} href={s.website || '#'} target="_blank" rel="noreferrer" className="opacity-70 hover:opacity-100 transition">
+            <a key={s.id} href={s.website || '#'} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-zinc-50 rounded-lg border border-zinc-200 hover:border-zinc-300 transition">
               {s.logo_url ? (
-                <img src={s.logo_url} alt={s.name} className="h-12 w-auto object-contain" />
+                <img src={s.logo_url} alt={s.name} className="h-8 w-auto object-contain" />
               ) : (
-                <span className="text-sm font-medium text-zinc-600">{s.name}</span>
+                <span className="text-sm font-semibold text-zinc-800">{s.name}</span>
               )}
             </a>
           ))}

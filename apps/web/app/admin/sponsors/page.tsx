@@ -129,7 +129,7 @@ export default function AdminSponsorsPage() {
             <div className="flex items-center gap-3">
               {s.logo_url && <img src={s.logo_url} alt="" className="h-8 w-auto" />}
               <div>
-                <p className="font-medium">{s.name}</p>
+                <p className="font-medium text-zinc-900">{s.name || 'Bez naziva'}</p>
                 <p className="text-xs text-zinc-500">{s.level} · {s.status}</p>
               </div>
             </div>

@@ -59,38 +59,45 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="bg-[#0a0a1a] py-6">
-        <div className="max-w-7xl mx-auto px-5">
-          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-            {categories.map(c => (
-              <Link key={c.name} href={c.href} className="flex-shrink-0 flex flex-col items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/40 rounded-2xl px-4 py-3 min-w-[84px] transition-all duration-200">
-                <span className="text-2xl">{c.icon}</span>
-                <span className="text-[11px] text-white/70 whitespace-nowrap">{c.name}</span>
-              </Link>
-            ))}
+      <section className="bg-white py-8 -mt-16 relative z-10">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="bg-white rounded-3xl shadow-2xl shadow-black/10 p-4 border border-zinc-100">
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {categories.map(c => (
+                <Link key={c.name} href={c.href} className="flex-shrink-0 flex flex-col items-center gap-2 bg-zinc-50 hover:bg-purple-50 border border-zinc-200 hover:border-purple-300 rounded-2xl px-5 py-4 min-w-[90px] transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+                  <span className="text-3xl">{c.icon}</span>
+                  <span className="text-xs font-medium text-zinc-700 whitespace-nowrap">{c.name}</span>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {featured.length > 0 && (
-        <section className="py-14 bg-white">
-          <div className="max-w-7xl mx-auto px-5">
-            <div className="flex items-end justify-between mb-6">
+        <section className="py-16 bg-zinc-50">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex items-end justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-bold tracking-tight">Istaknuti događaji</h2>
-                <p className="text-sm text-zinc-500 mt-1">Stvarni objavljeni događaji</p>
+                <p className="text-xs tracking-[0.2em] text-purple-600 font-semibold uppercase mb-2">Otkrij</p>
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Istaknuti događaji</h2>
               </div>
-              <Link href="/search" className="text-sm text-purple-600 font-medium hover:underline">Pogledaj sve →</Link>
+              <Link href="/search" className="text-sm text-purple-600 font-semibold hover:underline flex items-center gap-1">
+                Pogledaj sve <span>→</span>
+              </Link>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {featured.map(e => (
-                <Link key={e.id} href={`/events/${e.slug}`} className="group relative rounded-2xl overflow-hidden bg-zinc-900 aspect-[16/10] shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-                  {e.image_url && <img src={e.image_url} alt={e.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <p className="text-xs text-white/70">{new Date(e.start_at).toLocaleDateString('bs-BA')}</p>
-                    <p className="font-semibold text-base mt-0.5 leading-tight">{e.title}</p>
-                    <p className="text-xs text-white/60 mt-1">{e.city}</p>
+                <Link key={e.id} href={`/events/${e.slug}`} className="group relative rounded-3xl overflow-hidden bg-zinc-900 aspect-[4/3] shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+                  {e.image_url && <img src={e.image_url} alt={e.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700" />}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                    <p className="text-xs text-white/70 font-medium">{new Date(e.start_at).toLocaleDateString('bs-BA', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    <p className="font-bold text-xl mt-1 leading-tight group-hover:text-purple-300 transition">{e.title}</p>
+                    <p className="text-sm text-white/60 mt-2 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      {e.city}
+                    </p>
                   </div>
                 </Link>
               ))}

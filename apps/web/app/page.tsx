@@ -124,7 +124,7 @@ export default async function HomePage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {withPrice.map(e => (
-                <Link key={e.id} href={`/events/${e.slug}`} className="group relative rounded-2xl overflow-hidden bg-[#1a1635] border border-white/10 hover-lift hover:border-[#7C3AED]/50 gpu">
+                <Link key={e.id} href={`/events/${e.slug}`} className="group relative rounded-2xl overflow-hidden bg-[#1a1635] border border-white/10 hover-lift hover:border-[#7C3AED]/50 card-contain">
                   <div className="aspect-[4/3] relative overflow-hidden">
                     {e.image_url ? (
                       <img src={e.image_url} alt={e.title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover img-zoom" />

@@ -21,15 +21,75 @@ body {
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-.glass { backdrop-filter: blur(16px); background: rgba(16,21,43,0.75); }
+/* Glass: isolate so blur doesn't repaint whole page */
+.glass { 
+  background: rgba(16,21,43,0.85); 
+  isolation: isolate;
+}
+@supports (backdrop-filter: blur(12px)) {
+  .glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+}
+
 .card-glow { box-shadow: 0 0 40px -10px rgba(124,58,237,0.4); }
 
-/* GPU-friendly animations */
-.gpu { transform: translateZ(0); backface-visibility: hidden; }
-.hover-lift { transition: transform 0.2s ease, border-color 0.2s ease; }
-.hover-lift:hover { transform: translateY(-4px) translateZ(0); }
-.img-zoom { transition: transform 0.4s ease; }
-.group:hover .img-zoom { transform: scale(1.05) translateZ(0); }
+/* GPU compositing helpers */
+.gpu {
+  transform: translate3d(0,0,0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+.gpu-opacity {
+  will-change: opacity;
+}
+
+/* Hover: only transform + border (composite + cheap paint) */
+.hover-lift {
+  transition: transform 0.18s ease-out, border-color 0.18s ease-out;
+  transform: translate3d(0,0,0);
+}
+.hover-lift:hover {
+  transform: translate3d(0,-4px,0);
+}
+
+.img-zoom {
+  transition: transform 0.35s ease-out;
+  transform: translate3d(0,0,0);
+}
+.group:hover .img-zoom {
+  transform: translate3d(0,0,0) scale(1.05);
+}
+
+/* Contain cards so hover doesn't invalidate outside */
+.card-contain {
+  contain: layout style paint;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+
+/* Soft glow via opacity layer instead of animated shadow */
+.btn-glow {
+  position: relative;
+  isolation: isolate;
+}
+.btn-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(124,58,237,0.4), rgba(160,32,240,0.3));
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: -1;
+  pointer-events: none;
+}
+.btn-glow:hover::after { opacity: 1; }
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .gpu, .hover-lift, .img-zoom { will-change: auto; }
 }

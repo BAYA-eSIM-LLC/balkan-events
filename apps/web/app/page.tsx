@@ -116,12 +116,12 @@ export default async function HomePage() {
       {withPrice.length > 0 && (
         <section className="py-14">
           <div className="max-w-7xl mx-auto px-5">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <span className="w-1 h-6 bg-gradient-to-b from-[#7C3AED] to-[#FF6B9D] rounded-full" />
-                <h2 className="text-2xl md:text-3xl font-bold">Izdvojeni događaji</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="w-1 h-6 bg-gradient-to-b from-[#7C3AED] to-[#FF6B9D] rounded-full shrink-0" />
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold">Izdvojeni događaji</h2>
               </div>
-              <Link href="/search" className="text-sm text-[#A78BFA] hover:text-white font-medium">Pogledaj sve događaje →</Link>
+              <Link href="/search" className="text-sm text-[#A78BFA] hover:text-white font-medium shrink-0 pl-4 sm:pl-0">Pogledaj sve →</Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {withPrice.map(e => (

@@ -83,8 +83,8 @@ export default function AdminSponsorsPage() {
       <div className="bg-white border rounded-xl p-4 mb-6">
         <h2 className="font-semibold mb-3">Dodaj sponzora</h2>
         <div className="grid md:grid-cols-2 gap-3">
-          <input className="border rounded-lg px-3 py-2" placeholder="Naziv" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-          <select className="border rounded-lg px-3 py-2" value={form.level} onChange={e => setForm({ ...form, level: e.target.value })}>
+          <input className="border rounded-lg px-3 py-2 text-zinc-900 bg-white" placeholder="Naziv" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+          <select className="border rounded-lg px-3 py-2 text-zinc-900 bg-white" value={form.level} onChange={e => setForm({ ...form, level: e.target.value })}>
             <option value="TITLE">Title</option>
             <option value="MAIN">Main</option>
             <option value="GOLD">Gold</option>
@@ -92,8 +92,8 @@ export default function AdminSponsorsPage() {
             <option value="PARTNER">Partner</option>
             <option value="MEDIA">Media</option>
           </select>
-          <input className="border rounded-lg px-3 py-2" placeholder="Logo URL" value={form.logo_url} onChange={e => setForm({ ...form, logo_url: e.target.value })} />
-          <input className="border rounded-lg px-3 py-2" placeholder="Website" value={form.website} onChange={e => setForm({ ...form, website: e.target.value })} />
+          <input className="border rounded-lg px-3 py-2 text-zinc-900 bg-white" placeholder="Logo URL" value={form.logo_url} onChange={e => setForm({ ...form, logo_url: e.target.value })} />
+          <input className="border rounded-lg px-3 py-2 text-zinc-900 bg-white" placeholder="Website" value={form.website} onChange={e => setForm({ ...form, website: e.target.value })} />
         </div>
         <button onClick={create} disabled={loading} className="mt-3 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm">{loading ? '...' : 'Dodaj sponzora'}</button>
       </div>
@@ -102,15 +102,15 @@ export default function AdminSponsorsPage() {
       <div className="bg-white border rounded-xl p-4 mb-6">
         <h2 className="font-semibold mb-3">Poveži sponzora s događajem</h2>
         <div className="grid md:grid-cols-3 gap-3">
-          <select className="border rounded-lg px-3 py-2" value={placement.sponsor_id} onChange={e => setPlacement({ ...placement, sponsor_id: e.target.value })}>
+          <select className="border rounded-lg px-3 py-2 text-zinc-900 bg-white" value={placement.sponsor_id} onChange={e => setPlacement({ ...placement, sponsor_id: e.target.value })}>
             <option value="">Odaberi sponzora</option>
             {sponsors.filter(s => s.status === 'ACTIVE').map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
-          <select className="border rounded-lg px-3 py-2" value={placement.event_id} onChange={e => setPlacement({ ...placement, event_id: e.target.value })}>
+          <select className="border rounded-lg px-3 py-2 text-zinc-900 bg-white" value={placement.event_id} onChange={e => setPlacement({ ...placement, event_id: e.target.value })}>
             <option value="">Svi događaji (homepage)</option>
             {events.map(e => <option key={e.id} value={e.id}>{e.title}</option>)}
           </select>
-          <select className="border rounded-lg px-3 py-2" value={placement.position} onChange={e => setPlacement({ ...placement, position: e.target.value })}>
+          <select className="border rounded-lg px-3 py-2 text-zinc-900 bg-white" value={placement.position} onChange={e => setPlacement({ ...placement, position: e.target.value })}>
             <option value="HOMEPAGE">Homepage</option>
             <option value="EVENT_PAGE">Stranica događaja</option>
             <option value="EVENT_HEADER">Header događaja</option>

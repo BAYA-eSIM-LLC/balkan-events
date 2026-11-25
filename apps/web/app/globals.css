@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-body { font-family: Inter, system-ui, -apple-system, sans-serif; }
+:root {
+  --navy: #10152B;
+  --navy-2: #15112F;
+  --purple: #7C3AED;
+  --neon: #A020F0;
+  --lavender: #A78BFA;
+  --coral: #FF6B9D;
+  --light: #F5F6FA;
+}
+
+body { 
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  background: var(--navy);
+  color: #fff;
+}
+
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+.glass { backdrop-filter: blur(16px); background: rgba(16,21,43,0.75); }
+.card-glow { box-shadow: 0 0 40px -10px rgba(124,58,237,0.4); }

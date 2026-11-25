@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -10,14 +10,12 @@ const CATEGORIES: Record<string, number> = {
   koncerti: 1, festivali: 2, sport: 3, teatar: 4, kultura: 5, nightlife: 6
 };
 
-export default function SearchPage() {
+function SearchContent() {
   const params = useSearchParams();
   const [q, setQ] = useState('');
-  const [city, setCity] = useState('');
-  const [categoryId, setCategoryId] = useState<number | null>(null);
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [categoryId, setCategoryId] = useState<number | null>(null);
 
   useEffect(() => {
     const cat = params.get('category');
@@ -29,24 +27,16 @@ export default function SearchPage() {
 
   const load = async (catId?: number) => {
     setLoading(true);
-    setError('');
     try {
       const urlParams = new URLSearchParams({ limit: '20' });
       if (q) urlParams.set('q', q);
-      if (city) urlParams.set('city', city);
       if (catId) urlParams.set('category_id', String(catId));
       const r = await fetch(`${API}/events/search?${urlParams}`);
-      if (!r.ok) throw new Error('Search failed');
       const d = await r.json();
       setResults(d.results || d || []);
-    } catch (e: any) {
-      setError(e.message || 'Error');
-    } finally {
-      setLoading(false);
-    }
+    } catch { setResults([]); }
+    finally { setLoading(false); }
   };
-
-  const search = () => load(categoryId || undefined);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
@@ -54,10 +44,9 @@ export default function SearchPage() {
         <h1 className="text-2xl font-bold mb-4">{categoryId ? Object.keys(CATEGORIES).find(k => CATEGORIES[k] === categoryId)?.replace(/^\w/, c => c.toUpperCase()) : 'Pretraga'}</h1>
         <div className="flex gap-2 mb-6">
           <input className="flex-1 border rounded-lg px-4 py-2" placeholder="Događaj, izvođač..." value={q} onChange={e => setQ(e.target.value)} />
-          <button onClick={search} className="bg-purple-600 text-white px-6 py-2 rounded-lg">Pretraži</button>
+          <button onClick={() => load(categoryId || undefined)} className="bg-purple-600 text-white px-6 py-2 rounded-lg">Pretraži</button>
         </div>
         {loading && <p className="text-gray-500">Učitavanje...</p>}
-        {error && <p className="text-red-500">{error}</p>}
         <div className="grid gap-4">
           {results.map(e => (
             <Link key={e.id} href={`/events/${e.slug}`} className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md flex gap-4">
@@ -72,5 +61,13 @@ export default function SearchPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 pt-20 p-4">Učitavanje...</div>}>
+      <SearchContent />
+    </Suspense>
   );
 }

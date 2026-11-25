@@ -74,7 +74,7 @@ export default function Login() {
       <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl">
         <div className="flex items-center gap-2 mb-4">
           <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6d3df5] to-[#d4af77] grid place-items-center text-white text-xs font-bold">B</span>
-          <span className="font-display font-bold text-sm">BALKAN EVENTS</span><span className="ml-auto text-[10px] font-bold bg-amber-400 text-black px-1.5 py-0.5 rounded">TEST</span>
+          <span className="font-display font-bold text-sm">BALKAN EVENTS</span>{process.env.NEXT_PUBLIC_ENV === "test" && <span className="ml-auto text-[10px] font-bold bg-amber-400 text-black px-1.5 py-0.5 rounded">TEST</span>}
         </div>
         <h1 className="text-2xl font-display font-extrabold text-[#0d0b1f]">{mfaToken ? 'MFA potvrda' : 'Prijava'}</h1>
         <p className="text-gray-500 text-sm mt-1">{mfaToken ? 'Unesi TOTP ili recovery kod' : 'Dobrodošao nazad'}</p>

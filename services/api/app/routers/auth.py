@@ -170,6 +170,10 @@ async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
     await db.commit()
     return await _issue_tokens(user, db)
 
+@router.get("/me")
+async def me(user: User = Depends(get_current_user)):
+    return {"id": user.id, "email": user.email, "full_name": user.full_name, "role": user.role}
+
 @router.post("/logout")
 async def logout(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
     token_hash = hash_refresh_token(data.refresh_token)

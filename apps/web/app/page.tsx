@@ -100,7 +100,7 @@ export default async function HomePage() {
                 className={`flex-shrink-0 flex flex-col items-center gap-2 rounded-2xl px-5 py-4 min-w-[88px] transition-all duration-200 border ${
                   i === 0
                     ? 'bg-gradient-to-br from-[#7C3AED] to-[#A020F0] border-transparent text-white shadow-lg shadow-purple-500/40 scale-105'
-                    : 'bg-[#1a1635] border-white/10 text-zinc-300 hover:border-[#7C3AED]/50 hover:text-white hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-900/30'
+                    : 'bg-[#1a1635] border-white/10 text-zinc-300 hover-lift hover:border-[#7C3AED]/50 hover:text-white'
                 }`}
               >
                 <span className="text-2xl">{c.icon}</span>
@@ -124,16 +124,16 @@ export default async function HomePage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {withPrice.map(e => (
-                <Link key={e.id} href={`/events/${e.slug}`} className="group relative rounded-2xl overflow-hidden bg-[#1a1635] border border-white/10 hover:border-[#7C3AED]/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-purple-900/50">
+                <Link key={e.id} href={`/events/${e.slug}`} className="group relative rounded-2xl overflow-hidden bg-[#1a1635] border border-white/10 hover-lift hover:border-[#7C3AED]/50 gpu">
                   <div className="aspect-[4/3] relative overflow-hidden">
                     {e.image_url ? (
-                      <img src={e.image_url} alt={e.title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+                      <img src={e.image_url} alt={e.title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover img-zoom" />
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-[#7C3AED]/40 to-[#15112F]" />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#10152B] via-transparent to-transparent" />
                     {e.pricing?.low && (
-                      <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wider bg-[#FF6B9D] text-white px-2 py-1 rounded-full animate-pulse">Malo ulaznica</span>
+                      <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wider bg-[#FF6B9D] text-white px-2 py-1 rounded-full">Malo ulaznica</span>
                     )}
                     <button className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white/70 hover:text-[#FF6B9D] hover:scale-110 transition-all duration-200 group-hover:bg-black/60" aria-label="Favorit">
                       <svg className="w-4 h-4 group-hover:fill-[#FF6B9D]/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
@@ -193,7 +193,7 @@ export default async function HomePage() {
               { n: '2', t: 'Kupi ulaznicu', d: 'Sigurna kupovina karticom. QR kod stiže na email.' },
               { n: '3', t: 'Dođi i uživaj', d: 'Pokaži QR na ulazu. Ulaznica je spremna.' },
             ].map(s => (
-              <div key={s.n} className="p-6 rounded-2xl bg-[#10152B] border border-white/10 hover:border-[#7C3AED]/40 hover:-translate-y-1 transition-all duration-300">
+              <div key={s.n} className="p-6 rounded-2xl bg-[#10152B] border border-white/10 hover-lift hover:border-[#7C3AED]/40">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7C3AED] to-[#A020F0] flex items-center justify-center font-bold text-sm">{s.n}</div>
                 <h3 className="mt-4 font-semibold">{s.t}</h3>
                 <p className="mt-1 text-sm text-zinc-400">{s.d}</p>

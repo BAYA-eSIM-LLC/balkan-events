@@ -43,7 +43,7 @@ export default function HeroBanner() {
   return (
     <section className="relative min-h-[92vh] flex items-center text-white overflow-hidden bg-[#10152B]">
       {slides.map((s, i) => (
-        <div key={i} className={`absolute inset-0 transition-opacity duration-1000 ${i === current ? 'opacity-100' : 'opacity-0'}`}>
+        <div key={i} className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}>
           <img src={s.desktop} alt={s.alt} className="absolute inset-0 w-full h-full object-cover scale-105" loading={i === 0 ? "eager" : "lazy"} fetchPriority={i === 0 ? "high" : "low"} decoding="async" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#10152B] via-[#10152B]/80 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#10152B] via-transparent to-[#10152B]/40" />
@@ -66,7 +66,7 @@ export default function HeroBanner() {
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <a href="/search" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#A020F0] hover:opacity-95 hover:shadow-lg hover:shadow-purple-500/50 px-6 py-3.5 rounded-full font-semibold text-sm transition-all duration-300">
+              <a href="/search" className="inline-flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#A020F0] hover:opacity-95 hover:opacity-95 px-6 py-3.5 rounded-full font-semibold text-sm transition-all duration-300">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 Otkrij događaje →
               </a>
@@ -79,7 +79,7 @@ export default function HeroBanner() {
 
           {/* Phone mockup */}
           <div className="hidden lg:block relative">
-            <div className="w-[280px] h-[560px] bg-zinc-900 rounded-[40px] border-4 border-zinc-700 shadow-2xl shadow-purple-900/50 overflow-hidden relative">
+            <div className="w-[280px] h-[560px] bg-zinc-900 rounded-[40px] border-4 border-zinc-700 shadow-xl overflow-hidden relative">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-zinc-800 rounded-b-2xl z-10" />
               <img src={slide.desktop} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60" />
               <div className="absolute inset-0 bg-gradient-to-b from-[#10152B]/60 via-transparent to-[#10152B]" />

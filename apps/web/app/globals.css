@@ -23,3 +23,13 @@ body {
 
 .glass { backdrop-filter: blur(16px); background: rgba(16,21,43,0.75); }
 .card-glow { box-shadow: 0 0 40px -10px rgba(124,58,237,0.4); }
+
+/* GPU-friendly animations */
+.gpu { transform: translateZ(0); backface-visibility: hidden; }
+.hover-lift { transition: transform 0.2s ease, border-color 0.2s ease; }
+.hover-lift:hover { transform: translateY(-4px) translateZ(0); }
+.img-zoom { transition: transform 0.4s ease; }
+.group:hover .img-zoom { transform: scale(1.05) translateZ(0); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

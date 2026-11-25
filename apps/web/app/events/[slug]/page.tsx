@@ -57,7 +57,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           </div>
           {event.start_at && <Countdown date={event.start_at} />}
           {event.short_description && <p className="mt-6 text-zinc-700 leading-relaxed text-base">{event.short_description}</p>}
-          {event.performers?.length > 0 && (
+          {(event.performers?.length ?? 0) > 0 && (
             <div className="mt-8">
               <h2 className="text-lg font-bold text-[#0d0b1f] mb-3">Izvođači</h2>
               <div className="space-y-4">

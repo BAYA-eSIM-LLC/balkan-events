@@ -53,7 +53,7 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto px-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-400">
           <span className="flex items-center gap-1.5"><span className="text-green-400">✓</span> Sigurna kupovina</span>
           <span className="flex items-center gap-1.5"><span className="text-green-400">✓</span> Digitalne QR ulaznice</span>
-          <span className="flex items-center gap-1.5"><span className="text-green-400">✓</span> Rezervacija bez stvarnog plaćanja (dev)</span>
+          <span className="flex items-center gap-1.5"><span className="text-green-400">✓</span> Sigurna online kupovina</span>
           <span className="flex items-center gap-1.5"><span className="text-green-400">✓</span> Podrška 24/7</span>
         </div>
       </section>

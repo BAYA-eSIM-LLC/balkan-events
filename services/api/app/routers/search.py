@@ -61,10 +61,18 @@ async def advanced_search(
 
     if q:
         nq = normalize(q)
+        raw = q.lower()
         query = query.where(or_(
             func.lower(Event.title).contains(nq),
+            func.lower(Event.title).contains(raw),
             func.lower(Event.short_description).contains(nq),
-            func.lower(Event.description).contains(nq)
+            func.lower(Event.short_description).contains(raw),
+            func.lower(Event.description).contains(nq),
+            func.lower(Event.description).contains(raw),
+            func.lower(Event.city).contains(nq),
+            func.lower(Event.city).contains(raw),
+            func.lower(Event.venue_name).contains(nq),
+            func.lower(Event.venue_name).contains(raw)
         ))
     if country_id:
         query = query.where(Event.country_id == country_id)

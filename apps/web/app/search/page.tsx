@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 const CATEGORIES: Record<string, number> = {
   koncerti: 1, festivali: 2, sport: 3, teatar: 4, kultura: 5, nightlife: 6
@@ -19,17 +19,22 @@ function SearchContent() {
 
   useEffect(() => {
     const cat = params.get('category');
+    const query = params.get('q');
+    if (query) setQ(query);
     if (cat && CATEGORIES[cat]) {
       setCategoryId(CATEGORIES[cat]);
-      load(CATEGORIES[cat]);
+      load(CATEGORIES[cat], query || undefined);
+    } else if (query) {
+      load(undefined, query);
     }
   }, [params]);
 
-  const load = async (catId?: number) => {
+  const load = async (catId?: number, query?: string) => {
     setLoading(true);
     try {
       const urlParams = new URLSearchParams({ limit: '20' });
-      if (q) urlParams.set('q', q);
+      const searchQ = query || q;
+      if (searchQ) urlParams.set('q', searchQ);
       if (catId) urlParams.set('category_id', String(catId));
       const r = await fetch(`${API}/events/search?${urlParams}`);
       const d = await r.json();

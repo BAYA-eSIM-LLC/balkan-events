@@ -57,6 +57,24 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           </div>
           {event.start_at && <Countdown date={event.start_at} />}
           {event.short_description && <p className="mt-6 text-zinc-700 leading-relaxed text-base">{event.short_description}</p>}
+          {event.performers?.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-lg font-bold text-[#0d0b1f] mb-3">Izvođači</h2>
+              <div className="space-y-4">
+                {event.performers.map((pf: any) => (
+                  <div key={pf.id} className="flex gap-4 p-4 bg-[#f6f5fb] rounded-2xl">
+                    {pf.image_url && <img src={pf.image_url} alt={pf.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />}
+                    <div>
+                      <p className="text-xs text-[#7C3AED] font-semibold uppercase">{pf.role || 'Izvođač'}</p>
+                      <p className="font-bold text-[#0d0b1f]">{pf.name}</p>
+                      {pf.bio && <p className="mt-1 text-sm text-zinc-600 leading-relaxed">{pf.bio}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <Sponsors position="EVENT_PAGE" eventId={event.id} title="Sponzori" />
           <div className="mt-6">
             <p className="text-xs text-zinc-500 mb-2 font-medium">Podijeli</p>

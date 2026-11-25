@@ -115,13 +115,27 @@ async def search_events(q: Optional[str] = None, city: Optional[str] = None, cat
     result = await db.execute(query)
     return [event_to_public(e) for e in result.scalars().all()]
 
+async def event_performers(db, event_id: int):
+    rows = await db.execute(
+        select(Performer, EventPerformer.role, EventPerformer.sort_order)
+        .join(EventPerformer, EventPerformer.performer_id == Performer.id)
+        .where(EventPerformer.event_id == event_id, Performer.is_active == True)
+        .order_by(EventPerformer.sort_order)
+    )
+    return [{
+        "id": p.id, "name": p.name, "slug": p.slug, "type": p.performer_type,
+        "bio": p.bio, "image_url": p.image_url, "role": role or "Izvođač",
+    } for p, role, _ in rows.all()]
+
 @public.get("/slug/{slug}")
 async def get_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Event).where(Event.slug == slug))
     e = result.scalar_one_or_none()
     if not e or e.status not in (EventStatus.PUBLISHED.value,):
         raise HTTPException(status_code=404, detail="Event not found")
-    return event_to_public(e)
+    data = event_to_public(e)
+    data["performers"] = await event_performers(db, e.id)
+    return data
 
 @public.get("/{event_id}")
 async def get_event(event_id: int, db: AsyncSession = Depends(get_db)):

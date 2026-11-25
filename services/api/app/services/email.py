@@ -11,6 +11,7 @@ from datetime import datetime
 import smtplib
 from email.message import EmailMessage
 import logging
+import urllib.parse
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ def payment_success_body(reference: str, tickets: list[str], amount: float = 0, 
     lines.append("Vaše ulaznice:")
     for t in tickets:
         lines.append(f"- {t}")
-        lines.append(f"  Link: https://balkanevents.org/ticket/{t}")
+        lines.append(f"  Link: https://balkanevents.org/ticket/{urllib.parse.quote(t, safe=chr(39))}")
     lines.append("")
     lines.append("QR kod možete prikazati otvaranjem linka ili u sekciji Moje ulaznice.")
     lines.append("")

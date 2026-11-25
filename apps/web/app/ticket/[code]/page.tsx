@@ -10,7 +10,7 @@ export default function PublicTicket() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch(`${API}/payments/tickets/public/${code}`)
+    fetch(`${API}/payments/tickets/public/${decodeURIComponent(code as string)}`)
       .then(r => r.ok ? r.json() : Promise.reject('Not found'))
       .then(setTicket)
       .catch(e => setError(e.message || 'Ulaznica nije pronađena'));

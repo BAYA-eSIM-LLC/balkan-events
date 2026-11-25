@@ -28,7 +28,7 @@ export default function AdminEvents() {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [create, setCreate] = useState(false);
-  const [newEvent, setNewEvent] = useState({ title: "", organization_id: 1, start_at: "", venue_name: "" });
+  const [newEvent, setNewEvent] = useState({ title: "", organization_id: 1, start_at: "", venue_name: "", category_id: 1 });
   const pageSize = 20;
 
   function load(p = page) {
@@ -133,6 +133,14 @@ export default function AdminEvents() {
           <div className="bg-[#12121f] border border-white/10 rounded-2xl p-5 max-w-md w-full space-y-3">
             <h3 className="font-semibold">Novi događaj</h3>
             <input value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} placeholder="Naziv događaja" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />
+            <select value={newEvent.category_id} onChange={e => setNewEvent({...newEvent, category_id: parseInt(e.target.value)})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm">
+              <option value="1">Koncerti</option>
+              <option value="2">Festivali</option>
+              <option value="3">Sport</option>
+              <option value="4">Teatar</option>
+              <option value="5">Kultura</option>
+              <option value="6">Noćni život</option>
+            </select>
             <input type="datetime-local" value={newEvent.start_at} onChange={e => setNewEvent({...newEvent, start_at: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />
             <input value={newEvent.venue_name} onChange={e => setNewEvent({...newEvent, venue_name: e.target.value})} placeholder="Lokacija" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm" />
             <div className="flex gap-2">

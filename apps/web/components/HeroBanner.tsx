@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 type Slide = { desktop: string; mobile: string; alt: string; title: string; subtitle?: string };
 const FALLBACK: Slide[] = [
   { 
-    desktop: 'https://balkanevents.org/media/zeljko-joksimovic.jpg', 
-    mobile: 'https://balkanevents.org/media/zeljko-joksimovic.jpg', 
-    alt: 'Željko Joksimović – Ljubuški', 
-    title: 'Željko Joksimović',
-    subtitle: 'Ljubuški · 28.12.2026. · od 17.90 EUR'
+    desktop: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=2000&q=80', 
+    mobile: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=2000&q=80', 
+    alt: 'Koncert', 
+    title: 'Doživi najbolje događaje na Balkanu.',
+    subtitle: ''
   },
 ];
 

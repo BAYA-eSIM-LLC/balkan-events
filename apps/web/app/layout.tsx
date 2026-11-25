@@ -1,14 +1,6 @@
 import './globals.css';
 import AppShell from '@/components/AppShell';
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
-
-const inter = Inter({
-  subsets: ['latin', 'latin-ext'],
-  display: 'swap',
-  weight: ['400', '500', '600', '700', '800'],
-});
-
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -43,7 +35,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="bs" className={inter.className}>
+    <html lang="bs" className="font-sans">
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

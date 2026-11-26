@@ -31,7 +31,7 @@ export default function SeatMapPage() {
     if (!slug) return;
     (async () => {
       try {
-        const er = await fetch(`${API}/events/${slug}`);
+        const er = await fetch(`${API}/events/slug/${slug}`);
         if (!er.ok) { setErr('Događaj nije pronađen'); setLoading(false); return; }
         const ev = await er.json();
         setEvent(ev);

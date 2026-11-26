@@ -73,16 +73,16 @@ export default async function HomePage() {
         ) : (
           <div className="grid md:grid-cols-3 gap-5">
             {featured.map((e) => (
-              <Link key={e.id} href={`/events/${e.slug}`} className="group relative rounded-2xl overflow-hidden h-64 shadow-lg">
-                <img src={e.image_url || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=900&q=80"} alt="" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute top-3 left-3 bg-amber-400 text-black text-[10px] font-bold px-2 py-1 rounded-md">★ FEATURED</div>
-                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                  <p className="text-xs opacity-80">{fmt(e.start_at)}</p>
-                  <p className="font-bold text-lg leading-tight">{e.title}</p>
-                  <p className="text-xs opacity-80 mt-1">📍 {e.city}{e.venue_name ? `, ${e.venue_name}` : ""}</p>
+              <Link key={e.id} href={`/events/${e.slug}`} className="group block bg-white rounded-2xl overflow-hidden border border-zinc-100 shadow-sm hover:shadow-md transition">
+                <div className="relative aspect-[16/10] bg-zinc-900">
+                  <img src={e.image_url || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=900&q=80"} alt="" className="absolute inset-0 w-full h-full object-contain group-hover:scale-[1.02] transition duration-500" />
+                  <div className="absolute top-3 left-3 bg-amber-400 text-black text-[10px] font-bold px-2 py-1 rounded-md">★ FEATURED</div>
                 </div>
-                <span className="absolute bottom-4 right-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white">→</span>
+                <div className="p-4">
+                  <p className="text-xs text-zinc-500">{fmt(e.start_at)}</p>
+                  <p className="font-bold text-lg leading-tight mt-0.5">{e.title}</p>
+                  <p className="text-xs text-zinc-500 mt-1">📍 {[e.city, e.venue_name].filter(Boolean).join(" · ")}</p>
+                </div>
               </Link>
             ))}
           </div>
@@ -102,12 +102,12 @@ export default async function HomePage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {upcoming.map((e) => (
             <Link key={e.id} href={`/events/${e.slug}`} className="group">
-              <div className="rounded-2xl overflow-hidden h-40 bg-zinc-100">
-                <img src={e.image_url || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=700&q=80"} alt="" className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+              <div className="relative rounded-2xl overflow-hidden aspect-[16/10] bg-zinc-900">
+                <img src={e.image_url || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=700&q=80"} alt="" className="absolute inset-0 w-full h-full object-contain group-hover:scale-[1.02] transition duration-500" />
               </div>
               <p className="mt-2 text-xs text-zinc-500">{fmt(e.start_at)}</p>
               <p className="font-bold leading-tight">{e.title}</p>
-              <p className="text-xs text-zinc-500">📍 {e.city}</p>
+              <p className="text-xs text-zinc-500">📍 {[e.city, e.venue_name].filter(Boolean).join(" · ")}</p>
             </Link>
           ))}
         </div>

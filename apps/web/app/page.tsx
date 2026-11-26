@@ -21,10 +21,26 @@ function fmt(d?: string) {
   } catch { return ""; }
 }
 
+async function minPrices(events: {id: number}[]) {
+  const out: Record<number, number> = {};
+  await Promise.all(events.map(async (e) => {
+    try {
+      const r = await fetch(`${API}/events/${e.id}/ticket-types`, { cache: "no-store" });
+      if (!r.ok) return;
+      const types = await r.json();
+      const prices = (types || []).map((x: {price: number}) => Number(x.price)).filter((n: number) => n > 0);
+      if (prices.length) out[e.id] = Math.min(...prices);
+    } catch {}
+  }));
+  return out;
+}
+
 export default async function HomePage() {
   const events = await fetchEvents("/events/upcoming");
   const featured = events.slice(0, 3);
   const upcoming = events.slice(0, 8);
+  const prices = await minPrices(events);
+  const heroEvent = featured[0];
 
   return (
     <div className="bg-white text-[#0d0b1f]">
@@ -43,6 +59,12 @@ export default async function HomePage() {
           </h1>
           <p className="mt-4 text-white/80 max-w-md">Koncerti, festivali, sport, teatar i još mnogo toga. Pronađi, rezerviši i doživi najbolje događaje u regionu.</p>
 
+          {heroEvent && (
+            <Link href={`/events/${heroEvent.slug}`} className="mt-5 inline-flex items-center gap-2 bg-[#7C3AED] hover:bg-[#6d28d9] text-white font-semibold px-5 py-2.5 rounded-full text-sm shadow-lg">
+              Ulaznice od {prices[heroEvent.id] ? prices[heroEvent.id].toFixed(2) : ""} EUR →
+            </Link>
+          )}
+
           <form action="/search" className="mt-7 flex flex-col sm:flex-row gap-2 max-w-2xl bg-white rounded-2xl p-2 shadow-xl">
             <div className="flex-1 flex items-center gap-2 px-3">
               <span className="text-zinc-400">⌕</span>
@@ -50,6 +72,12 @@ export default async function HomePage() {
             </div>
             <button type="submit" className="bg-[#7C3AED] hover:bg-[#6d28d9] text-white font-semibold px-6 py-2.5 rounded-xl text-sm">Pretraži</button>
           </form>
+
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            {["Sarajevo", "Zagreb", "Beograd", "Ljubuški", "Mostar", "Split"].map((c) => (
+              <Link key={c} href={`/search?q=${encodeURIComponent(c)}`} className="shrink-0 text-xs text-white/80 border border-white/20 rounded-full px-3 py-1 hover:bg-white/10">{c}</Link>
+            ))}
+          </div>
 
           <div className="mt-6 flex gap-3 overflow-x-auto pb-2">
             {categories.map((c) => (
@@ -82,6 +110,7 @@ export default async function HomePage() {
                   <p className="text-xs text-zinc-500">{fmt(e.start_at)}</p>
                   <p className="font-bold text-lg leading-tight mt-0.5">{e.title}</p>
                   <p className="text-xs text-zinc-500 mt-1">📍 {[e.city, e.venue_name].filter(Boolean).join(" · ")}</p>
+                  {prices[e.id] && <p className="text-sm font-semibold text-[#7C3AED] mt-1.5">od {prices[e.id].toFixed(2)} EUR</p>}
                 </div>
               </Link>
             ))}
@@ -108,6 +137,7 @@ export default async function HomePage() {
               <p className="mt-2 text-xs text-zinc-500">{fmt(e.start_at)}</p>
               <p className="font-bold leading-tight">{e.title}</p>
               <p className="text-xs text-zinc-500">📍 {[e.city, e.venue_name].filter(Boolean).join(" · ")}</p>
+              {prices[e.id] && <p className="text-xs font-semibold text-[#7C3AED] mt-0.5">od {prices[e.id].toFixed(2)} EUR</p>}
             </Link>
           ))}
         </div>
@@ -125,7 +155,7 @@ export default async function HomePage() {
       </section>
 
       {/* APP */}
-      <section className="max-w-7xl mx-auto px-5 pb-16 grid md:grid-cols-2 gap-8 items-center">
+      <section className="max-w-7xl mx-auto px-5 pb-16 grid md:grid-cols-2 gap-10 items-center">
         <div>
           <h2 className="text-3xl font-extrabold">Balkan Events aplikacija</h2>
           <p className="mt-2 text-zinc-600">Svi događaji u tvom džepu. Pretraži, kupi ulaznice i prati omiljene izvođače.</p>
@@ -138,6 +168,24 @@ export default async function HomePage() {
           <div className="mt-5 flex gap-3">
             <span className="bg-black text-white text-xs font-semibold px-4 py-2.5 rounded-lg">App Store</span>
             <span className="bg-black text-white text-xs font-semibold px-4 py-2.5 rounded-lg">Google Play</span>
+          </div>
+        </div>
+        <div className="relative h-72 flex justify-center">
+          <div className="absolute left-1/2 -translate-x-[70%] w-36 h-64 rounded-[2rem] bg-[#0d1020] border-4 border-zinc-800 shadow-2xl overflow-hidden">
+            <div className="h-5 bg-zinc-900 flex justify-center"><span className="w-10 h-1.5 bg-zinc-700 rounded-full mt-1" /></div>
+            <div className="p-2 text-white text-[8px]">
+              <p className="font-bold">ŽELJKO</p>
+              <div className="mt-2 h-16 rounded bg-purple-700/60" />
+              <p className="mt-1">od 17.90 EUR</p>
+            </div>
+          </div>
+          <div className="absolute left-1/2 -translate-x-[15%] w-36 h-64 rounded-[2rem] bg-white border-4 border-zinc-800 shadow-2xl overflow-hidden">
+            <div className="h-5 bg-zinc-100 flex justify-center"><span className="w-10 h-1.5 bg-zinc-300 rounded-full mt-1" /></div>
+            <div className="p-2 text-[8px]">
+              <p className="font-bold">Moje ulaznice</p>
+              <div className="mt-2 h-20 rounded bg-zinc-100 flex items-center justify-center text-zinc-400">QR</div>
+              <p className="mt-1 text-emerald-600 font-semibold">VAŽEĆA</p>
+            </div>
           </div>
         </div>
       </section>

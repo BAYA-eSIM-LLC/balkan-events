@@ -21,7 +21,7 @@ function MiniGooglePlay() {
 export default function Footer() {
   return (
     <footer className="bg-[#0d1020] text-zinc-400 text-sm">
-      <div className="max-w-7xl mx-auto px-5 py-12 grid grid-cols-2 md:grid-cols-6 gap-8">
+      <div className="max-w-7xl mx-auto px-5 py-8 md:py-12 grid grid-cols-2 md:grid-cols-6 gap-6 md:gap-8">
         <div className="col-span-2 md:col-span-1">
           <Link href="/" className="flex items-center gap-2.5 text-white">
             <span className="w-9 h-9 bg-gradient-to-br from-[#7C3AED] to-[#A020F0] rounded-lg flex items-center justify-center">

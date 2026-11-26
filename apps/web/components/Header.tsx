@@ -29,59 +29,49 @@ export default function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#101B35]/95 backdrop-blur border-b border-white/5 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-          <span className="w-11 h-11 bg-gradient-to-br from-[#E5AD54] to-[#c4923a] rounded-xl flex items-center justify-center shadow-lg shadow-[#E5AD54]/30 group-hover:scale-105 transition">
-            <svg className="w-5 h-5 text-[#101B35]" viewBox="0 0 24 24" fill="currentColor">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#FAF7F2]/95 backdrop-blur border-b border-[#e8e4df] text-[#1a1a1a]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[64px] flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2 shrink-0">
+          <span className="w-10 h-10 bg-gradient-to-br from-[#FF6B35] to-[#F7931E] rounded-xl flex items-center justify-center shadow-md">
+            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
               <path d="M8 5v14l11-7z" />
             </svg>
           </span>
           <span className="flex flex-col leading-none">
-            <span className="text-[14px] font-black tracking-wide">BALKAN</span>
-            <span className="text-[12px] font-bold text-[#E5AD54]">EVENTS<sup className="text-[8px]">®</sup></span>
+            <span className="text-[13px] font-black tracking-wide">BALKAN</span>
+            <span className="text-[11px] font-bold text-[#FF6B35]">EVENTS</span>
           </span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-7 text-sm text-zinc-300">
-          <Link href="/search" className="hover:text-white transition">Događaji</Link>
-          <Link href="/cities" className="hover:text-white transition">Gradovi</Link>
-          <Link href="/categories" className="hover:text-white transition">Kategorije</Link>
-          <Link href="/organizer" className="hover:text-white transition">Organizatori</Link>
-          <Link href="/organizer" className="hover:text-white transition">Za organizatore</Link>
+        <nav className="hidden lg:flex items-center gap-6 text-sm text-[#444]">
+          <Link href="/search" className="hover:text-[#FF6B35] transition font-medium">Događaji</Link>
+          <Link href="/cities" className="hover:text-[#FF6B35] transition font-medium">Gradovi</Link>
+          <Link href="/categories" className="hover:text-[#FF6B35] transition font-medium">Kategorije</Link>
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Link href="/search" className="hidden sm:flex p-2 rounded-full hover:bg-white/10 transition" aria-label="Pretraži">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          </Link>
-
+        <div className="flex items-center gap-2">
           {user ? (
             <>
-              <Link href="/profile" className="hidden sm:inline text-sm text-zinc-200 hover:text-white">{user.first_name || user.email?.split('@')[0]}</Link>
-              <button onClick={logout} className="text-sm px-3 py-1.5 rounded-full border border-white/20 hover:bg-white/10 transition">Odjava</button>
+              <Link href="/profile" className="text-sm font-medium hover:text-[#FF6B35]">{user.first_name || user.email?.split('@')[0]}</Link>
+              <button onClick={logout} className="text-sm px-3 py-1.5 rounded-full border border-[#ddd] hover:bg-white transition">Odjava</button>
             </>
           ) : (
-            <>
-              <Link href="/login" className="hidden sm:inline text-sm px-4 py-2 rounded-full border border-white/20 hover:bg-white/10 transition">Prijava</Link>
-              <Link href="/register" className="text-sm px-4 py-2 rounded-full bg-gradient-to-r from-[#E5AD54] to-[#c4923a] text-[#101B35] hover:opacity-90 transition font-medium shadow-lg shadow-[#E5AD54]/30">Registracija</Link>
-            </>
+            <Link href="/login" className="text-sm font-semibold hover:text-[#FF6B35] transition">Prijava</Link>
           )}
 
-          <button onClick={() => setOpen(!open)} className="lg:hidden p-2 rounded-lg hover:bg-white/10" aria-label="Meni">
+          <button onClick={() => setOpen(!open)} className="lg:hidden p-2 rounded-lg hover:bg-[#f0ebe5]" aria-label="Meni">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={open ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} /></svg>
           </button>
         </div>
       </div>
 
       {open && (
-        <div className="lg:hidden border-t border-white/10 bg-[#10152B]/95 backdrop-blur">
-          <nav className="flex flex-col px-4 py-4 gap-1 text-sm">
-            <Link href="/search" onClick={() => setOpen(false)} className="py-2.5 px-3 rounded-lg hover:bg-white/10">Događaji</Link>
-            <Link href="/cities" onClick={() => setOpen(false)} className="py-2.5 px-3 rounded-lg hover:bg-white/10">Gradovi</Link>
-            <Link href="/categories" onClick={() => setOpen(false)} className="py-2.5 px-3 rounded-lg hover:bg-white/10">Kategorije</Link>
-            <Link href="/organizer" onClick={() => setOpen(false)} className="py-2.5 px-3 rounded-lg hover:bg-white/10">Organizatori</Link>
-            {!user && <Link href="/login" onClick={() => setOpen(false)} className="py-2.5 px-3 rounded-lg hover:bg-white/10">Prijava</Link>}
+        <div className="lg:hidden border-t border-[#e8e4df] bg-[#FAF7F2]">
+          <nav className="flex flex-col px-4 py-3 gap-1 text-sm">
+            <Link href="/search" onClick={() => setOpen(false)} className="py-2.5 px-3 rounded-lg hover:bg-white">Događaji</Link>
+            <Link href="/cities" onClick={() => setOpen(false)} className="py-2.5 px-3 rounded-lg hover:bg-white">Gradovi</Link>
+            <Link href="/categories" onClick={() => setOpen(false)} className="py-2.5 px-3 rounded-lg hover:bg-white">Kategorije</Link>
+            {!user && <Link href="/login" onClick={() => setOpen(false)} className="py-2.5 px-3 rounded-lg hover:bg-white">Prijava</Link>}
           </nav>
         </div>
       )}

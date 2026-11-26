@@ -7,6 +7,10 @@ import ShareButtons from '@/components/ShareButtons';
 import Sponsors from '@/components/Sponsors';
 import type { Metadata } from 'next';
 
+const EVENT_VIDEOS: Record<string, string> = {
+  'zeljko-joksimovic-ljubuski': 'TVmIAwSrT78',
+};
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const event = await fetchEventBySlug(slug);
@@ -28,6 +32,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   if (!event) notFound();
   const img = event.image_url || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=1600&q=80';
   const shareUrl = `https://balkanevents.org/events/${slug}`;
+  const videoId = EVENT_VIDEOS[slug];
   const jsonLd = {
     '@context': 'https://schema.org', '@type': 'Event',
     name: event.title, description: event.short_description || event.title,
@@ -71,6 +76,21 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {videoId && (
+            <div className="mt-8">
+              <h2 className="text-lg font-bold text-[#0d0b1f] mb-3">Video</h2>
+              <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-black">
+                <iframe
+                  src={`https://www.youtube.com/embed/${videoId}`}
+                  title={`${event.title} video`}
+                  className="absolute inset-0 w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
               </div>
             </div>
           )}

@@ -4,7 +4,7 @@ import type { Metadata, Viewport } from 'next';
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#10152B',
+  themeColor: '#FAF7F2',
 };
 
 export const metadata: Metadata = {
@@ -48,8 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           sameAs: [],
         })}} />
       </head>
-      <body className="bg-[#10152B] text-white antialiased">
-        <div className="bg-mesh" aria-hidden="true" />
+      <body className="bg-[#FAF7F2] text-[#1a1a1a] antialiased">
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] focus:bg-white focus:text-black focus:px-3 focus:py-2 focus:rounded">Preskoči na sadržaj</a>
         <AppShell>{children}</AppShell>
       </body>

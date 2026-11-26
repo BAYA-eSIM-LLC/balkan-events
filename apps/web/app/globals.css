@@ -3,13 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --navy: #10152B;
+  --navy: #101B35;
   --navy-2: #15112F;
   --purple: #7C3AED;
+  --gold: #E5AD54;
+  --ivory: #F4F6FA;
   --neon: #A020F0;
   --lavender: #A78BFA;
   --coral: #FF6B9D;
-  --light: #F5F6FA;
+  --light: #F4F6FA;
 }
 
 body { 

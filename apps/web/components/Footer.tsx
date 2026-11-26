@@ -20,12 +20,12 @@ function MiniGooglePlay() {
 
 export default function Footer() {
   return (
-    <footer className="bg-[#0d1020] text-zinc-400 text-sm">
+    <footer className="bg-[#101B35] text-zinc-400 text-sm">
       <div className="max-w-7xl mx-auto px-5 py-8 md:py-12 grid grid-cols-2 md:grid-cols-6 gap-6 md:gap-8">
         <div className="col-span-2 md:col-span-1">
           <Link href="/" className="flex items-center gap-2.5 text-white">
-            <span className="w-9 h-9 bg-gradient-to-br from-[#7C3AED] to-[#A020F0] rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <span className="w-9 h-9 bg-gradient-to-br from-[#E5AD54] to-[#c4923a] rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-[#101B35]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 8a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 100 4v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 100-4V8z" />
                 <path strokeLinecap="round" d="M15 8v8" />
               </svg>

@@ -11,6 +11,7 @@ const nav = [
   { href: '/organizer/orders', label: 'Narudžbe', icon: '🛒' },
   { href: '/organizer/attendees', label: 'Sudionici', icon: '👥' },
   { href: '/organizer/scanner', label: 'QR Scanner', icon: '📷' },
+  { href: '/organizer/seat-maps', label: 'Mape sjedišta', icon: '🪑' },
   { href: '/organizer/reports', label: 'Izvještaji', icon: '📊' },
   { href: '/organizer/team', label: 'Tim', icon: '🤝' },
   { href: '/organizer/profile', label: 'Profil', icon: '🏢' },

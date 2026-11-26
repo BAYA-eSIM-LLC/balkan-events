@@ -82,6 +82,9 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           </div>
           <div id="buy" className="mt-8">
             <h2 className="text-lg font-bold text-[#0d0b1f] mb-3">Ulaznice</h2>
+            <Link href={`/events/${slug}/seats`} className="mb-4 inline-flex items-center gap-2 bg-[#101B35] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#1a2a4a]">
+              Odaberi sjedište na mapi →
+            </Link>
             <BuyTickets eventId={event.id} />
           </div>
           <Link href="/search" className="mt-6 inline-block text-sm text-zinc-500 hover:text-[#7C3AED]">← Nazad na događaje</Link>

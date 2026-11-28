@@ -22,7 +22,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0d0b1f] to-[#1a1535] flex items-center justify-center px-4 pt-16">
+    <div className="min-h-[calc(100svh-4rem)] bg-gradient-to-br from-[#0d0b1f] to-[#1a1535] flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl">
         <div className="flex items-center gap-2 mb-4">
           <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6d3df5] to-[#d4af77] grid place-items-center text-white text-xs font-bold">B</span>

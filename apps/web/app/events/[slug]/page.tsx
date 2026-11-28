@@ -1,4 +1,5 @@
 import { fetchEventBySlug, formatDate } from '@/lib/api';
+import EventLocationMap from '@/components/EventLocationMap';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -8,6 +9,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   if (!event) notFound();
 
   const img = event.image_url || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=1600&q=80';
+  const venueLocation = [event.venue_name, event.city, event.country].filter(Boolean).join(', ');
 
   return (
     <div className="bg-[#f6f5fb] min-h-screen">
@@ -36,6 +38,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             </Link>
           </div>
         </div>
+        {venueLocation && <EventLocationMap location={venueLocation} />}
       </div>
     </div>
   );

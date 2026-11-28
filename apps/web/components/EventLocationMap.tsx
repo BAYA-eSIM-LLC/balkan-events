@@ -53,7 +53,15 @@ export default function EventLocationMap({ location }: Props) {
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <>
+      <Script
+        id="google-maps-js"
+        src={`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&loading=async`}
+        strategy="afterInteractive"
+        onReady={initializeMap}
+        onError={() => setStatus('error')}
+      />
+      <section className="mt-8 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
       <h2 className="text-lg font-semibold text-zinc-900">Lokacija događaja</h2>
       <p className="mt-1 text-sm text-zinc-500">{location}</p>
       <div className="relative mt-4 overflow-hidden rounded-xl">
@@ -66,6 +74,7 @@ export default function EventLocationMap({ location }: Props) {
           </div>
         )}
       </div>
-    </section>
+      </section>
+    </>
   );
 }

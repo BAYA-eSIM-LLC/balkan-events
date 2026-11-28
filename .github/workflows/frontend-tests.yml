@@ -2,9 +2,9 @@ name: Frontend Tests
 
 on:
   push:
-    branches: [develop]
+    branches: [develop, full-redesign]
   pull_request:
-    branches: [develop, main]
+    branches: [develop, main, full-redesign]
   workflow_dispatch:
 
 jobs:

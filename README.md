@@ -8,6 +8,7 @@ Production: https://balkanevents.org
 
 - Backend: FastAPI, SQLAlchemy 2, Alembic, PostgreSQL 16, JWT + refresh tokens
 - Frontend: Next.js 15, React 19, TypeScript, Tailwind CSS
+- Maps: Google Maps JavaScript API (event venue and city map)
 
 ## Local development
 
@@ -22,7 +23,7 @@ uvicorn app.main:app --reload
 # Frontend
 cd apps/web
 npm install
-NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
+NEXT_PUBLIC_API_URL=http://localhost:8000 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-restricted-key npm run dev
 ```
 
 ## Environment variables
@@ -32,8 +33,11 @@ NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
 | `DATABASE_URL` | PostgreSQL connection string |
 | `SECRET_KEY` | JWT signing secret |
 | `NEXT_PUBLIC_API_URL` | Public API base URL for frontend |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Browser key restricted to the BALKAN EVENTS website and Maps JavaScript API |
 
-See `.env.prod.example` for production template. **Never commit real secrets.**
+See `.env.prod.example` for production template. Add the real Maps key to the server's untracked `.env.prod` file. **Never commit real secrets or API keys.**
+
+For production deployment, the deploy script passes `.env.prod` to Docker Compose at build time so the public Maps key is embedded into the Next.js client bundle. Rebuild the web container after changing the key.
 
 ## CI
 

@@ -1,80 +1,101 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
-import Script from 'next/script';
+import { useEffect, useState } from 'react';
 
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
+type Coordinates = {
+  lat: number;
+  lon: number;
+};
 
 type Props = {
   location: string;
 };
 
 export default function EventLocationMap({ location }: Props) {
-  const mapElement = useRef<HTMLDivElement>(null);
+  const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-  const initializeMap = useCallback(() => {
-    const maps = window.google?.maps;
-    if (!maps || !mapElement.current) return;
+  useEffect(() => {
+    const controller = new AbortController();
 
-    const geocoder = new maps.Geocoder();
-    geocoder.geocode({ address: location }, (results: any[], resultStatus: string) => {
-      const coordinates = results?.[0]?.geometry?.location;
-      if (resultStatus !== 'OK' || !coordinates || !mapElement.current) {
+    async function findLocation() {
+      try {
+        setStatus('loading');
+        setCoordinates(null);
+
+        // Photon geocoding is used instead of a paid Google Maps API key.
+        const response = await fetch(
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(location)}&limit=1`,
+          { signal: controller.signal }
+        );
+        if (!response.ok) throw new Error('Geocoding request failed');
+
+        const data = await response.json();
+        const feature = data?.features?.[0];
+        const point = feature?.geometry?.coordinates;
+
+        if (!Array.isArray(point) || point.length < 2) {
+          setStatus('error');
+          return;
+        }
+
+        setCoordinates({ lon: Number(point[0]), lat: Number(point[1]) });
+        setStatus('ready');
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return;
         setStatus('error');
-        return;
       }
+    }
 
-      const map = new maps.Map(mapElement.current, {
-        center: coordinates,
-        zoom: 15,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: true,
-      });
-
-      new maps.Marker({ map, position: coordinates, title: location });
-      setStatus('ready');
-    });
+    void findLocation();
+    return () => controller.abort();
   }, [location]);
 
-  if (!apiKey) {
-    return (
-      <section className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
-        <h2 className="text-lg font-semibold text-zinc-900">Lokacija događaja</h2>
-        <p className="mt-2 text-sm text-zinc-600">Google Maps će biti prikazan nakon konfiguracije API ključa.</p>
-      </section>
-    );
-  }
+  const mapUrl = coordinates
+    ? (() => {
+        const { lat, lon } = coordinates;
+        const delta = 0.012;
+        const bbox = [lon - delta, lat - delta, lon + delta, lat + delta].join(',');
+        return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${lat}%2C${lon}`;
+      })()
+    : undefined;
+
+  const directionsUrl = coordinates
+    ? `https://www.openstreetmap.org/?mlat=${coordinates.lat}&mlon=${coordinates.lon}#map=16/${coordinates.lat}/${coordinates.lon}`
+    : `https://www.openstreetmap.org/search?query=${encodeURIComponent(location)}`;
 
   return (
-    <>
-      <Script
-        id="google-maps-js"
-        src={`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&loading=async`}
-        strategy="afterInteractive"
-        onReady={initializeMap}
-        onError={() => setStatus('error')}
-      />
-      <section className="mt-8 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <section className="mt-8 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
       <h2 className="text-lg font-semibold text-zinc-900">Lokacija događaja</h2>
       <p className="mt-1 text-sm text-zinc-500">{location}</p>
       <div className="relative mt-4 overflow-hidden rounded-xl">
-        <div ref={mapElement} className="h-[320px] w-full bg-zinc-100" aria-label={`Google mapa: ${location}`} />
-        {status !== 'ready' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-zinc-100/90 px-5 text-center text-sm text-zinc-600">
+        {mapUrl ? (
+          <iframe
+            title={`OpenStreetMap karta: ${location}`}
+            src={mapUrl}
+            className="h-[320px] w-full border-0 bg-zinc-100"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        ) : (
+          <div className="flex h-[320px] items-center justify-center bg-zinc-100 px-5 text-center text-sm text-zinc-600">
             {status === 'error'
               ? 'Lokacija nije pronađena. Provjerite naziv mjesta održavanja.'
-              : 'Učitavanje Google karte…'}
+              : 'Učitavanje karte…'}
           </div>
         )}
       </div>
-      </section>
-    </>
+      <div className="mt-3 flex items-center justify-between gap-3 text-xs text-zinc-500">
+        <span>Mapa: © OpenStreetMap saradnici</span>
+        <a
+          href={directionsUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="font-medium text-violet-700 hover:underline"
+        >
+          Otvori mapu
+        </a>
+      </div>
+    </section>
   );
 }

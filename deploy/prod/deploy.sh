@@ -21,11 +21,11 @@ git fetch origin
 git checkout full-redesign
 git pull origin full-redesign
 
-# Build and restart (keeps postgres volume)
+# Build and restart (keeps postgres volume); .env.prod supplies the build-time Maps key
 cd deploy/prod
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose --env-file ../../.env.prod -f docker-compose.prod.yml up -d --build
 
 echo ""
 echo "=== Done ==="
 echo "Check: curl -I http://localhost/"
-echo "Rollback: docker compose -f docker-compose.prod.yml down && restore from $BACKUP_DIR"
+echo "Rollback: docker compose --env-file ../../.env.prod -f docker-compose.prod.yml down && restore from $BACKUP_DIR"

@@ -8,7 +8,7 @@ Production: https://balkanevents.org
 
 - Backend: FastAPI, SQLAlchemy 2, Alembic, PostgreSQL 16, JWT + refresh tokens
 - Frontend: Next.js 15, React 19, TypeScript, Tailwind CSS
-- Maps: Google Maps JavaScript API (event venue and city map)
+- Maps: OpenStreetMap embedded maps with Photon geocoding (no Google Maps API key or billing account required)
 
 ## Local development
 
@@ -23,7 +23,7 @@ uvicorn app.main:app --reload
 # Frontend
 cd apps/web
 npm install
-NEXT_PUBLIC_API_URL=http://localhost:8000 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-restricted-key npm run dev
+NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
 ```
 
 ## Environment variables
@@ -33,11 +33,10 @@ NEXT_PUBLIC_API_URL=http://localhost:8000 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-r
 | `DATABASE_URL` | PostgreSQL connection string |
 | `SECRET_KEY` | JWT signing secret |
 | `NEXT_PUBLIC_API_URL` | Public API base URL for frontend |
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Browser key restricted to the BALKAN EVENTS website and Maps JavaScript API |
 
-See `.env.prod.example` for production template. Add the real Maps key to the server's untracked `.env.prod` file. **Never commit real secrets or API keys.**
+See `.env.prod.example` for production template. No Google Maps API key or payment method is needed for the event map integration.
 
-For production deployment, the deploy script passes `.env.prod` to Docker Compose at build time so the public Maps key is embedded into the Next.js client bundle. Rebuild the web container after changing the key.
+The event map resolves the venue address with the public Photon geocoding service and displays an OpenStreetMap embed. Public geocoding and map tile services have fair-use policies and availability limits; for high traffic, use a hosted provider or self-hosted geocoding/tiles.
 
 ## CI
 
